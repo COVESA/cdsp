@@ -1,0 +1,1 @@
+This directory contains the project documentation including the sources for the online documentation website.
