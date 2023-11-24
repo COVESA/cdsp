@@ -1,0 +1,1 @@
+This directory contains files related to the Docker deployment of the Central Data Service Playground.
