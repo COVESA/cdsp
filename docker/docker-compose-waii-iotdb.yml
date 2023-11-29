@@ -1,4 +1,6 @@
 version: "3"
+name: cdsp-waii-iotdb
+
 services:
 
 # Apache IoTDB acting as VSS Data Store
