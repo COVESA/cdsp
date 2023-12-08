@@ -27,6 +27,8 @@ services:
         - ./logs:/iotdb/logs
 
 # WAII acting as VISS Protocol Data Server
+#WAII_SRC_PATH = ../automotive-viss2
+
   tmp:
     image: busybox
     container_name: waii_container_volumes
@@ -50,7 +52,7 @@ services:
   vissv2server:
     container_name: vissv2server
     build:
-      context: .  # context set to repo root
+      context: ../cdsp/automotive-viss2  # context set to repo root
       target: vissv2server
     entrypoint: [ /app/vissv2server,-s,redis]
     ports:
