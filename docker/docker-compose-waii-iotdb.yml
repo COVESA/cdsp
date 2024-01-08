@@ -30,7 +30,7 @@ services:
         - ./logs:/iotdb/logs
 
 # WAII acting as VISS Protocol Data Server
-#WAII_SRC_PATH = ../automotive-viss2
+#WAII_SRC_PATH = ../cdsp/automotive-viss2
 
   tmp:
     image: busybox
@@ -48,7 +48,7 @@ services:
     user: root
     command: redis-server /etc/redis.conf
     volumes:
-      - ./redis/redis.conf:/etc/redis.conf
+      - ../cdsp/automotive-viss2/redis/redis.conf:/etc/redis.conf
     volumes_from:
       - tmp
 
