@@ -1,0 +1,1 @@
+This directory contains examples of using the Playground. This includes patterns, architectures and uses cases. Often involving other COVESA technology.

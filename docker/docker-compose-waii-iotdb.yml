@@ -1,0 +1,68 @@
+version: "3"
+name: cdsp-waii-iotdb
+
+services:
+
+# Apache IoTDB acting as VSS Data Store
+  iotdb-service:
+    image: apache/iotdb:1.2.2-standalone
+    hostname: iotdb-service
+    container_name: iotdb-service
+    ports:
+      - "6667:6667"
+    environment:
+      - cn_internal_address=iotdb-service
+      - cn_internal_port=10710
+      - cn_consensus_port=10720
+#      - cn_seed_config_node=iotdb-service:10710
+      - cn_target_config_node_list=iotdb-service:10710
+      - dn_rpc_address=iotdb-service
+      - dn_internal_address=iotdb-service
+      - dn_rpc_port=6667
+      - dn_mpp_data_exchange_port=10740
+      - dn_schema_region_consensus_port=10750
+      - dn_data_region_consensus_port=10760
+      - dn_seed_config_node=iotdb-service:10710
+#      - dn_seed_config_node=iotdb-service:10710
+      - dn_target_config_node_list=iotdb-service:10710
+    volumes:
+        - ./data:/iotdb/data
+        - ./logs:/iotdb/logs
+
+# WAII acting as VISS Protocol Data Server
+#WAII_SRC_PATH = ../cdsp/automotive-viss2
+
+  tmp:
+    image: busybox
+    container_name: waii_container_volumes
+    user: root
+    command: >
+      chmod -R 777 /tmp/docker/
+    volumes:
+      - /tmp/docker/
+
+  redis:
+    image: redis
+    container_name: app_redis
+    privileged: true
+    user: root
+    command: redis-server /etc/redis.conf
+    volumes:
+      - ../cdsp/automotive-viss2/redis/redis.conf:/etc/redis.conf
+    volumes_from:
+      - tmp
+
+  vissv2server:
+    container_name: vissv2server
+    build:
+      context: ../cdsp/automotive-viss2  # context set to repo root
+      target: vissv2server
+    entrypoint: [ /app/vissv2server,-s,redis]
+    ports:
+      - "127.0.0.1:8081:8081"
+      - "127.0.0.1:8888:8888"
+      - "127.0.0.1:8887:8887"
+    volumes:
+      - ./logs:/app/logs
+    volumes_from:
+      - tmp

@@ -1,0 +1,3 @@
+[submodule "cdsp/automotive-viss2"]
+	path = cdsp/automotive-viss2
+	url = https://github.com/w3c/automotive-viss2.git
