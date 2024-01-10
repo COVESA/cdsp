@@ -81,6 +81,7 @@ Server: readyState=3, status=200
 Server: {"data":{"dp":{"ts":"2024-01-10T14:56:48Z","value":"Data-not-found"},"path":"Vehicle.Speed"},"ts":"2024-01-10T14:56:48Z"}
 ```
 
+You can query what VSS nodes the server understands by asking for the VSS path list using the URL `http://localhost:8081/vsspathlist`. Entering that URL in your web browser will typically give you a graphical rendering of the JSON data returned.
 
 ## With Realm data store backend
 TBA
