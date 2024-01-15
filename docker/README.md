@@ -12,10 +12,10 @@ The [WAII VISS Data Server](https://github.com/w3c/automotive-viss2) has no pre-
 The WAII [build tutorial](https://w3c.github.io/automotive-viss2/build-system/) says to install golang version 1.13 or later.
 Go install instructions can be found here: https://go.dev/learn/
 
-Depending on your distro you may need to setup GOROOT and GOPATH. This was not required on Ubuntu 20 LTS, but was on Mac.
+Depending on your distro you may need to setup `GOROOT` and `GOPATH`. This was not required on Ubuntu 20 LTS, but was on Mac.
 
 ### Create persistent local volume /tmp/docker
-The upstream Docker compose assumes the existence of the local directory '/tmp/docker' but does not create it. Fix the issue by creating it yourself:
+The upstream Docker compose assumes the existence of the local directory `/tmp/docker` but does not create it. Fix the issue by creating it yourself:
 
 ```
 $ mkdir /tmp/docker
@@ -23,12 +23,12 @@ $ mkdir /tmp/docker
 See upstream issue report https://github.com/w3c/automotive-viss2/issues/99 for details.
 
 ### Generate credentials (testCredGen build error)
-The upstream Dockerfile assumes that credentials have already been created and will fail to build if they are not found. Generate them by running './testCredGen.sh ca' from the directory '/cdsp/automotive-viss2/testCredGenRun'
+The upstream Dockerfile assumes that credentials have already been created and will fail to build if they are not found. Generate them by running `./testCredGen.sh ca` from the directory `/cdsp/automotive-viss2/testCredGenRun`
 
 See upstream issue report https://github.com/w3c/automotive-viss2/issues/86 for details.
 
 ### Disable Access Grant support (agt_public_key.rsa build error)
-There is a current issue with the upstream WAII VISS Server Dockerfile in which the server fails to build due to a missing public key for the Access Control server. See upstream issue report https://github.com/w3c/automotive-viss2/issues/88 for details. After discussion with the upstream maintainers the current workaround is to comment out the relevant following line from the end of the Dockerfile. The change should be made to cdsp/cdsp/automotive-viss2/Dockerfile
+There is a current issue with the upstream WAII VISS Server Dockerfile in which the server fails to build due to a missing public key for the Access Control server. See upstream issue report https://github.com/w3c/automotive-viss2/issues/88 for details. After discussion with the upstream maintainers the current workaround is to comment out the relevant following line from the end of the Dockerfile. The change should be made to `cdsp/cdsp/automotive-viss2/Dockerfile`
 ```
 #COPY --from=builder /build/server/agt_server/agt_public_key.rsa .
 ```
@@ -36,7 +36,7 @@ There is a current issue with the upstream WAII VISS Server Dockerfile in which 
 If your project requires Access Grant support please discuss enabling it with the WAII community.
 
 ### Mac build error "ERROR [internal] load metadata for docker.io"
-On a Mac build errors related to docker metadata such as 'ERROR [internal] load metadata for docker.io/library/golang' have been observed. This [serverfault article](https://serverfault.com/a/1131599) suggests commenting the line '"credsStore": "desktop"' from the Docker config.json for your user. This was found to work.
+On a Mac build errors related to docker metadata such as `ERROR [internal] load metadata for docker.io/library/golang` have been observed. This [serverfault article](https://serverfault.com/a/1131599) suggests commenting the line `"credsStore": "desktop"` from the Docker `config.json` for your user. This was found to work.
 
 ## With Apache IoTDB data store backend
 ### Deploy with Docker Compose
