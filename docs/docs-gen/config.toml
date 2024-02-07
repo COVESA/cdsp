@@ -1,0 +1,22 @@
+baseURL = "https://covesa.github.io/cdsp/"
+languageCode = "en-us"
+title = "Central Data Service Playground"
+theme = "learn"
+publishDir = "../docs"
+[params]
+  # Change default color scheme with a variant one. Can be "red", "blue", "green".
+  themeVariant = "blue"
+  disableInlineCopyToClipBoard = true
+  editURL = "https://github.com/covesa/cdsp/edit/master/docs/docs-gen/content/"
+  disableLandingPageButton = true
+
+
+[[menu.shortcuts]]
+name = "<i class='fab fa-github'></i> Github repo"
+identifier = "ds"
+url = "https://github.com/covesa/cdsp"
+weight = 10
+
+# Generation of JSON index to allow search
+[outputs]
+home = [ "HTML", "RSS", "JSON"]
