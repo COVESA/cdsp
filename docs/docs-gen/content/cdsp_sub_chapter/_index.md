@@ -1,5 +1,5 @@
 ---
-title: Sub-capter
+title: Sub-chapter
 weight: 20
 chapter: true
 ---
