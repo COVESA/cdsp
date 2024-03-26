@@ -2,9 +2,17 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>https://covesa.github.io/cdsp/cdsp_sub_chapter/sub-chapter/</loc>
+    <loc>https://covesa.github.io/cdsp/overview/</loc>
   </url><url>
-    <loc>https://covesa.github.io/cdsp/cdsp_sub_chapter/</loc>
+    <loc>https://covesa.github.io/cdsp/overview/cdsp-overview/</loc>
+  </url><url>
+    <loc>https://covesa.github.io/cdsp/overview/cdsp-logical-concept/</loc>
+  </url><url>
+    <loc>https://covesa.github.io/cdsp/examples/</loc>
+  </url><url>
+    <loc>https://covesa.github.io/cdsp/overview/cdsp-implementation-concept/</loc>
+  </url><url>
+    <loc>https://covesa.github.io/cdsp/overview/covesa-and-beyond/</loc>
   </url><url>
     <loc>https://covesa.github.io/cdsp/categories/</loc>
   </url><url>

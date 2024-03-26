@@ -2,15 +2,19 @@
 title: "Central Data Service Playground"
 ---
 # Central Data Service Playground
+## Overview
+Learn the basics and benefits of using the playground
 
-Intro to CDSP...
+[Overview]({{< ref "cdsp-overview" >}} "playground overview")
 
-To insert a figure:
-![Figure text](/cdsp/images/cdsp.png?width=50pc)
+## Browse by section
 
-To insert a link to[the sub chapter in the subchapter](/cdsp/cdsp_sub_chapter/sub-chapter)
+### Manuals
+This section contains user guides and reference manuals for the playground
 
-To insert a link to [COVESA/VSS-Tools](https://github.com/COVESA/vss-tools).
+Overview \| Integration guides \| etc.
 
-## Another section
-Some CDSP detail....
+### Examples
+Learn how to use the playground by stepping through examples.
+
+[Overview]({{< ref "examples" >}} "playground overview")

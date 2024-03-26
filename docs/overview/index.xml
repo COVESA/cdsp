@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Central Data Service Playground</title>
-    <link>https://covesa.github.io/cdsp/</link>
-    <description>Recent content on Central Data Service Playground</description>
+    <title>Playground overview on Central Data Service Playground</title>
+    <link>https://covesa.github.io/cdsp/overview/</link>
+    <description>Recent content in Playground overview on Central Data Service Playground</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en-us</language><atom:link href="https://covesa.github.io/cdsp/index.xml" rel="self" type="application/rss+xml" />
+    <language>en-us</language><atom:link href="https://covesa.github.io/cdsp/overview/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Playground overview</title>
       <link>https://covesa.github.io/cdsp/overview/cdsp-overview/</link>

@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en" class="js csstransforms3d">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="Hugo 0.103.1" />
+    <meta name="description" content="">
+
+
+    <link rel="shortcut icon" href="/hierarchical_information_model/images/fav.png" type="image/x-icon" />
+
+    <title>Playground logical concept :: Central Data Service Playground</title>
+
+    
+    <link href="/cdsp/css/nucleus.css?1711475998" rel="stylesheet">
+    <link href="/cdsp/css/fontawesome-all.min.css?1711475998" rel="stylesheet">
+    <link href="/cdsp/css/hybrid.css?1711475998" rel="stylesheet">
+    <link href="/cdsp/css/featherlight.min.css?1711475998" rel="stylesheet">
+    <link href="/cdsp/css/perfect-scrollbar.min.css?1711475998" rel="stylesheet">
+    <link href="/cdsp/css/auto-complete.css?1711475998" rel="stylesheet">
+    <link href="/cdsp/css/atom-one-dark-reasonable.css?1711475998" rel="stylesheet">
+    <link href="/cdsp/css/theme.css?1711475998" rel="stylesheet">
+    <link href="/cdsp/css/hugo-theme.css?1711475998" rel="stylesheet">
+    
+    <link href="/cdsp/css/theme-blue.css?1711475998" rel="stylesheet">
+    
+    
+
+    <script src="/cdsp/js/jquery-3.3.1.min.js?1711475998"></script>
+
+    <style>
+      :root #header + #content > #left > #rlblock_left{
+          display:none !important;
+      }
+      
+        :not(pre) > code + span.copy-to-clipboard {
+            display: none;
+        }
+      
+    </style>
+    
+  </head>
+  <body class="" data-url="/cdsp/overview/cdsp-logical-concept/">
+    <nav id="sidebar" class="">
+
+
+
+  <div id="header-wrapper">
+    <div id="header">
+      <a id="logo" href="https://covesa.github.io/cdsp/">
+  <img src="/cdsp/images/cdsp.png">
+</a>
+
+    </div>
+    
+        <div class="searchbox">
+    <label for="search-by"><i class="fas fa-search"></i></label>
+    <input data-search-input id="search-by" type="search" placeholder="Search...">
+    <span data-search-clear=""><i class="fas fa-times"></i></span>
+</div>
+
+<script type="text/javascript" src="/cdsp/js/lunr.min.js?1711475998"></script>
+<script type="text/javascript" src="/cdsp/js/auto-complete.js?1711475998"></script>
+<script type="text/javascript">
+    
+        var baseurl = "https:\/\/covesa.github.io\/cdsp\/";
+    
+</script>
+<script type="text/javascript" src="/cdsp/js/search.js?1711475998"></script>
+
+    
+  </div>
+  
+
+    <div class="highlightable">
+    <ul class="topics">
+
+        
+          
+          
+
+
+
+
+ 
+  
+    
+    <li data-nav-id="/cdsp/overview/" title="Playground overview" class="dd-item
+        parent
+        
+        
+        ">
+      <a href="/cdsp/overview/">
+          Playground overview
+          
+      </a>
+      
+      
+        <ul>
+          
+          
+          
+
+        
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/cdsp/overview/cdsp-overview/" title="Playground overview" class="dd-item ">
+        <a href="/cdsp/overview/cdsp-overview/">
+        Playground overview
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/cdsp/overview/cdsp-logical-concept/" title="Playground logical concept" class="dd-item active">
+        <a href="/cdsp/overview/cdsp-logical-concept/">
+        Playground logical concept
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/cdsp/overview/cdsp-implementation-concept/" title="Playground implementation" class="dd-item ">
+        <a href="/cdsp/overview/cdsp-implementation-concept/">
+        Playground implementation
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/cdsp/overview/covesa-and-beyond/" title="Combining with wider eco-system" class="dd-item ">
+        <a href="/cdsp/overview/covesa-and-beyond/">
+        Combining with wider eco-system
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+        
+        </ul>
+      
+    </li>
+  
+ 
+
+          
+          
+
+
+
+
+ 
+  
+    
+    <li data-nav-id="/cdsp/examples/" title="Playground examples" class="dd-item
+        
+        
+        
+        ">
+      <a href="/cdsp/examples/">
+          Playground examples
+          
+      </a>
+      
+      
+    </li>
+  
+ 
+
+          
+        
+    </ul>
+
+    
+    
+      <section id="shortcuts">
+        <h3>More</h3>
+        <ul>
+          
+              <li>
+                  <a class="padding" href="https://github.com/covesa/cdsp"><i class='fab fa-github'></i> Github repo</a>
+              </li>
+          
+        </ul>
+      </section>
+    
+
+    
+    <section id="footer">
+      <p>Built with <a href="https://github.com/matcornic/hugo-theme-learn"><i class="fas fa-heart"></i></a> from <a href="https://getgrav.org">Grav</a> and <a href="https://gohugo.io/">Hugo</a></p>
+
+    </section>
+  </div>
+</nav>
+
+
+
+
+        <section id="body">
+        <div id="overlay"></div>
+        <div class="padding highlightable">
+              
+              <div>
+                <div id="top-bar">
+                
+                  
+                  
+                  
+                  <div id="top-github-link">
+                    <a class="github-link" title='Edit this page' href="https://github.com/covesa/cdsp/edit/master/docs/docs-gen/content/overview/cdsp-logical-concept.md" target="blank">
+                      <i class="fas fa-code-branch"></i>
+                      <span id="top-github-link-text">Edit this page</span>
+                    </a>
+                  </div>
+                  
+                
+                
+                <div id="breadcrumbs" itemscope="" itemtype="http://data-vocabulary.org/Breadcrumb">
+                    <span id="sidebar-toggle-span">
+                        <a href="#" id="sidebar-toggle" data-sidebar-toggle="">
+                          <i class="fas fa-bars"></i>
+                        </a>
+                    </span>
+                  
+                  <span id="toc-menu"><i class="fas fa-list-alt"></i></span>
+                  
+                  <span class="links">
+                 
+                 
+                    
+          
+          
+            
+            
+          
+          
+            
+            
+          
+          
+            <a href='/cdsp/'>Central Data Service Playground</a> > <a href='/cdsp/overview/'>Playground overview</a> > Playground logical concept
+          
+        
+          
+        
+          
+        
+                 
+                  </span>
+                </div>
+                
+                    <div class="progress">
+    <div class="wrapper">
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#importance-of-maintaining-a-logical-concept">Importance of maintaining a logical concept</a></li>
+    <li><a href="#why-_central-data-service-playground_-">Why <em>Central Data Service Playground</em> ?</a>
+      <ul>
+        <li><a href="#problem">Problem</a></li>
+        <li><a href="#goal">Goal</a></li>
+        <li><a href="#why-_central-data-service_">Why <em>Central Data Service</em>?</a></li>
+        <li><a href="#why-_playground_-why-not-poc">Why <em>Playground</em>? Why not PoC?</a></li>
+      </ul>
+    </li>
+    <li><a href="#what">What?</a>
+      <ul>
+        <li><a href="#requirements">Requirements</a></li>
+        <li><a href="#components">Components</a></li>
+        <li><a href="#flexibility-in-use">Flexibility in use</a></li>
+        <li><a href="#the-playground-in-context">The Playground in context</a></li>
+        <li><a href="#project-success-factors">Project success factors</a></li>
+      </ul>
+    </li>
+    <li><a href="#how">How?</a></li>
+  </ul>
+</nav>
+    </div>
+</div>
+
+                
+              </div>
+            </div>
+            
+        <div id="head-tags">
+        
+        </div>
+        
+        <div id="body-inner">
+          
+            <h1>
+              
+              Playground logical concept
+            </h1>
+          
+
+        
+
+
+<h2 id="importance-of-maintaining-a-logical-concept">Importance of maintaining a logical concept</h2>
+<p>COVESA is a grass roots OSS automotive alliance. From a communication and community perspective it is important to maintain descriptions of the logical concepts. Discussion at a logical level allows different parties to collaborate on common concepts, whilst making different implementation decisions, e.g. in product/technology selection or system architecture for example. That however does not mean we need spend months in philosophical discussions before moving to implementation. Instead logical concepts (why, what) can be developed alongside implementation.</p>
+<p>The Data Architecture team therefore intends to maintain concepts for both logical and implementation alongside each other for their projects using the playground.</p>
+<p>Of course it is perfectly normal that in <em>using</em> the playground to develop an idea, example or pattern, that an architecture and components are chosen as part of the design.</p>
+<h2 id="why-_central-data-service-playground_-">Why <em>Central Data Service Playground</em> ?</h2>
+<h3 id="problem">Problem</h3>
+<p>OEMs have presented various open questions and requirements in tackling growing software complexity. One representative list appears below.</p>
+<p>Key questions for a End-to-End Data Architecture:</p>
+<ul>
+<li>How data can be shared between all touchpoints?</li>
+<li>How different domains of data share same tech
+stack?</li>
+<li>How should a bidirectional sync work?</li>
+<li>Who is responsible for conflict management?</li>
+<li>Who takes care about permissions, roles, rights
+and privacy?</li>
+<li>How the data model can be updated and synced?</li>
+<li>How subscriptions can be handled?</li>
+<li>How to handle historized and time series data &hellip;</li>
+<li>&hellip;on different touchpoints?</li>
+<li>How to handle multiple sync endpoints?</li>
+<li>How to handle unidirectional data streams?</li>
+<li>How (new) knowledge &hellip;</li>
+<li>&hellip; can be shared with others?</li>
+</ul>
+<p>Source: <a href="https://wiki.covesa.global/download/attachments/78840403/COVESA_DataMiddleware-PoC-Status_v2.pdf?version=1&amp;modificationDate=1698737955726&amp;api=v2"><em>&ldquo;Building Bridges with a common Data Middleware&rdquo;</em>, BMW AG, COVESA Autumn 2023 AMM</a></p>
+<p>At the same time there has been a realization that some problems require open collaboration.</p>
+<h3 id="goal">Goal</h3>
+<p>The playground was first conceived by the COVESA Data Architecture team to meet their needs in addressing these problems. They also recognized similar needs in the wider community inside and outside COVESA. For example, for COVESA to demonstrate how VSS data can be used with its eco-system for newcomers.</p>
+<p>The playground goals from the introductory overview:</p>
+<p><em>The Central Data Service Playground (CDSP) serves as a neutral, open playground for data services both within and outside the vehicle in the context of data-centric architectures. It enables investigation into the internals of these services and how they can be combined. Furthermore, the playground provides a means to publish and collaborate on such work in the open.</em></p>
+<p>The following sections address the Why, What and How in more detail.</p>
+<h3 id="why-_central-data-service_">Why <em>Central Data Service</em>?</h3>
+<ul>
+<li>VSS is a mechanism of abstraction. The COVESA logical architecture for the VSS eco-system shown below places operation in the &lsquo;big ECUs&rsquo;, in zonal ECUs and above. Discussion of next-gen and data-centric architectures suggests investigation into data services in zone, domain and HPC controller scenarios and the cooperation between them. Hence <em>Central</em>.</li>
+</ul>
+<figure><img src="Logical-Architecture-Overview.drawio.svg" width="50pc"/><figcaption>
+            <h4>The COVESA Logical Architecture</h4>
+        </figcaption>
+</figure>
+
+<ul>
+<li>
+<p>A repeating pattern of discussion in the COVESA Data Architecture team is the combination of VSS Data Server and VSS Data Store with advanced features and their connection southbound to feeders/native data and northbound to clients and off-board. Hence <em>Data Service</em>.</p>
+</li>
+<li>
+<p>The name Central Data Service is not an attempt to introduce a new category of component. It is used here simply as a useful synonym for what otherwise would be a longer descriptive phrase explaining combinations of VSS centric Data Server and Store and their location in the vehicle.</p>
+</li>
+</ul>
+<h3 id="why-_playground_-why-not-poc">Why <em>Playground</em>? Why not PoC?</h3>
+<ul>
+<li>
+<p>A PoC is often a snapshot in time and often specific in scope. Playground suggests greater flexibility. The central service, the Lego building block, is intended to be flexible and evolving. Similarly with what it is combined with to illustrate COVESA concepts and technology.</p>
+</li>
+<li>
+<p>The Playground could certainly be used to implement a PoC.</p>
+</li>
+<li>
+<p>Patterns such as view/controller, out of the box data servers, data stores linked to applications (e.g. SQLite) etc are well known. The Service could in part be defined by what&rsquo;s not known, by open questions in next-gen architectures such as data-centric architectures, that needs to be tackled down. The Playground is the means to doing that and illustrating the results.</p>
+</li>
+</ul>
+<h2 id="what">What?</h2>
+<h3 id="requirements">Requirements</h3>
+<figure><img src="cdsp-logical-concept.drawio.svg"/><figcaption>
+            <h4>The data service core requirements</h4>
+        </figcaption>
+</figure>
+
+<p>At its core the service has requirements in three key areas:</p>
+<ol>
+<li>
+<p>Data Models: the live data models - VSS as the abstracted view of the vehicle, along with other adjacent data models such as personal data.</p>
+</li>
+<li>
+<p>Persistence: history of the model and signals etc - historical and cached timeseries data.</p>
+</li>
+<li>
+<p>Application logic / APIs: standardized APIs for accessing the data such as the <a href="https://github.com/COVESA/vehicle-information-service-specification">Vehicle Information Service Specification (VISS)</a>
+or GraphQL.</p>
+</li>
+</ol>
+<p><em>Additional requirements:</em> It is recognized that additional features, such as synchronization are absolutely desirable and have been a part of discussions in the Data Architecture team. Such features may also already be part of the feature set of the playground components. For example, both the Apache IoTDB and MongoDB Realm databases have sync capabilities. A base feature set is described as a starting point to help readers quickly grasp the concept. Additional features will be created or illustrated collectively based on interest and participation.</p>
+<h3 id="components">Components</h3>
+<p>As a starting point the playground has been realized as a &lsquo;project of projects&rsquo; to create the basic building block data service. Achieved by combining a VISS Data Protocol Server with highly functional VSS Data Stores.</p>
+<p>The VISS Protocol Server principally provides northbound get/set/sub application logic using the VISS protocol. Along with the secondary benefit of any additional features provided by the server.</p>
+<p>&lsquo;Highly functional&rsquo; in the context of the VSS Data Store means the flexible means to store, query, process and analysis timeseries data. An archetype would be a database server that can operate in-vehicle and the cloud. Such a component provides the possibility of using a variety of different architecture patterns, such as both client-server and event-driven, or data processing approaches.</p>
+<h3 id="flexibility-in-use">Flexibility in use</h3>
+<p>As well as the mentioned flexibility in implementation, flexibility in use is also intended:</p>
+<ul>
+<li>
+<p>With some supporting documentation it can help meet the ongoing request from newcomers to the VSS eco-system as to how VSS can be used.</p>
+</li>
+<li>
+<p>The Data Architecture group has various topics it wishes to investigate related to data-centric architectures. Data layer topics such as sync, data reduction and data quality. Also separation of concerns and cooperation between data and knowledge layers.</p>
+</li>
+<li>
+<p>The playground can be used to investigate internals of data services. For example, connecting to medium and high speed data, or adding a protocol.</p>
+</li>
+<li>
+<p>External connections with other systems may also be a focus. For example, combining the service with other components to implement a particular touchpoint such as mobile.</p>
+</li>
+</ul>
+<p>Further details can be found in the following sections.</p>
+<h3 id="the-playground-in-context">The Playground in context</h3>
+<p>To help understand its use lets quickly place the playground in context.</p>
+<p><strong>Big picture</strong>: As stated above the COVESA logical architecture places its scope at Zonal ECUs and above as shown in the diagram. It is assumed that the playground would likely be deployed on a Zone, Domain or Central controller, with corresponding h/w capabilities.</p>
+<p><strong>Interaction between &lsquo;Large ECU&rsquo;</strong>: In the COVESA Data Architecture team it is recognized that zone/domain specific data services will need to synchronize and cooperate between themselves and/or with a central vehicle computer, e.g. Inter-controller sync/cooperation:</p>
+<p><img src="https://raw.githubusercontent.com/slawr/vss-otaku/master/in-vehicle-storage/apache-iotdb/doc/zonal-vss-store-cooperation.drawio.svg" alt="Cooperation between zonal data stores and central data service/store" title="Cooperation between zonal data stores">
+Source: <a href="https://github.com/slawr/vss-otaku">vss-otaku</a></p>
+<p><strong>In-vehicle southbound</strong>: The playground can be integrated southbound to lower parts of the vehicle and its native data, through data feeders and connectors. This can include making connections to other systems such as Autosar etc.</p>
+<p><strong>Northbound</strong>: connections will be made to clients, mobile, cloud and major in-vehicle domains such as IVI running Android/Apple etc.</p>
+<p><strong>Logical domains</strong>: Connections may also be made to other logical data domains. For example, there is an <a href="https://wiki.covesa.global/x/cYI8B">knowledge layer proposal</a> made in the COVESA Data Architecture team that discusses the separation of concerns and interaction between knowledge, information and raw data layers as illustrated below. The Playground here could be used to provide the data/information layer services in its investigation.</p>
+<p><img src="https://wiki.covesa.global/download/attachments/71074417/Knowledge-Layer-v3.png?api=v2?width=50pc" alt="Knowledge layer proposal" title="Deployment illustration from the proposal">
+Source: <a href="https://wiki.covesa.global/x/cYI8B">knowledge layer proposal</a></p>
+<h3 id="project-success-factors">Project success factors</h3>
+<ol>
+<li>
+<p>Newcomers to COVESA technology use the playground to accelerate their understanding of how the technology can be used. That could be a looking at a simple instance of how a VSS data server is combined with a VSS data store and queried using VISS. It could also be a more complex instance that combines components to illustrate a longer specific end to end use case, e.g. mobile to vehicle connection.</p>
+</li>
+<li>
+<p>Internal groups within COVESA naturally use the logical concepts and the playground implementation in combination with other components to develop and disseminate ideas. This especially applies to the Data Architecture and Infrastructure pillar.</p>
+</li>
+<li>
+<p>Supporting materials such as patterns, diagrams, cookbooks etc are adopted as useful assets within and outside COVESA, which in turn helps socialization.</p>
+</li>
+</ol>
+<h2 id="how">How?</h2>
+<ul>
+<li>
+<p>Address two high level implementation needs, keeping in mind a path towards production where possible:</p>
+<ul>
+<li>
+<p>Easy to develop: make it easy to build, modify and trial by providing an instance running on a host, e.g. using Docker container(s).</p>
+</li>
+<li>
+<p>Closer to production: the same base code should be deployable to systems closer to production, including on automotive hardware (or its simulation), e.g. Yocto, container orchestration, SOA etc.</p>
+</li>
+</ul>
+</li>
+<li>
+<p>A path towards production can be supported by using production components, rather than overly simple substitutes, where it makes sense. For instance a particular scenario may use Kafka in a cloud connection. The point is not to pick a winning product in a particular category, but to recognize that using a production tool can represent a category that is known to scale. Detailed requirements for a specific production project and product selection for it, is rightly left to that project.</p>
+</li>
+<li>
+<p>A generic code base for the basic building blocks should allow flexible compilation to meet those needs on multiple architectures, e.g. x86, ARM and RISC-V. The target for how it is used being a matter of deployment at a high level.</p>
+</li>
+<li>
+<p>Follow the OSS mantra of adopt where you can, extend if needed, create where necessary.</p>
+</li>
+<li>
+<p>Promote flexible reconfiguration of components by favouring loose coupling over tight coupling.</p>
+</li>
+</ul>
+
+
+<footer class="footline">
+	
+</footer>
+
+        
+        </div>
+        
+
+      </div>
+
+    <div id="navigation">
+        
+        
+
+        
+            
+            
+                
+                    
+                    
+                
+                
+
+                    
+                    
+                        
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                        
+                        
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                        
+                        
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+
+        
+
+
+	 
+	 
+		
+			<a class="nav nav-prev" href="/cdsp/overview/cdsp-overview/" title="Playground overview"> <i class="fa fa-chevron-left"></i></a>
+		
+		
+			<a class="nav nav-next" href="/cdsp/overview/cdsp-implementation-concept/" title="Playground implementation" style="margin-right: 0px;"><i class="fa fa-chevron-right"></i></a>
+		
+	
+    </div>
+
+    </section>
+
+    <div style="left: -1000px; overflow: scroll; position: absolute; top: -1000px; border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;">
+      <div style="border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;"></div>
+    </div>
+    <script src="/cdsp/js/clipboard.min.js?1711475998"></script>
+    <script src="/cdsp/js/perfect-scrollbar.min.js?1711475998"></script>
+    <script src="/cdsp/js/perfect-scrollbar.jquery.min.js?1711475998"></script>
+    <script src="/cdsp/js/jquery.sticky.js?1711475998"></script>
+    <script src="/cdsp/js/featherlight.min.js?1711475998"></script>
+    <script src="/cdsp/js/highlight.pack.js?1711475998"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+    <script src="/cdsp/js/modernizr.custom-3.6.0.js?1711475998"></script>
+    <script src="/cdsp/js/learn.js?1711475998"></script>
+    <script src="/cdsp/js/hugo-learn.js?1711475998"></script>
+    
+        
+            <script src="/cdsp/mermaid/mermaid.js?1711475998"></script>
+        
+        <script>
+            mermaid.initialize({ startOnLoad: true });
+        </script>
+    
+    
+
+  </body>
+</html>
+

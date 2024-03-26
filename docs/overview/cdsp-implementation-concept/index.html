@@ -9,7 +9,7 @@
 
     <link rel="shortcut icon" href="/hierarchical_information_model/images/fav.png" type="image/x-icon" />
 
-    <title>Central Data Service Playground :: Central Data Service Playground</title>
+    <title>Playground implementation :: Central Data Service Playground</title>
 
     
     <link href="/cdsp/css/nucleus.css?1711475998" rel="stylesheet">
@@ -40,7 +40,7 @@
     </style>
     
   </head>
-  <body class="" data-url="/cdsp/">
+  <body class="" data-url="/cdsp/overview/cdsp-implementation-concept/">
     <nav id="sidebar" class="">
 
 
@@ -86,7 +86,7 @@
   
     
     <li data-nav-id="/cdsp/overview/" title="Playground overview" class="dd-item
-        
+        parent
         
         
         ">
@@ -154,7 +154,7 @@
  
   
     
-      <li data-nav-id="/cdsp/overview/cdsp-implementation-concept/" title="Playground implementation" class="dd-item ">
+      <li data-nav-id="/cdsp/overview/cdsp-implementation-concept/" title="Playground implementation" class="dd-item active">
         <a href="/cdsp/overview/cdsp-implementation-concept/">
         Playground implementation
         
@@ -251,33 +251,109 @@
         <div id="overlay"></div>
         <div class="padding highlightable">
               
+              <div>
+                <div id="top-bar">
+                
+                  
+                  
+                  
+                  <div id="top-github-link">
+                    <a class="github-link" title='Edit this page' href="https://github.com/covesa/cdsp/edit/master/docs/docs-gen/content/overview/cdsp-implementation-concept.md" target="blank">
+                      <i class="fas fa-code-branch"></i>
+                      <span id="top-github-link-text">Edit this page</span>
+                    </a>
+                  </div>
+                  
+                
+                
+                <div id="breadcrumbs" itemscope="" itemtype="http://data-vocabulary.org/Breadcrumb">
+                    <span id="sidebar-toggle-span">
+                        <a href="#" id="sidebar-toggle" data-sidebar-toggle="">
+                          <i class="fas fa-bars"></i>
+                        </a>
+                    </span>
+                  
+                  <span id="toc-menu"><i class="fas fa-list-alt"></i></span>
+                  
+                  <span class="links">
+                 
+                 
+                    
+          
+          
+            
+            
+          
+          
+            
+            
+          
+          
+            <a href='/cdsp/'>Central Data Service Playground</a> > <a href='/cdsp/overview/'>Playground overview</a> > Playground implementation
+          
+        
+          
+        
+          
+        
+                 
+                  </span>
+                </div>
+                
+                    <div class="progress">
+    <div class="wrapper">
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#implementation-concepts">Implementation Concepts</a></li>
+  </ul>
+</nav>
+    </div>
+</div>
+
+                
+              </div>
+            </div>
+            
         <div id="head-tags">
         
         </div>
         
         <div id="body-inner">
           
+            <h1>
+              
+              Playground implementation
+            </h1>
+          
 
         
 
-<span id="sidebar-toggle-span">
-<a href="#" id="sidebar-toggle" data-sidebar-toggle=""><i class="fas fa-bars"></i> navigation</a>
-</span>
 
- 
-<h1 id="central-data-service-playground">Central Data Service Playground</h1>
-<h2 id="overview">Overview</h2>
-<p>Learn the basics and benefits of using the playground</p>
-<p><a href="/cdsp/overview/cdsp-overview/" title="playground overview">Overview</a></p>
-<h2 id="browse-by-section">Browse by section</h2>
-<h3 id="manuals">Manuals</h3>
-<p>This section contains user guides and reference manuals for the playground</p>
-<p>Overview | Integration guides | etc.</p>
-<h3 id="examples">Examples</h3>
-<p>Learn how to use the playground by stepping through examples.</p>
-<p><a href="/cdsp/examples/" title="playground overview">Overview</a></p>
+
+<div class="notices warning" ><p>This placeholder text comes from the Playground Proposal and will be replaced with a fuller discussion of the implementation</p>
+</div>
+
+<h2 id="implementation-concepts">Implementation Concepts</h2>
+<p>The logical section above should be read to understand the concepts to be implemented. This section suggests starting points for discussion in the community.
+Initial idea for the Central Data Service</p>
+<p>As outlined in the logical description, as a starting point the Service could be realised as a basic building block combining VISS Data Server with highly functional VSS Data Store. The availability of generic code allows flexible deployment to meet the two high level implementation needs to support easy development trials, whilst also supporting investigation closer to production, including a path to production.</p>
+<p>Initial idea/sketch for base building block:</p>
+<ul>
+<li>Generic code: VISS Data Server with VSS Data Store backend
+<ul>
+<li>Data Architecture requirements: Add Apache IotDB (Apache eco-system, embedded and UDF) and Realm (embedded, sync) as backends to enable research.</li>
+<li>Example using WAII VISS Data Protocol Server, which supports historical data and has a data store backend and various embedded databases:</li>
+</ul>
+</li>
+<li>Deployment 1 - Easy to develop (assumed first target): x86 host Docker containers</li>
+<li>Deployment 2 - Closer to production (assumed second target): ARM64 using common automotive deployment, e.g. Yocto Linux.</li>
+</ul>
+
+
+<footer class="footline">
 	
-  
+</footer>
+
         
         </div>
         
@@ -309,8 +385,6 @@
             
                 
                     
-                        
-                        
                     
                 
                 
@@ -324,6 +398,9 @@
             
             
                 
+                    
+                        
+                        
                     
                 
                 
@@ -357,6 +434,7 @@
             
                 
                     
+                    
                 
                 
 
@@ -372,6 +450,9 @@
             
             
                 
+                    
+                        
+                        
                     
                 
                 
@@ -412,8 +493,10 @@
 	 
 	 
 		
+			<a class="nav nav-prev" href="/cdsp/overview/cdsp-logical-concept/" title="Playground logical concept"> <i class="fa fa-chevron-left"></i></a>
 		
-			<a class="nav nav-next" href="/cdsp/overview/" title="Playground overview" style="margin-right: 0px;"><i class="fa fa-chevron-right"></i></a>
+		
+			<a class="nav nav-next" href="/cdsp/overview/covesa-and-beyond/" title="Combining with wider eco-system" style="margin-right: 0px;"><i class="fa fa-chevron-right"></i></a>
 		
 	
     </div>
