@@ -5,6 +5,7 @@
     <link>https://covesa.github.io/cdsp/categories/</link>
     <description>Recent content in Categories on Central Data Service Playground</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en-us</language><atom:link href="https://covesa.github.io/cdsp/categories/index.xml" rel="self" type="application/rss+xml" />
+    <language>en-us</language>
+    <atom:link href="https://covesa.github.io/cdsp/categories/index.xml" rel="self" type="application/rss+xml" />
   </channel>
 </rss>

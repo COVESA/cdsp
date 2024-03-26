@@ -5,45 +5,35 @@
     <link>https://covesa.github.io/cdsp/overview/</link>
     <description>Recent content in Playground overview on Central Data Service Playground</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en-us</language><atom:link href="https://covesa.github.io/cdsp/overview/index.xml" rel="self" type="application/rss+xml" />
+    <language>en-us</language>
+    <atom:link href="https://covesa.github.io/cdsp/overview/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Playground overview</title>
       <link>https://covesa.github.io/cdsp/overview/cdsp-overview/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://covesa.github.io/cdsp/overview/cdsp-overview/</guid>
-      <description>The Central Data Service Playground (CDSP) serves as a neutral, open playground for data services both within and outside the vehicle in the context of data-centric architectures. It enables investigation into the internals of these services and how they can be combined. Furthermore, the playground provides a means to publish and collaborate on such work in the open.
-The playground was first conceived by the COVESA Data Architecture team to meet their needs.</description>
+      <description>The Central Data Service Playground (CDSP) serves as a neutral, open playground for data services both within and outside the vehicle in the context of data-centric architectures. It enables investigation into the internals of these services and how they can be combined. Furthermore, the playground provides a means to publish and collaborate on such work in the open.&#xA;The playground was first conceived by the COVESA Data Architecture team to meet their needs.</description>
     </item>
-    
     <item>
       <title>Playground logical concept</title>
       <link>https://covesa.github.io/cdsp/overview/cdsp-logical-concept/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://covesa.github.io/cdsp/overview/cdsp-logical-concept/</guid>
       <description>Importance of maintaining a logical concept COVESA is a grass roots OSS automotive alliance. From a communication and community perspective it is important to maintain descriptions of the logical concepts. Discussion at a logical level allows different parties to collaborate on common concepts, whilst making different implementation decisions, e.g. in product/technology selection or system architecture for example. That however does not mean we need spend months in philosophical discussions before moving to implementation.</description>
     </item>
-    
     <item>
       <title>Playground implementation</title>
       <link>https://covesa.github.io/cdsp/overview/cdsp-implementation-concept/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://covesa.github.io/cdsp/overview/cdsp-implementation-concept/</guid>
-      <description>This placeholder text comes from the Playground Proposal and will be replaced with a fuller discussion of the implementation
-Implementation Concepts The logical section above should be read to understand the concepts to be implemented. This section suggests starting points for discussion in the community. Initial idea for the Central Data Service
-As outlined in the logical description, as a starting point the Service could be realised as a basic building block combining VISS Data Server with highly functional VSS Data Store.</description>
+      <description>This placeholder text comes from the Playground Proposal and will be replaced with a fuller discussion of the implementation&#xA;Implementation Concepts The logical section above should be read to understand the concepts to be implemented. This section suggests starting points for discussion in the community. Initial idea for the Central Data Service&#xA;As outlined in the logical description, as a starting point the Service could be realised as a basic building block combining VISS Data Server with highly functional VSS Data Store.</description>
     </item>
-    
     <item>
       <title>Combining with wider eco-system</title>
       <link>https://covesa.github.io/cdsp/overview/covesa-and-beyond/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://covesa.github.io/cdsp/overview/covesa-and-beyond/</guid>
       <description>&amp;lt;TBA: Put the playground &amp;rsquo;lego piece&amp;rsquo; in context with the wider COVESA eco-system and beyond, e.g. connection to Capabilities southbound&amp;gt;</description>
     </item>
-    
   </channel>
 </rss>
