@@ -15,7 +15,7 @@ Of course it is perfectly normal that in _using_ the playground to develop an id
 ### Problem
 OEMs have presented various open questions and requirements in tackling growing software complexity. One representative list appears below.
 
-Key questions for a End-to-End Data Architecture:
+"Key questions for a End-to-End Data Architecture:
 - How data can be shared between all touchpoints?
 - How different domains of data share same tech
 stack?
@@ -30,9 +30,9 @@ and privacy?
 - How to handle multiple sync endpoints?
 - How to handle unidirectional data streams?
 - How (new) knowledge ...
-- ... can be shared with others?
+- ... can be shared with others?"
 
-Source: [_"Building Bridges with a common Data Middleware"_, BMW AG, COVESA Autumn 2023 AMM](https://wiki.covesa.global/download/attachments/78840403/COVESA_DataMiddleware-PoC-Status_v2.pdf?version=1&modificationDate=1698737955726&api=v2)
+Source: [_"Building Bridges with a common Data Middleware"_, OEM, COVESA Autumn 2023 AMM](https://wiki.covesa.global/download/attachments/78840403/COVESA_DataMiddleware-PoC-Status_v2.pdf?version=1&modificationDate=1698737955726&api=v2)
 
 At the same time there has been a realization that some problems require open collaboration.
 
