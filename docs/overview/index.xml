@@ -26,7 +26,7 @@
       <link>https://covesa.github.io/cdsp/overview/cdsp-implementation-concept/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>https://covesa.github.io/cdsp/overview/cdsp-implementation-concept/</guid>
-      <description>This placeholder text comes from the Playground Proposal and will be replaced with a fuller discussion of the implementation&#xA;Implementation Concepts The logical section above should be read to understand the concepts to be implemented. This section suggests starting points for discussion in the community. Initial idea for the Central Data Service&#xA;As outlined in the logical description, as a starting point the Service could be realised as a basic building block combining VISS Data Server with highly functional VSS Data Store.</description>
+      <description>The prior section describing the logical concept should be read to understand the concepts to be implemented.&#xA;As outlined in the logical description, as a starting point the Service is realized as a basic building block combining VISS Data Server with highly functional (VSS) Data Store.&#xA;VISS data server The reference implementation for the COVESA VISS specification is developed in the VISSR project. The playground has included VISSR to provide its northbound VISS support.</description>
     </item>
     <item>
       <title>Combining with wider eco-system</title>
