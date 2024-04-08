@@ -28,8 +28,7 @@ services:
         - ./data:/iotdb/data
         - ./logs:/iotdb/logs
 
-# WAII acting as VISS Protocol Data Server
-#WAII_SRC_PATH = ../cdsp/automotive-viss2
+# VISSR acting as VISS Data Server
 
   tmp:
     image: busybox
