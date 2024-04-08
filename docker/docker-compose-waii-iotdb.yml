@@ -7,6 +7,7 @@ services:
     image: apache/iotdb:1.2.2-standalone
     hostname: iotdb-service
     container_name: iotdb-service
+    restart: always
     ports:
       - "6667:6667"
     environment:
@@ -54,6 +55,7 @@ services:
     container_name: vissv2server
     depends_on:
       - redis
+      - iotdb-service
     build:
       context: ../cdsp/vissr  # context set to repo root
       dockerfile: Dockerfile.rlserver
