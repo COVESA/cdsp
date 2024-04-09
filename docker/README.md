@@ -86,7 +86,6 @@ Deploy (start) just IoTDB:
 $ sudo docker compose -f docker-compose-cdsp.yml up -d iotdb-service
 [+] Running 1/0
  ✔ Container iotdb-service  Running                 0.0s
-$
 ```
 
 ## Deploy with Docker Compose
@@ -100,7 +99,6 @@ $ sudo docker compose -f docker-compose-cdsp.yml up -d
  ✔ Container iotdb-service            Started                 0.7s
  ✔ Container app_redis                Started                 1.0s
  ✔ Container vissv2server             Started                 1.3s
-$
 ```
 
 Stop and remove the containers:
@@ -112,7 +110,6 @@ $ sudo docker compose -f docker-compose-cdsp.yml down
  ✔ Container iotdb-service            Removed                 2.2s
  ✔ Container vissr_container_volumes  Removed                 0.0s
  ✔ Network cdsp_default               Removed                 0.1s
-$
 ```
 ### Expected Result
 Listing should show three running containers as shown below:
@@ -122,7 +119,6 @@ NAME            IMAGE                           COMMAND                  SERVICE
 app_redis       redis                           "docker-entrypoint.s…"   redis           10 minutes ago   Up 10 minutes   6379/tcp
 iotdb-service   apache/iotdb:1.2.2-standalone   "/usr/bin/dumb-init …"   iotdb-service   10 minutes ago   Up 10 minutes   0.0.0.0:6667->6667/tcp, :::6667->6667/tcp
 vissv2server    cdsp-vissv2server               "/app/vissv2server -…"   vissv2server    10 minutes ago   Up 4 seconds    0.0.0.0:8081->8081/tcp, 0.0.0.0:8600->8600/tcp, 0.0.0.0:8887->8887/tcp, 127.0.0.1:8888->8888/tcp
-$ 
 ```
 #### Apache IoTDB
 You can confirm the Apache IoTDB server is running by connecting to it with the IoTDB CLI client (_quit_ to exit the client):
