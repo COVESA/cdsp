@@ -7,7 +7,7 @@ services:
     image: apache/iotdb:1.2.2-standalone
     hostname: iotdb-service
     container_name: iotdb-service
-    restart: always
+    restart: on-failure:3
     ports:
       - "6667:6667"
     environment:
@@ -45,6 +45,7 @@ services:
     container_name: app_redis
     privileged: true
     user: root
+    restart: on-failure:3
     command: redis-server /etc/redis.conf
     volumes:
       - ../cdsp/vissr/redis/redis.conf:/etc/redis.conf
@@ -56,6 +57,7 @@ services:
     depends_on:
       - redis
       - iotdb-service
+    restart: on-failure:3
     build:
       context: ../cdsp/vissr  # context set to repo root
       dockerfile: Dockerfile.rlserver
