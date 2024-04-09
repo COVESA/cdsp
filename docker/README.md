@@ -1,15 +1,15 @@
 This directory contains files related to the Docker deployment of the Central Data Service Playground.
 
 # Central Data Service Playground
-NOTE: The documentation below is a work in progress as we work on the Phase 1 PoC. The intention is to help but it may be incomplete.
+The compose file `docker-compose-cdsp.yml` provides a containerized deployment of the playground using docker.
 
-FIXME: Document deployment and the basic result for each backend. Suggest following simple template set by https://github.com/docker/awesome-compose as a starting point.
+## VISSR docker image build setup
+The [VISSR VISS Data Server](https://github.com/COVESA/vissr) has no pre-built image in a docker image repository and must therefore be built. Whilst the upstream documentation for VISSR is considered the reference documentation for build environment setup this section collects information that we have needed for a successful build of master branch commit 27d6de0.
 
-## WAII docker build setup
-The [WAII VISS Data Server](https://github.com/w3c/automotive-viss2) has no pre-built image in a docker image repository and must therefore be built. Whilst the upstream documentation for WAII is considered the reference documentation for build environment setup this section collects information that we have needed for a successful build of master branch commit bd92da77.
+NOTE: This project intends to work towards the availability of a pre-built VISSR docker image so that the playground docker deployment can be a simple download of images.
 
 ### Install golang
-The WAII [build tutorial](https://w3c.github.io/automotive-viss2/build-system/) says to install golang version 1.13 or later.
+The VISSR [build tutorial](https://covesa.github.io/vissr/build-system/) says to install golang version 1.13 or later.
 Go install instructions can be found here: https://go.dev/learn/
 
 Depending on your distro you may need to setup `GOROOT` and `GOPATH`. This was not required on Ubuntu 20 LTS, but was on Mac.
@@ -23,46 +23,86 @@ $ mkdir /tmp/docker
 See upstream issue report https://github.com/w3c/automotive-viss2/issues/99 for details.
 
 ### Generate credentials (testCredGen build error)
-The upstream Dockerfile assumes that credentials have already been created and will fail to build if they are not found. Generate them by running `./testCredGen.sh ca` from the directory `/cdsp/automotive-viss2/testCredGenRun`
+The upstream Dockerfile assumes that credentials have already been created and will fail to build if they are not found. Generate them by running `./testCredGen.sh ca` from the directory `/cdsp/vissr/testCredGenRun`
 
 See upstream issue report https://github.com/w3c/automotive-viss2/issues/86 for details.
 
 ### Disable Access Grant support (agt_public_key.rsa build error)
-There is a current issue with the upstream WAII VISS Server Dockerfile in which the server fails to build due to a missing public key for the Access Control server. See upstream issue report https://github.com/w3c/automotive-viss2/issues/88 for details. After discussion with the upstream maintainers the current workaround is to comment out the relevant following line from the end of the Dockerfile. The change should be made to `cdsp/cdsp/automotive-viss2/Dockerfile`
+There is a current issue with the upstream VISSR VISS Server Dockerfile in which the server fails to build due to a missing public key for the Access Control server. See upstream issue report https://github.com/w3c/automotive-viss2/issues/88 for details. After discussion with the upstream maintainers the current workaround is to comment out the relevant following line from the end of the `vissv2server` section of the Dockerfile. The change should be made to `cdsp/cdsp/vissr/Dockerfile.rlserver`
 ```
 #COPY --from=builder /build/server/agt_server/agt_public_key.rsa .
 ```
 
-If your project requires Access Grant support please discuss enabling it with the WAII community.
+If your project requires Access Grant support please discuss enabling it with the VISSR community.
 
-### Mac build error "ERROR [internal] load metadata for docker.io"
+### Tip: Corporate CA security (download error "tls: failed to verify certificate:")
+If you are working behind a corporate security system that places a _man-in-the-middle_ between your host and the internet you may see security errors when artifacts are downloaded as part of the build process.
+
+For example:
+
+```
+3.254 client/client-1.0/simple_client.go:27:2: github.com/akamensky/argparse@v1.4.0: Get "https://proxy.golang.org/github.com/akamensky/argparse/@v/v1.4.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+```
+This is an attribute of docker, rather than the playground and results when the CA root certificate for the security system is not known.
+
+A solution is to add the CA root certificate to the VISSR Dockerfile which will update the CA store as part of the build and allow the downloads to proceed successfully.
+
+The VISSR Dockerfile already includes an example of this for a Cisco system which uses the CA root certificate `cisco.crt`.
+
+From `cdsp/vissr/Dockerfile.rlserver`:
+```
+#corporate proxy settings can sometimes cause tls verification error. Add root crt to docker container.
+COPY testCredGen/cicso-umbrella/cisco.crt /usr/local/share/ca-certificates/cisco.crt
+RUN update-ca-certificates
+```
+To add your own:
+1. Ask your IT for the CA root certificate for the security system they use.
+2. Copy the `.crt` file into `cdsp/vissr/testCredGen`
+3. Add your own line to the Dockerfile to copy the certificate so that it is included when `update-ca-certificates` is run. As shown below.
+
+```
+COPY testCredGen/cicso-umbrella/cisco.crt /usr/local/share/ca-certificates/cisco.crt
+COPY testCredGen/<my company .crt>  /usr/local/share/
+RUN update-ca-certificates
+```
+
+### Tip: Mac build error "ERROR [internal] load metadata for docker.io"
 On a Mac build errors related to docker metadata such as `ERROR [internal] load metadata for docker.io/library/golang` have been observed. This [serverfault article](https://serverfault.com/a/1131599) suggests commenting the line `"credsStore": "desktop"` from the Docker `config.json` for your user. This was found to work.
 
-## With Apache IoTDB data store backend
-### Deploy with Docker Compose
+## Deploy with Docker Compose
+### Start/stop containers
 Start the containers:
 ```
-$ sudo docker compose -f docker-compose-waii-iotdb.yml up -d
-[+] Running 5/5
- ✔ Network cdsp-waii-iotdb_default   Created                                                                                                             0.1s
- ✔ Container iotdb-service           Started                                                                                                             0.1s
- ✔ Container waii_container_volumes  Started                                                                                                             0.1s
- ✔ Container vissv2server            Started                                                                                                             0.1s
- ✔ Container app_redis               Started
+$ sudo docker compose -f docker-compose-cdsp.yml up -d
+[+] Running 4/5
+ ⠴ Network cdsp_default               Created                 1.5s
+ ✔ Container vissr_container_volumes  Started                 0.5s
+ ✔ Container iotdb-service            Started                 0.7s
+ ✔ Container app_redis                Started                 1.0s
+ ✔ Container vissv2server             Started                 1.3s
+$
 ```
 
 Stop and remove the containers:
 ```
-$ sudo docker compose -f docker-compose-waii-iotdb.yml down
+$ sudo docker compose -f docker-compose-cdsp.yml down
+[+] Running 5/5
+ ✔ Container vissv2server             Removed                 0.0s
+ ✔ Container app_redis                Removed                 0.3s
+ ✔ Container iotdb-service            Removed                 2.2s
+ ✔ Container vissr_container_volumes  Removed                 0.0s
+ ✔ Network cdsp_default               Removed                 0.1s
+$
 ```
 ### Expected Result
 Listing should show three running containers as shown below:
 ```
 $ sudo docker ps
-CONTAINER ID   IMAGE                           COMMAND                  CREATED          STATUS          PORTS                                                          NAMES
-72d793c9619c   cdsp-waii-iotdb-vissv2server    "/app/vissv2server -…"   21 minutes ago   Up 21 minutes   127.0.0.1:8081->8081/tcp, 127.0.0.1:8887-8888->8887-8888/tcp   vissv2server
-b9418de22ea5   redis                           "docker-entrypoint.s…"   21 minutes ago   Up 21 minutes   6379/tcp                                                       app_redis
-24858f79203b   apache/iotdb:1.2.2-standalone   "/usr/bin/dumb-init …"   21 minutes ago   Up 21 minutes   0.0.0.0:6667->6667/tcp, :::6667->6667/tcp                      iotdb-service
+NAME            IMAGE                           COMMAND                  SERVICE         CREATED          STATUS          PORTS
+app_redis       redis                           "docker-entrypoint.s…"   redis           10 minutes ago   Up 10 minutes   6379/tcp
+iotdb-service   apache/iotdb:1.2.2-standalone   "/usr/bin/dumb-init …"   iotdb-service   10 minutes ago   Up 10 minutes   0.0.0.0:6667->6667/tcp, :::6667->6667/tcp
+vissv2server    cdsp-vissv2server               "/app/vissv2server -…"   vissv2server    10 minutes ago   Up 4 seconds    0.0.0.0:8081->8081/tcp, 0.0.0.0:8600->8600/tcp, 0.0.0.0:8887->8887/tcp, 127.0.0.1:8888->8888/tcp
+$ 
 ```
 #### Apache IoTDB
 You can confirm the Apache IoTDB server is running by connecting to it with the IoTDB CLI client (_quit_ to exit the client):
@@ -82,10 +122,10 @@ Starting IoTDB Cli
 Successfully login at iotdb-service:6667
 IoTDB>
 ```
-#### WAII VISS server
-You can confirm the WAII VISS server is running by using one of its included clients. 
+#### VISSR VISS server
+You can confirm the VISSR VISS server is running by using one of its included clients. 
 
-The following example uses the javascript HTML client from `automotive-viss2/client/client-1.0/Javascript/httpclient.html`:
+The following example uses the javascript HTML client from `vissr/client/client-1.0/Javascript/httpclient.html`:
 
 1. Get the IP address of the VISS server using docker inspect (in this example 192.168.128.5 is returned.):
 ```
@@ -109,8 +149,3 @@ $ sudo docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}
 ```
 
 You can query what VSS nodes the server understands by asking for the VSS path list using the URL `http://localhost:8081/vsspathlist`. Entering that URL in your web browser will typically give you a graphical rendering of the JSON data returned.
-
-## With Realm data store backend
-TBA
-## With SQLite or Redis data store backend
-TBA
