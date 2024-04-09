@@ -143,17 +143,11 @@ You can confirm the VISSR VISS server is running by using one of its included cl
 
 The following example uses the javascript HTML client from `vissr/client/client-1.0/Javascript/httpclient.html`:
 
-1. Get the IP address of the VISS server using docker inspect (in this example 192.168.128.5 is returned.):
-```
-$ sudo docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' vissv2server
-192.168.128.5
-```
+1. In your web browser open the javascript HTML client at `cdsp/cdsp/automotive-viss2/client/client-1.0/Javascript/httpclient.html`. The GUI of the client should be displayed.
 
-2. In your web browser open the javascript HTML client at `cdsp/cdsp/automotive-viss2/client/client-1.0/Javascript/httpclient.html`. The GUI of the client should be displayed.
+2. The client needs to be told where to find the server. The default value of `localhost` in the `host IP` text box should be sufficient, but you can also enter the numerical IP address if you wish, now press the `Server IP` button.
 
-3. The client needs to be told where to find the server. Enter the IP address returned in step 1 into the `host IP` text box and press the `Server IP` button.
-
-4. Now lets communicate with the server by requesting a VSS data node:
+3. Now lets communicate with the server by requesting a VSS data node:
   - To the left of the `GET` button enter `Vehicle.Speed` in the `url path` text box.
   - Now press the `GET` button to request the query from the server.
   - You should see messages returned by the server confirming the request, but the data value returned will be "Data-not-found" if the database contains no values.
