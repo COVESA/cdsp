@@ -14,7 +14,7 @@ Go install instructions can be found here: https://go.dev/learn/
 
 Depending on your distro you may need to setup `GOROOT` and `GOPATH`. This was not required on Ubuntu 20 LTS, but was on Mac.
 
-### Create persistent local volume /tmp/docker
+### Create persistent local volume `/tmp/docker`
 The upstream Docker compose assumes the existence of the local directory `/tmp/docker` but does not create it. Fix the issue by creating it yourself:
 
 ```
@@ -34,6 +34,13 @@ There is a current issue with the upstream VISSR VISS Server Dockerfile in which
 ```
 
 If your project requires Access Grant support please discuss enabling it with the VISSR community.
+
+### Generate `vss_vissv2.binary`
+The VISSR server component requires a file called `vss_vissv2.binary` to understand the VSS tree it must work with. Unfortunately, VISSR provides no default file and you must therefore generate it yourself.
+
+Instructions for doing that can be found in the VISSR documentation site [here](https://covesa.github.io/vissr/server/#vss-tree-configuration)
+
+Tip: The playground maintainers have found that the method involving running `make binary` in a git clone of the VSS source tree to generate the file is straight forward. Note: check the VSS readme for the python requirements for the tooling.
 
 ### Tip: Corporate CA security (download error "tls: failed to verify certificate:")
 If you are working behind a corporate security system that places a _man-in-the-middle_ between your host and the internet you may see security errors when artifacts are downloaded as part of the build process.
@@ -68,6 +75,19 @@ RUN update-ca-certificates
 
 ### Tip: Mac build error "ERROR [internal] load metadata for docker.io"
 On a Mac build errors related to docker metadata such as `ERROR [internal] load metadata for docker.io/library/golang` have been observed. This [serverfault article](https://serverfault.com/a/1131599) suggests commenting the line `"credsStore": "desktop"` from the Docker `config.json` for your user. This was found to work.
+
+### Tip: I am blocked by VISSR build issues or do not want to build
+You can start working with the playground by starting the deployment with just the Apache IoTDB server which has a pre-built docker image. Its extensive feature set will let you begin experimenting with timeseries data.
+
+In parallel you can work through any VISSR build issues to add VISS support northbound and the other features it supports.
+
+Deploy (start) just IoTDB:
+```
+$ sudo docker compose -f docker-compose-cdsp.yml up -d iotdb-service
+[+] Running 1/0
+ ✔ Container iotdb-service  Running                 0.0s
+$
+```
 
 ## Deploy with Docker Compose
 ### Start/stop containers
