@@ -13,6 +13,8 @@ Note: There is not a separate section for the VSS data model because the vast ma
 ## Data Layer, Processing and Analysis
 Data Reduction \| Data Quality \| Events \| Data Streams etc.
 
+Tip: well you wait for some examples consider how you could use the IoTDB data processing functions in the [UDF library](https://iotdb.apache.org/UserGuide/latest/Reference/UDF-Libraries.html).
+
 ## Knowledge Layer, Reasoning and Data Models
 Data Layer Connector \| A \| B \| C etc.
 
