@@ -33,7 +33,21 @@
       <link>https://covesa.github.io/cdsp/overview/covesa-and-beyond/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>https://covesa.github.io/cdsp/overview/covesa-and-beyond/</guid>
-      <description>&amp;lt;TBA: Put the playground &amp;rsquo;lego piece&amp;rsquo; in context with the wider COVESA eco-system and beyond, e.g. connection to Capabilities southbound&amp;gt;</description>
+      <description>&amp;lt;TBA: This page will put the playground &amp;rsquo;lego piece&amp;rsquo; in context with the wider COVESA eco-system and beyond, e.g. connection to CVI/Capabilities/Vehicle API gateway southbound&amp;gt;</description>
+    </item>
+    <item>
+      <title>Apache IoTDB</title>
+      <link>https://covesa.github.io/cdsp/manuals/apache-iotdb/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>https://covesa.github.io/cdsp/manuals/apache-iotdb/</guid>
+      <description>Introduction The playground uses Apache IoTDB to provide a highly functional data store.&#xA;Description of Apache IoTDB from https://iotdb.apache.org/:&#xA;&amp;ldquo;Apache IoTDB (Database for Internet of Things) is an IoT native database with high performance for data management and analysis, deployable on the edge and the cloud. Due to its light-weight architecture, high performance and rich feature set together with its deep integration with Apache Hadoop, Spark and Flink, Apache IoTDB can meet the requirements of massive data storage, high-speed data ingestion and complex data analysis in the IoT industrial fields.</description>
+    </item>
+    <item>
+      <title>VISSR (VISS data server)</title>
+      <link>https://covesa.github.io/cdsp/manuals/vissr-viss/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>https://covesa.github.io/cdsp/manuals/vissr-viss/</guid>
+      <description>Introduction The playground uses the VISSR project to provide its northbound VISS support, along with the other features it provides.&#xA;The VISSR project documentation site has extensive documentation on the VISSR components. So as the project progresses we will add information below focused on topics specific to the playground.&#xA;Apache IoTDB connector Please see the IoTDB guide for details of the connector between VISSR and IoTDB.</description>
     </item>
   </channel>
 </rss>

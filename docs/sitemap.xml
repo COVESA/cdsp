@@ -6,6 +6,8 @@
   </url><url>
     <loc>https://covesa.github.io/cdsp/overview/cdsp-overview/</loc>
   </url><url>
+    <loc>https://covesa.github.io/cdsp/manuals/</loc>
+  </url><url>
     <loc>https://covesa.github.io/cdsp/overview/cdsp-logical-concept/</loc>
   </url><url>
     <loc>https://covesa.github.io/cdsp/examples/</loc>
@@ -14,10 +16,14 @@
   </url><url>
     <loc>https://covesa.github.io/cdsp/overview/covesa-and-beyond/</loc>
   </url><url>
+    <loc>https://covesa.github.io/cdsp/manuals/apache-iotdb/</loc>
+  </url><url>
     <loc>https://covesa.github.io/cdsp/categories/</loc>
   </url><url>
     <loc>https://covesa.github.io/cdsp/</loc>
   </url><url>
     <loc>https://covesa.github.io/cdsp/tags/</loc>
+  </url><url>
+    <loc>https://covesa.github.io/cdsp/manuals/vissr-viss/</loc>
   </url>
 </urlset>

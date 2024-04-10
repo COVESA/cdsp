@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en" class="js csstransforms3d">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="Hugo 0.124.0">
+    <meta name="description" content="">
+
+
+    <link rel="shortcut icon" href="/hierarchical_information_model/images/fav.png" type="image/x-icon" />
+
+    <title>Apache IoTDB :: Central Data Service Playground</title>
+
+    
+    <link href="/cdsp/css/nucleus.css?1712781657" rel="stylesheet">
+    <link href="/cdsp/css/fontawesome-all.min.css?1712781657" rel="stylesheet">
+    <link href="/cdsp/css/hybrid.css?1712781657" rel="stylesheet">
+    <link href="/cdsp/css/featherlight.min.css?1712781657" rel="stylesheet">
+    <link href="/cdsp/css/perfect-scrollbar.min.css?1712781657" rel="stylesheet">
+    <link href="/cdsp/css/auto-complete.css?1712781657" rel="stylesheet">
+    <link href="/cdsp/css/atom-one-dark-reasonable.css?1712781657" rel="stylesheet">
+    <link href="/cdsp/css/theme.css?1712781657" rel="stylesheet">
+    <link href="/cdsp/css/hugo-theme.css?1712781657" rel="stylesheet">
+    
+    <link href="/cdsp/css/theme-blue.css?1712781657" rel="stylesheet">
+    
+    
+
+    <script src="/cdsp/js/jquery-3.3.1.min.js?1712781657"></script>
+
+    <style>
+      :root #header + #content > #left > #rlblock_left{
+          display:none !important;
+      }
+      
+        :not(pre) > code + span.copy-to-clipboard {
+            display: none;
+        }
+      
+    </style>
+    
+  </head>
+  <body class="" data-url="/cdsp/manuals/apache-iotdb/">
+    <nav id="sidebar" class="">
+
+
+
+  <div id="header-wrapper">
+    <div id="header">
+      <a id="logo" href="https://covesa.github.io/cdsp/">
+  <img src="/cdsp/images/cdsp.png">
+</a>
+
+    </div>
+    
+        <div class="searchbox">
+    <label for="search-by"><i class="fas fa-search"></i></label>
+    <input data-search-input id="search-by" type="search" placeholder="Search...">
+    <span data-search-clear=""><i class="fas fa-times"></i></span>
+</div>
+
+<script type="text/javascript" src="/cdsp/js/lunr.min.js?1712781657"></script>
+<script type="text/javascript" src="/cdsp/js/auto-complete.js?1712781657"></script>
+<script type="text/javascript">
+    
+        var baseurl = "https:\/\/covesa.github.io\/cdsp\/";
+    
+</script>
+<script type="text/javascript" src="/cdsp/js/search.js?1712781657"></script>
+
+    
+  </div>
+  
+
+    <div class="highlightable">
+    <ul class="topics">
+
+        
+          
+          
+
+
+
+
+ 
+  
+    
+    <li data-nav-id="/cdsp/overview/" title="Playground overview" class="dd-item
+        
+        
+        
+        ">
+      <a href="/cdsp/overview/">
+          Playground overview
+          
+      </a>
+      
+      
+        <ul>
+          
+          
+          
+
+        
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/cdsp/overview/cdsp-overview/" title="Playground overview" class="dd-item ">
+        <a href="/cdsp/overview/cdsp-overview/">
+        Playground overview
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/cdsp/overview/cdsp-logical-concept/" title="Playground logical concept" class="dd-item ">
+        <a href="/cdsp/overview/cdsp-logical-concept/">
+        Playground logical concept
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/cdsp/overview/cdsp-implementation-concept/" title="Playground implementation" class="dd-item ">
+        <a href="/cdsp/overview/cdsp-implementation-concept/">
+        Playground implementation
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/cdsp/overview/covesa-and-beyond/" title="Combining with wider eco-system" class="dd-item ">
+        <a href="/cdsp/overview/covesa-and-beyond/">
+        Combining with wider eco-system
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+        
+        </ul>
+      
+    </li>
+  
+ 
+
+          
+          
+
+
+
+
+ 
+  
+    
+    <li data-nav-id="/cdsp/manuals/" title="Manuals" class="dd-item
+        parent
+        
+        
+        ">
+      <a href="/cdsp/manuals/">
+          Manuals
+          
+      </a>
+      
+      
+        <ul>
+          
+          
+          
+
+        
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/cdsp/manuals/apache-iotdb/" title="Apache IoTDB" class="dd-item active">
+        <a href="/cdsp/manuals/apache-iotdb/">
+        Apache IoTDB
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/cdsp/manuals/vissr-viss/" title="VISSR (VISS data server)" class="dd-item ">
+        <a href="/cdsp/manuals/vissr-viss/">
+        VISSR (VISS data server)
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+        
+        </ul>
+      
+    </li>
+  
+ 
+
+          
+          
+
+
+
+
+ 
+  
+    
+    <li data-nav-id="/cdsp/examples/" title="Playground examples" class="dd-item
+        
+        
+        
+        ">
+      <a href="/cdsp/examples/">
+          Playground examples
+          
+      </a>
+      
+      
+    </li>
+  
+ 
+
+          
+        
+    </ul>
+
+    
+    
+      <section id="shortcuts">
+        <h3>More</h3>
+        <ul>
+          
+              <li>
+                  <a class="padding" href="https://github.com/covesa/cdsp"><i class='fab fa-github'></i> Github repo</a>
+              </li>
+          
+        </ul>
+      </section>
+    
+
+    
+    <section id="footer">
+      <p>Built with <a href="https://github.com/matcornic/hugo-theme-learn"><i class="fas fa-heart"></i></a> from <a href="https://getgrav.org">Grav</a> and <a href="https://gohugo.io/">Hugo</a></p>
+
+    </section>
+  </div>
+</nav>
+
+
+
+
+        <section id="body">
+        <div id="overlay"></div>
+        <div class="padding highlightable">
+              
+              <div>
+                <div id="top-bar">
+                
+                  
+                  
+                  
+                  <div id="top-github-link">
+                    <a class="github-link" title='Edit this page' href="https://github.com/covesa/cdsp/edit/master/docs/docs-gen/content/manuals/apache-iotdb.md" target="blank">
+                      <i class="fas fa-code-branch"></i>
+                      <span id="top-github-link-text">Edit this page</span>
+                    </a>
+                  </div>
+                  
+                
+                
+                <div id="breadcrumbs" itemscope="" itemtype="http://data-vocabulary.org/Breadcrumb">
+                    <span id="sidebar-toggle-span">
+                        <a href="#" id="sidebar-toggle" data-sidebar-toggle="">
+                          <i class="fas fa-bars"></i>
+                        </a>
+                    </span>
+                  
+                  <span id="toc-menu"><i class="fas fa-list-alt"></i></span>
+                  
+                  <span class="links">
+                 
+                 
+                    
+          
+          
+            
+            
+          
+          
+            
+            
+          
+          
+            <a href='/cdsp/'>Central Data Service Playground</a> > <a href='/cdsp/manuals/'>Manuals</a> > Apache IoTDB
+          
+        
+          
+        
+          
+        
+                 
+                  </span>
+                </div>
+                
+                    <div class="progress">
+    <div class="wrapper">
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#introduction">Introduction</a></li>
+    <li><a href="#integrating-vss-data-into-the-iotdb-data-model">Integrating VSS data into the IoTDB data model</a></li>
+    <li><a href="#seeding-the-database-with-vss-data">Seeding the database with VSS data</a>
+      <ul>
+        <li><a href="#example-using-the-iotdb-cli-client">Example using the IoTDB CLI client</a></li>
+      </ul>
+    </li>
+    <li><a href="#single-node-edge-vs-cluster">Single node (Edge) vs Cluster</a></li>
+    <li><a href="#udf-and-udf-library-for-data-processing">UDF and UDF library for data processing</a></li>
+    <li><a href="#vissr-viss-integration">VISSR (VISS) integration</a>
+      <ul>
+        <li><a href="#connector-scope">Connector scope</a></li>
+        <li><a href="#runtime-notes">Runtime notes</a></li>
+        <li><a href="#database-schema-assumptions">Database schema assumptions</a></li>
+        <li><a href="#configuration">Configuration</a></li>
+        <li><a href="#logging">Logging</a></li>
+        <li><a href="#vissr-development-notes">VISSR Development notes</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+    </div>
+</div>
+
+                
+              </div>
+            </div>
+            
+        <div id="head-tags">
+        
+        </div>
+        
+        <div id="body-inner">
+          
+            <h1>
+              
+              Apache IoTDB
+            </h1>
+          
+
+        
+
+
+<h2 id="introduction">Introduction</h2>
+<p>The playground uses Apache IoTDB to provide a highly functional data store.</p>
+<p>Description of Apache IoTDB from <a href="https://iotdb.apache.org/">https://iotdb.apache.org/</a>:</p>
+<p><em>&ldquo;Apache IoTDB (Database for Internet of Things) is an IoT native database with high performance for data management and analysis, deployable on the edge and the cloud. Due to its light-weight architecture, high performance and rich feature set together with its deep integration with Apache Hadoop, Spark and Flink, Apache IoTDB can meet the requirements of massive data storage, high-speed data ingestion and complex data analysis in the IoT industrial fields.&rdquo;</em></p>
+<p>The IoTDB project <a href="https://iotdb.apache.org/">website</a> has extensive documentation on the IoTDB server. In the guide below we focus on topics specific to the playground such as VSS data schemas and the connector for the VISSR VISS data server.</p>
+<p>Info: The intention is to add more information such as a guide for feeder integration as the project progresses.</p>
+<h2 id="integrating-vss-data-into-the-iotdb-data-model">Integrating VSS data into the IoTDB data model</h2>
+<p>The <a href="https://iotdb.apache.org/UserGuide/latest/Basic-Concept/Data-Model-and-Terminology.html">&ldquo;Basic Concept&rdquo;</a> section of the IoTDB documentation introduces the IoTDB data model, data types, encoding and compression.</p>
+<p>In IoTDB terminology <em>measurement</em> is the key in a key/value pair. In VSS terms the leaf node name. The timeseries is the record of the measurement on the time axis. A timeseries is a series of time/value data points.</p>
+<p>The IoTDB data model supports hierarchical partitioning and like VSS uses a dot notation to separate the levels. This means if we simply appended a VSS leaf node name like <code>Vehicle.CurrentLocation.Longitude</code> as the measurement (key) name to the end of a IoTDB path such as <code>root.test2.dev1</code> the <code>Vehicle.CurrentLocation.</code> IoTDB would treat it as part of the IoTDB data model partitioning which could cause unwanted issues when scaling over millions of vehicles.</p>
+<p>We have separated those two concepts by quoting the VSS leaf node name using backticks when processing the name in IoTDB. As shown below:</p>
+<pre tabindex="0"><code>&lt;IoTDB prefix path&gt;.`&lt;VSS leaf node name&gt;`
+</code></pre><p>In our example the full IoTDB measurement path would become <code>root.test2.dev1.`Vehicle.CurrentLocation.Longitude` </code> and in an IoTDB timeseries would look like this:</p>
+<pre tabindex="0"><code>+------------------------+---------------------------------------------------+
+|                    Time|root.test2.dev1.`Vehicle.CurrentLocation.Longitude`|
++------------------------+---------------------------------------------------+
+|2024-03-07T17:55:24.514Z|                                           -42.4567|
+|2024-04-10T17:48:12.117Z|                                           -41.3567|
+|2024-04-10T17:48:23.389Z|                                           -39.3567|
+|2024-04-10T17:48:49.630Z|                                           -40.2578|
++------------------------+---------------------------------------------------+
+</code></pre><h2 id="seeding-the-database-with-vss-data">Seeding the database with VSS data</h2>
+<p>To illustrate the concepts lets seed a database with some simple timeseries VSS data.</p>
+<p>The typical steps are:</p>
+<ol>
+<li>Create the database in the server.</li>
+<li>Create a timeseries in the database populated with the VSS leaf nodes (keys) you are interested in.</li>
+<li>Load the VSS data into the timeseries.</li>
+</ol>
+<p>Note: IoTDB has data type detection so creating a schema for the timeseries in step 2 is optional. However, the use of a schema has performance and meta-data benefits so is recommended.</p>
+<p>IoTDB has a very extensive collection of integrations, tools, clients and APIs that could be used to achieve this.</p>
+<h3 id="example-using-the-iotdb-cli-client">Example using the IoTDB CLI client</h3>
+<p>The following tutorial shows an example using the <a href="https://iotdb.apache.org/UserGuide/latest/Tools-System/CLI.html">IoTDB CLI client</a>, using two methods. Firstly, in interactive mode where you type the commands and then sending the same commands in batch command mode.</p>
+<ol>
+<li>Connect to the CLI client from your host:</li>
+</ol>
+<pre tabindex="0"><code>$ bash &lt;iotdb path&gt;/sbin/start-cli.sh -h &lt;server hostname/ip&gt;
+</code></pre><ol start="2">
+<li>Create database from CLI command line:</li>
+</ol>
+<pre tabindex="0"><code>IoTDB &gt; create database root.test2.dev1
+</code></pre><ol start="3">
+<li>Create timeseries from CLI command line:</li>
+</ol>
+<pre tabindex="0"><code>IoTDB &gt; CREATE ALIGNED TIMESERIES root.test2.dev1(`Vehicle.CurrentLocation.Longitude` FLOAT, `Vehicle.CurrentLocation.Latitude` FLOAT, `Vehicle.Cabin.Infotainment.HMI.DistanceUnit` TEXT)
+</code></pre><ol start="4">
+<li>Add some data into the timeseries:</li>
+</ol>
+<pre tabindex="0"><code>IoTDB&gt; insert into root.test2.dev1(`Vehicle.CurrentLocation.Longitude`, `Vehicle.CurrentLocation.Latitude`, `Vehicle.Cabin.Infotainment.HMI.DistanceUnit`) values(-42.4567, 22.1234, &#39;MILES&#39;)
+</code></pre><ol start="5">
+<li>Display the data just added as a sanity check:</li>
+</ol>
+<pre tabindex="0"><code>IoTDB&gt; select last * from root.test2.dev1
++------------------------+-------------------------------------------------------------+--------+--------+
+|                    Time|                                                   Timeseries|   Value|DataType|
++------------------------+-------------------------------------------------------------+--------+--------+
+|2024-03-07T17:55:24.514Z|          root.test2.dev1.`Vehicle.CurrentLocation.Longitude`|-42.4567|   FLOAT|
+|2024-03-07T17:55:24.514Z|root.test2.dev1.`Vehicle.Cabin.Infotainment.HMI.DistanceUnit`|   MILES|    TEXT|
+|2024-03-07T17:55:24.514Z|           root.test2.dev1.`Vehicle.CurrentLocation.Latitude`| 22.1234|   FLOAT|
++------------------------+-------------------------------------------------------------+--------+--------+
+</code></pre><p>You have now seeded the database with some initial VSS data.</p>
+<p>The CLI client startup script accepts SQL commands using the <code>-e</code> parameter. We can therefore use this to codify the above in a bash script. So the VSS node names (keys) are passed correctly on the command line the backticks must be escaped.</p>
+<p>For example:</p>
+<pre tabindex="0"><code># !/bin/bash
+
+host=127.0.0.1
+rpcPort=6667
+user=root
+pass=root
+
+bash ./sbin/start-cli.sh -h ${host} -p ${rpcPort} -u ${user} -pw ${pass} -e &#34;create database root.test2.dev1&#34;
+bash ./sbin/start-cli.sh -h ${host} -p ${rpcPort} -u ${user} -pw ${pass} -e &#34;CREATE ALIGNED TIMESERIES root.test2.dev1(\`Vehicle.CurrentLocation.Longitude\` FLOAT, \`Vehicle.CurrentLocation.Latitude\` FLOAT, \`Vehicle.Cabin.Infotainment.HMI.DistanceUnit\` TEXT)&#34;
+bash ./sbin/start-cli.sh -h ${host} -p ${rpcPort} -u ${user} -pw ${pass} -e &#34;insert into root.test2.dev1(\`Vehicle.CurrentLocation.Longitude\`, \`Vehicle.CurrentLocation.Latitude\`, \`Vehicle.Cabin.Infotainment.HMI.DistanceUnit\`) values(-42.4567, 22.1234, &#39;MILES&#39;)&#34;
+bash ./sbin/start-cli.sh -h ${host} -p ${rpcPort} -u ${user} -pw ${pass} -e &#34;select last * from root.test2.dev1&#34;
+</code></pre><p>Of course any of the programming language clients provided by IoTDB, e.g. go, python, C++, Rust, or integration into tools that support its SQL language, can also be used to achieve the same result.</p>
+<h2 id="single-node-edge-vs-cluster">Single node (Edge) vs Cluster</h2>
+<p>The upstream IoTDB project has both standalone single node and cluster deployments, to cover use case requirements from edge to cloud.</p>
+<p>At the time of writing the playground docker deployment deploys the single node IoTDB docker image, as it is most suitable for deployment at the edge in-vehicle, whilst still being able to represent the cloud.</p>
+<p>Of course if your cloud development requires higher performance then you can integrate the cluster version.</p>
+<h2 id="udf-and-udf-library-for-data-processing">UDF and UDF library for data processing</h2>
+<p>Whilst IoTDB has a series of built-in timeseries processing functions you can add your own as User Defined Functions (UDF).</p>
+<p>The <a href="https://iotdb.apache.org/UserGuide/latest/User-Manual/Database-Programming.html#user-defined-function-udf">UDF section</a> of the IoTDB documentation explains how to develop and register your own.</p>
+<p>The IoTDB project also maintains UDF Library an extensive collection of data processing functions covering:</p>
+<ul>
+<li>Data Quality</li>
+<li>Data Profiling</li>
+<li>Anomaly Detection</li>
+<li>Frequency Domain Analysis</li>
+<li>Data Repair</li>
+<li>Series Discovery</li>
+<li>Machine Learning</li>
+</ul>
+<p>The UDF Library is an optional install. How to install the library is documented <a href="https://iotdb.apache.org/UserGuide/latest/User-Manual/Database-Programming.html#data-quality-function-library">here</a>. Documentation for the functions can be found <a href="https://iotdb.apache.org/UserGuide/latest/Reference/UDF-Libraries.html">here</a>.</p>
+<p>The combination of built-in and UDF library functions, built on the low latency queries enabled by IoTDB and its TsFile format gives you a lot to explore.</p>
+<h2 id="vissr-viss-integration">VISSR (VISS) integration</h2>
+<p>As part of the initial development of the playground the team extended VISSR to support connections to Apache IoTDB as a VISSR data store backend and upstreamed the support.</p>
+<h3 id="connector-scope">Connector scope</h3>
+<p>The support is implemented by connector code in the VISSR service manager, which connects VISSR to an external Apache IoTDB server. This code uses the IoTDB Go client to maintain a connection session to the IoTDB server, which it then uses to get/set vehicle data from the database.</p>
+<p>As VISSR and the IoTDB server are separate processes VISSR needs to be told where to find the IoTDB server and which storage prefix to use to access the data.</p>
+<p>Development followed the patterns set by the existing VISSR support for Redis and SQLite. The administration of the Apache IoTDB server itself, including startup and shutdown, is out of scope of the connector and is handled externally to VISSR. In the case of the playground this is handled by the playground compose.</p>
+<h3 id="runtime-notes">Runtime notes</h3>
+<p>VISSR runtime assumptions:</p>
+<ol>
+<li>IoTDB server lifecycle (e.g. startup and shutdown) is handled externally to VISSR.</li>
+<li>Management (e.g. creation/deletion) of the IoTDB timeseries containing VSS data is handled externally to VISSR.</li>
+<li>Configuration of the connector code is specified in the config file iotdb-config.json. If the config file is not found then build-time defaults are used.</li>
+</ol>
+<p>Handling of IoTDB server and timeseries management is placed outside of VISSR to allow flexible deployment through loosely coupled connections.</p>
+<h3 id="database-schema-assumptions">Database schema assumptions</h3>
+<p>The connector assumes a simple key/value pair schema for accessing VSS data in an IoTDB timeseries:</p>
+<ol>
+<li>
+<p>VSS node names (keys) are backtick quoted when stored as measurement keys in the database e.g. <code>`Vehicle.CurrentLocation.Longitude`</code>. This is for reasons explained above in <a href="#integrating-vss-data-into-the-iotdb-data-model">&ldquo;Integrating VSS data into the IoTDB data model&rdquo;</a> to avoid IoTDB interpreting the VSS tree path, in the example <code>Vehicle.CurrentLocation.</code>, as part of its storage path which also uses a dot notation.</p>
+</li>
+<li>
+<p>VSS data is stored using native (IoTDB) data types rather than strings.</p>
+</li>
+<li>
+<p>That the timeseries containing VSS nodes can be found using the prefix path specified in the config file.</p>
+</li>
+</ol>
+<h3 id="configuration">Configuration</h3>
+<p>The connection code reads its runtime configuration from the JSON formatted file <code>iotdb-config.json</code> located in the vissv2server directory. You must specify all values.</p>
+<h4 id="configuration-file-format">Configuration file format</h4>
+<table>
+<thead>
+<tr>
+<th>Key name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>host</code></td>
+<td>String</td>
+<td>Hostname or IP address of the IoTDB server</td>
+</tr>
+<tr>
+<td><code>port</code></td>
+<td>String</td>
+<td>RPC port of the server. Default is 6667</td>
+</tr>
+<tr>
+<td><code>username</code></td>
+<td>String</td>
+<td>Username to access the server. Default is root</td>
+</tr>
+<tr>
+<td><code>password</code></td>
+<td>String</td>
+<td>Password to access the server. Default is root</td>
+</tr>
+<tr>
+<td><code>queryPrefixPath</code></td>
+<td>String</td>
+<td>Timeseries prefix path of VSS data in the database</td>
+</tr>
+<tr>
+<td><code>queryTimeout(ms)</code></td>
+<td>Int</td>
+<td>Query timeout in milliseconds</td>
+</tr>
+</tbody>
+</table>
+<p>Example <code>iotdb-config.json</code>:</p>
+<pre tabindex="0"><code>{
+	&#34;host&#34;: &#34;iotdb-service&#34;,
+	&#34;port&#34;: &#34;6667&#34;,
+	&#34;username&#34;: &#34;root&#34;,
+	&#34;password&#34;: &#34;root&#34;,
+	&#34;queryPrefixPath&#34;: &#34;root.test2.dev1&#34;,
+	&#34;queryTimeout(ms)&#34;: 5000
+}
+</code></pre><h3 id="logging">Logging</h3>
+<p>The connector writes information, warning and error messages to the VISSR server log with the prefix <code>IoTDB</code>. Grepping in the log for that prefix string can help you quickly identify connector messages.</p>
+<h3 id="vissr-development-notes">VISSR Development notes</h3>
+<p>Please see the notes in the VISSR source commit messages and related Github pull requests for the history of the development of the Apache IoTDB connection code and its integration into the VISSR Service Manager component.</p>
+<p>Development followed the patterns set by the existing support for Redis and SQLite.</p>
+<p>The connection code was first developed with Apache IoTDB v1.2.2, using the upstream standalone pre-built image and Apache IoTDB Go Client v1.1.7.</p>
+
+
+<footer class="footline">
+	
+</footer>
+
+        
+        </div>
+        
+
+      </div>
+
+    <div id="navigation">
+        
+        
+
+        
+            
+            
+                
+                    
+                    
+                
+                
+
+                    
+                    
+                        
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                        
+                        
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                        
+                        
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+
+        
+
+
+	 
+	 
+		
+			<a class="nav nav-prev" href="/cdsp/manuals/" title="Manuals"> <i class="fa fa-chevron-left"></i></a>
+		
+		
+			<a class="nav nav-next" href="/cdsp/manuals/vissr-viss/" title="VISSR (VISS data server)" style="margin-right: 0px;"><i class="fa fa-chevron-right"></i></a>
+		
+	
+    </div>
+
+    </section>
+
+    <div style="left: -1000px; overflow: scroll; position: absolute; top: -1000px; border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;">
+      <div style="border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;"></div>
+    </div>
+    <script src="/cdsp/js/clipboard.min.js?1712781657"></script>
+    <script src="/cdsp/js/perfect-scrollbar.min.js?1712781657"></script>
+    <script src="/cdsp/js/perfect-scrollbar.jquery.min.js?1712781657"></script>
+    <script src="/cdsp/js/jquery.sticky.js?1712781657"></script>
+    <script src="/cdsp/js/featherlight.min.js?1712781657"></script>
+    <script src="/cdsp/js/highlight.pack.js?1712781657"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+    <script src="/cdsp/js/modernizr.custom-3.6.0.js?1712781657"></script>
+    <script src="/cdsp/js/learn.js?1712781657"></script>
+    <script src="/cdsp/js/hugo-learn.js?1712781657"></script>
+    
+        
+            <script src="/cdsp/mermaid/mermaid.js?1712781657"></script>
+        
+        <script>
+            mermaid.initialize({ startOnLoad: true });
+        </script>
+    
+    
+
+  </body>
+</html>
+

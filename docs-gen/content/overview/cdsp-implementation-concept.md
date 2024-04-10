@@ -12,7 +12,7 @@ As outlined in the logical description, as a starting point the Service is reali
 The reference implementation for the COVESA VISS specification is developed in the [VISSR](https://github.com/COVESA/vissr) project.
 The playground has included VISSR to provide its northbound VISS support.
 
-Alongside the VISS server the VISSR project provides clients, feeders and tooling Further details can be found in the upstream [VISSR documentation site](https://covesa.github.io/vissr/).
+Alongside the VISS server the VISSR project provides clients, feeders and tooling. Further details can be found in the upstream [VISSR documentation site](https://covesa.github.io/vissr/).
 
 During initial development of the playground the upstream VISSR project supported using SQLite, Redis or memcached databases as its data store.
 
