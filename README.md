@@ -12,6 +12,25 @@ A good place to start is the overview in the documentation which introduces why 
 
 Once you are ready to jump into some code the docker deployment readme explains building and starting the playground. Whilst the hello-world example provides simple examples of accessing the data store directly and using the data server to get/set data using the [Vehicle Information Service Specification (VISS)](https://github.com/COVESA/vehicle-information-service-specification) API. Hello-world can also be used as a sanity test that the playground is operating as expected.
 
+### Cloning the source repository
+The playground git source repository contains git submodules which need to be initialized either during the clone or afterwords as shown below.
+
+Clone with git v2.13 and later:
+```
+git clone --recurse-submodules https://github.com/COVESA/cdsp.git
+```
+
+Clone with git v1.9 and later:
+```
+git clone --recursive https://github.com/COVESA/cdsp.git
+```
+
+If the repository is already cloned:
+```
+cd <path to cdsp root>
+git submodule update --init --recursive
+```
+
 ## Known issues
 See the github issues for this project with the `bug` label.
 
