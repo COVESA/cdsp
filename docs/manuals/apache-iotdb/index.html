@@ -12,21 +12,21 @@
     <title>Apache IoTDB :: Central Data Service Playground</title>
 
     
-    <link href="/cdsp/css/nucleus.css?1714150049" rel="stylesheet">
-    <link href="/cdsp/css/fontawesome-all.min.css?1714150049" rel="stylesheet">
-    <link href="/cdsp/css/hybrid.css?1714150049" rel="stylesheet">
-    <link href="/cdsp/css/featherlight.min.css?1714150049" rel="stylesheet">
-    <link href="/cdsp/css/perfect-scrollbar.min.css?1714150049" rel="stylesheet">
-    <link href="/cdsp/css/auto-complete.css?1714150049" rel="stylesheet">
-    <link href="/cdsp/css/atom-one-dark-reasonable.css?1714150049" rel="stylesheet">
-    <link href="/cdsp/css/theme.css?1714150049" rel="stylesheet">
-    <link href="/cdsp/css/hugo-theme.css?1714150049" rel="stylesheet">
+    <link href="/cdsp/css/nucleus.css?1714156285" rel="stylesheet">
+    <link href="/cdsp/css/fontawesome-all.min.css?1714156285" rel="stylesheet">
+    <link href="/cdsp/css/hybrid.css?1714156285" rel="stylesheet">
+    <link href="/cdsp/css/featherlight.min.css?1714156285" rel="stylesheet">
+    <link href="/cdsp/css/perfect-scrollbar.min.css?1714156285" rel="stylesheet">
+    <link href="/cdsp/css/auto-complete.css?1714156285" rel="stylesheet">
+    <link href="/cdsp/css/atom-one-dark-reasonable.css?1714156285" rel="stylesheet">
+    <link href="/cdsp/css/theme.css?1714156285" rel="stylesheet">
+    <link href="/cdsp/css/hugo-theme.css?1714156285" rel="stylesheet">
     
-    <link href="/cdsp/css/theme-blue.css?1714150049" rel="stylesheet">
+    <link href="/cdsp/css/theme-blue.css?1714156285" rel="stylesheet">
     
     
 
-    <script src="/cdsp/js/jquery-3.3.1.min.js?1714150049"></script>
+    <script src="/cdsp/js/jquery-3.3.1.min.js?1714156285"></script>
 
     <style>
       :root #header + #content > #left > #rlblock_left{
@@ -59,14 +59,14 @@
     <span data-search-clear=""><i class="fas fa-times"></i></span>
 </div>
 
-<script type="text/javascript" src="/cdsp/js/lunr.min.js?1714150049"></script>
-<script type="text/javascript" src="/cdsp/js/auto-complete.js?1714150049"></script>
+<script type="text/javascript" src="/cdsp/js/lunr.min.js?1714156285"></script>
+<script type="text/javascript" src="/cdsp/js/auto-complete.js?1714156285"></script>
 <script type="text/javascript">
     
         var baseurl = "https:\/\/covesa.github.io\/cdsp\/";
     
 </script>
-<script type="text/javascript" src="/cdsp/js/search.js?1714150049"></script>
+<script type="text/javascript" src="/cdsp/js/search.js?1714156285"></script>
 
     
   </div>
@@ -463,7 +463,7 @@
 </code></pre><ol start="2">
 <li>Create database from CLI command line:</li>
 </ol>
-<pre tabindex="0"><code>IoTDB &gt; create database root.test2.dev1
+<pre tabindex="0"><code>IoTDB &gt; create database root.test2
 </code></pre><ol start="3">
 <li>Create timeseries from CLI command line:</li>
 </ol>
@@ -493,9 +493,12 @@ rpcPort=6667
 user=root
 pass=root
 
-bash ./sbin/start-cli.sh -h ${host} -p ${rpcPort} -u ${user} -pw ${pass} -e &#34;create database root.test2.dev1&#34;
+bash ./sbin/start-cli.sh -h ${host} -p ${rpcPort} -u ${user} -pw ${pass} -e &#34;create database root.test2&#34;
+
 bash ./sbin/start-cli.sh -h ${host} -p ${rpcPort} -u ${user} -pw ${pass} -e &#34;CREATE ALIGNED TIMESERIES root.test2.dev1(\`Vehicle.CurrentLocation.Longitude\` FLOAT, \`Vehicle.CurrentLocation.Latitude\` FLOAT, \`Vehicle.Cabin.Infotainment.HMI.DistanceUnit\` TEXT)&#34;
+
 bash ./sbin/start-cli.sh -h ${host} -p ${rpcPort} -u ${user} -pw ${pass} -e &#34;insert into root.test2.dev1(\`Vehicle.CurrentLocation.Longitude\`, \`Vehicle.CurrentLocation.Latitude\`, \`Vehicle.Cabin.Infotainment.HMI.DistanceUnit\`) values(-42.4567, 22.1234, &#39;MILES&#39;)&#34;
+
 bash ./sbin/start-cli.sh -h ${host} -p ${rpcPort} -u ${user} -pw ${pass} -e &#34;select last * from root.test2.dev1&#34;
 </code></pre><p>Of course any of the programming language clients provided by IoTDB, e.g. go, python, C++, Rust, or integration into tools that support its SQL language, can also be used to achieve the same result.</p>
 <h2 id="single-node-edge-vs-cluster">Single node (Edge) vs Cluster</h2>
@@ -809,19 +812,19 @@ bash ./sbin/start-cli.sh -h ${host} -p ${rpcPort} -u ${user} -pw ${pass} -e &#34
     <div style="left: -1000px; overflow: scroll; position: absolute; top: -1000px; border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;">
       <div style="border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;"></div>
     </div>
-    <script src="/cdsp/js/clipboard.min.js?1714150049"></script>
-    <script src="/cdsp/js/perfect-scrollbar.min.js?1714150049"></script>
-    <script src="/cdsp/js/perfect-scrollbar.jquery.min.js?1714150049"></script>
-    <script src="/cdsp/js/jquery.sticky.js?1714150049"></script>
-    <script src="/cdsp/js/featherlight.min.js?1714150049"></script>
-    <script src="/cdsp/js/highlight.pack.js?1714150049"></script>
+    <script src="/cdsp/js/clipboard.min.js?1714156285"></script>
+    <script src="/cdsp/js/perfect-scrollbar.min.js?1714156285"></script>
+    <script src="/cdsp/js/perfect-scrollbar.jquery.min.js?1714156285"></script>
+    <script src="/cdsp/js/jquery.sticky.js?1714156285"></script>
+    <script src="/cdsp/js/featherlight.min.js?1714156285"></script>
+    <script src="/cdsp/js/highlight.pack.js?1714156285"></script>
     <script>hljs.initHighlightingOnLoad();</script>
-    <script src="/cdsp/js/modernizr.custom-3.6.0.js?1714150049"></script>
-    <script src="/cdsp/js/learn.js?1714150049"></script>
-    <script src="/cdsp/js/hugo-learn.js?1714150049"></script>
+    <script src="/cdsp/js/modernizr.custom-3.6.0.js?1714156285"></script>
+    <script src="/cdsp/js/learn.js?1714156285"></script>
+    <script src="/cdsp/js/hugo-learn.js?1714156285"></script>
     
         
-            <script src="/cdsp/mermaid/mermaid.js?1714150049"></script>
+            <script src="/cdsp/mermaid/mermaid.js?1714156285"></script>
         
         <script>
             mermaid.initialize({ startOnLoad: true });

@@ -59,7 +59,7 @@ $ bash <iotdb path>/sbin/start-cli.sh -h <server hostname/ip>
 ```
 2. Create database from CLI command line:
 ```
-IoTDB > create database root.test2.dev1
+IoTDB > create database root.test2
 ```
 3. Create timeseries from CLI command line:
 ```
@@ -93,9 +93,12 @@ rpcPort=6667
 user=root
 pass=root
 
-bash ./sbin/start-cli.sh -h ${host} -p ${rpcPort} -u ${user} -pw ${pass} -e "create database root.test2.dev1"
+bash ./sbin/start-cli.sh -h ${host} -p ${rpcPort} -u ${user} -pw ${pass} -e "create database root.test2"
+
 bash ./sbin/start-cli.sh -h ${host} -p ${rpcPort} -u ${user} -pw ${pass} -e "CREATE ALIGNED TIMESERIES root.test2.dev1(\`Vehicle.CurrentLocation.Longitude\` FLOAT, \`Vehicle.CurrentLocation.Latitude\` FLOAT, \`Vehicle.Cabin.Infotainment.HMI.DistanceUnit\` TEXT)"
+
 bash ./sbin/start-cli.sh -h ${host} -p ${rpcPort} -u ${user} -pw ${pass} -e "insert into root.test2.dev1(\`Vehicle.CurrentLocation.Longitude\`, \`Vehicle.CurrentLocation.Latitude\`, \`Vehicle.Cabin.Infotainment.HMI.DistanceUnit\`) values(-42.4567, 22.1234, 'MILES')"
+
 bash ./sbin/start-cli.sh -h ${host} -p ${rpcPort} -u ${user} -pw ${pass} -e "select last * from root.test2.dev1"
 ```
 
