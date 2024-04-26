@@ -3,10 +3,25 @@ This directory contains files related to the Docker deployment of the Central Da
 # Central Data Service Playground
 The compose file `docker-compose-cdsp.yml` provides a containerized deployment of the playground using docker.
 
+## Docker installation
+If you are not familiar with Docker it is a widely deployed and well documented technology. For which you should find numerous tutorials on its use on the internet.
+
+At the time of writing Docker is available in two different editions with different licenses:
+1. [Docker EE/Docker Desktop]() is the commercial edition that provides a GUI and commercial support.
+2. [Docker CE (Community Edition)](https://docs.docker.com/engine/) is open source and uses the Docker Engine CLI.
+
+As COVESA operates as an open source community the playground docker support has been developed and documented using the Community Edition and the Docker Engine CLI. The docker compose plugin has been used for development of the compose definitions.
+
+Comprehensive Docker CE [installation instructions](https://docs.docker.com/engine/install/) for different distributions can be found upstream in the official Docker documentation.
+
+If you have a recent version of Docker installed but without the compose plugin, please add the plugin or upgrade.
+
 ## VISSR docker image build setup
 The [VISSR VISS Data Server](https://github.com/COVESA/vissr) has no pre-built image in a docker image repository and must therefore be built. Whilst the upstream documentation for VISSR is considered the reference documentation for build environment setup this section collects information that we have needed for a successful build of master branch commit 27d6de0.
 
 NOTE: This project intends to work towards the availability of a pre-built VISSR docker image so that the playground docker deployment can be a simple download of images.
+
+If you wish to quickly try the playground without the need for build setup as a first step, this [tip](#tip-i-am-blocked-by-vissr-build-issues-or-do-not-want-to-build) below tells you to how to start the playground without the VISS server.
 
 ### Install golang
 The VISSR [build tutorial](https://covesa.github.io/vissr/build-system/) says to install golang version 1.13 or later.
