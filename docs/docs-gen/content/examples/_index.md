@@ -19,7 +19,7 @@ Tip: well you wait for some examples consider how you could use the IoTDB data p
 Data Layer Connector \| A \| B \| C etc.
 
 ## Feeders
-RemotiveLabs \| WAII VISS \| etc.
+[RemotiveLabs](https://github.com/COVESA/cdsp/tree/main/examples/remotivelabs-feeder) \| WAII VISS \| etc.
 
 ## COVESA Touchpoints
 A \| B \| C
