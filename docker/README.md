@@ -7,7 +7,7 @@ The compose file `docker-compose-cdsp.yml` provides a containerized deployment o
 If you are not familiar with Docker it is a widely deployed and well documented technology. For which you should find numerous tutorials on its use on the internet.
 
 At the time of writing Docker is available in two different editions with different licenses:
-1. [Docker EE/Docker Desktop]() is the commercial edition that provides a GUI and commercial support.
+1. [Docker EE/Docker Desktop](https://www.docker.com/products/docker-desktop/) is the commercial edition that provides a GUI and commercial support.
 2. [Docker CE (Community Edition)](https://docs.docker.com/engine/) is open source and uses the Docker Engine CLI.
 
 As COVESA operates as an open source community the playground docker support has been developed and documented using the Community Edition and the Docker Engine CLI. The docker compose plugin has been used for development of the compose definitions.
