@@ -2,7 +2,7 @@ const WebSocket = require("ws");
 const {
   authenticateAndConnectToRealm,
   onMediaElementChange,
-} = require("../../realmdb/src/realm-handler");
+} = require("../../handlers/realmdb/src/realm-handler");
 
 const server = new WebSocket.Server({ port: 8080 });
 
