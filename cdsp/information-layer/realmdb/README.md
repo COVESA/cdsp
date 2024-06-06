@@ -16,13 +16,12 @@ To get APIKey and AppID you need to setup a [ATLAS cloud](https://cloud.mongodb.
 
 Create a file <code>config.js</code> in the existing <code>realmdb/config</code> directory and add this content:
 
-<code>
- module.exports = { <br>
-     realmAppId: '<i>your-realm-AppId</i>', <br>
-     realmApiKey: '<i>your-realm-ApiKey</i>'<br>
-  };
-</code>
-
+```js
+module.exports = {
+    realmAppId: 'your-realm-AppId',
+    realmApiKey: 'your-realm-ApiKey'
+};
+```
 > **_IMPORTANT:_**  Do not commit this file to github!
 
 
