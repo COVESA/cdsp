@@ -11,7 +11,7 @@ Setting up an information layer in the CDSP involves running a [Database-Router]
 
 Please follow installation instructions of the chosen [handler](./handlers/)
  
-## [Installation of Database-Router](./router)
+## [Installation of Database-Router](./router/README.md#Install)
 
 # Running "Hello World" example
 
@@ -31,15 +31,10 @@ The Hello World example in our case is quite simple. We feed an updated value fo
 ### IoTDB
 - Not yet supported
 
-## Start the Database Router
-Start router by executing in [router src](./router/src/) directory the command:
-
-```bash
-node websocket-server.js
-```
+## [Start](./router/README.md#Run) the Database Router
 
 ## Look out for the Websocket Server message in the console
-Now you can changed the value of *Vehicle_Cabin_HVAC_AmbientAirTemperature* in ATLAS cloud to let's say `23`. After changing you should immediately see this line in console:
+Now you can changed the value of `Vehicle_Cabin_HVAC_AmbientAirTemperature` in ATLAS cloud to let's say `23`. After changing you should immediately see this line in console:
 
 ```
 the value of "Vehicle_Cabin_HVAC_AmbientAirTemperature" changed to 23
