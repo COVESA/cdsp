@@ -1,7 +1,9 @@
-With this component one can configure which database it shall connect to <em>(As this configuration capability is not yet implemented you can skip the configuration step, it's always choosen RealmDB for now)</em> .
+With this component one can configure which database it shall connect to *(As this configuration capability is not yet implemented you can skip the configuration step, it's always choosen RealmDB for now)*.
 
-### Installation of DB-Router
+# Installation
 
-Execute within <code>db-router</code> directory
+Execute within `db-router` directory:
 
-     npm install
+```bash
+npm install
+```

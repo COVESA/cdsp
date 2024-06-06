@@ -1,3 +1,4 @@
 module.exports = {
-    Vin: 1234567
-  };
+  Vin: 1234567,
+};
+

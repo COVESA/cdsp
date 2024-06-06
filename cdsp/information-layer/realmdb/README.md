@@ -1,33 +1,41 @@
 This directory contains the RealmDB Handler as Node.js application. As [RealmDB](https://www.mongodb.com/docs/atlas/device-sdks/sdk/node/) is an embedded database, the RealmDB Handler directly embedds the RealmSDK which creates the [RealmDB database](https://github.com/realm/realm-js) file(s) automatically in the working directory during runtime of RealmDB Handler.
 
-## 1 Installation of RealmDB-Handler
+# Installation
 
-Execute within <code>realmdb/src</code> directory
+Execute within `realmdb` directory
 
-     npm install
+```bash
+npm install
+```
 
-## 2 Configuring RealmDB
-Before the Database-Router can start the RealmDB Handler without any errors you need to configure the RealmSDK before. 
+# Configure RealmDB
 
-### 2.1 Create ATLAS Cloud instance
+Before the Database-Router can start the RealmDB Handler without any errors you need to configure the RealmSDK before.
+
+## Create a ATLAS Cloud instance
+
 To get APIKey and AppID you need to setup a [ATLAS cloud](https://cloud.mongodb.com/) instance and App Services. There is a free Tier solution (Status as of May 29, 2024) and you will find a lot of documentation in the internet how to set up everything.
 
-### 2.2 Configuration of RealmDB Handler
+## Configure of a RealmDB Handler
 
-Create a file <code>config.js</code> in the existing <code>realmdb/config</code> directory and add this content:
+Create `config/config.js` with the following format, replacing the app id and the api key with yours.
 
 ```js
 module.exports = {
-    realmAppId: 'your-realm-AppId',
-    realmApiKey: 'your-realm-ApiKey'
+  realmAppId: "your-realm-AppId",
+  realmApiKey: "your-realm-ApiKey",
 };
 ```
-> **_IMPORTANT:_**  Do not commit this file to github!
 
+> **_IMPORTANT:_** Do not commit this file to github!
 
-### 2.3 Configuration of example vehicle
-In the already existing file <code>vehicle-config.js</code> you can change the VIN (Vehicle Identification Number) of the example vehicle. The default VIN is <i>1234567</i>. If you do not want to change it ensure, that in your ATLAS cloud instance there is a vehicle <i>document</i> with an <code>_id: <i>1234567</i></code> in a collection named <i>Vehicles</i>. More infos how to run an example together with ATLAS cloud you can find [here](../readme.md#case-1-you-choosed-realm-as-database).
+## Configure an example vehicle
 
-## 3 Starting RealmDB-Handler
+Change the VIN (Vehicle Identification Number) of the example vehicle in [vehicle-config](./config/vehicle-config.js).
+The default VIN is `1234567`.
+If you do not want to change it ensure, that in your ATLAS cloud instance there is a vehicle _document_ with an `_id: 1234567` in a collection named `Vehicles`.
+More infos how to run an example together with ATLAS cloud you can find [here](../readme.md#case-1-you-choosed-realm-as-database).
+
+## Starting the RealmDB handler
+
 You do not need to start RealmDB Handler manually. It is started by the DB-Router like described [here](../readme.md#22-installation-of-database-router).
-
