@@ -1,18 +1,17 @@
 This directory contains files related to the [Information Layer](https://en.wikipedia.org/wiki/DIKW_pyramid) of the Central Data Service Playground.
 
 # Information Layer Playground components
-   - Database-Handlers
-       - [RealmDB-Handler](realmdb/README.md)
-       - [IotDB-Handler](iotdb/README.md)
-   - [Database-Router](db-router/README.md)
+   - [Database-Handlers](./handlers)
+   - [Database-Router](./router)
 
 # Setting up a CDSP Information Layer
-Setting up an information layer in the CDSP involves running a [Database-Router](db-router/README.md), which is technically a configurable Websocket server that enables northbound connections for WebSocket clients, such as a [Knowledge Layer Connector](../knowledge-layer/README.md), to read, subscribe, and write data. The WebSocket server is connected to a database, which can be selected before starting the web server. Southbound feeders write data to the database in a predefined semantic format, such as [VSS](https://github.com/COVESA/vehicle_signal_specification).  
+Setting up an information layer in the CDSP involves running a [Database-Router](./router), which is technically a configurable Websocket server that enables northbound connections for WebSocket clients, such as a [Knowledge Layer Connector](../knowledge-layer/README.md), to read, subscribe, and write data. The WebSocket server is connected to a database, which can be selected before starting the web server. Southbound feeders write data to the database in a predefined semantic format, such as [VSS](https://github.com/COVESA/vehicle_signal_specification).  
 
 ## Installation of Database-Handler
-Install and configure your database of choice, like described here for [RealmDB](realmdb/README.md) or for [IotDB](iotdb/README.md)
+
+Please follow installation instructions of the chosen [handler](./handlers/)
  
-## [Installation of Database-Router](./db-router/README.md)
+## [Installation of Database-Router](./router)
 
 # Running "Hello World" example
 
@@ -33,7 +32,7 @@ The Hello World example in our case is quite simple. We feed an updated value fo
 - Not yet supported
 
 ## Start the Database Router
-Start DB-Router by executing in `db-router/src` directory the command
+Start router by executing in [router src](./router/src/) directory the command:
 
 ```bash
 node websocket-server.js

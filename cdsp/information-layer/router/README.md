@@ -2,7 +2,7 @@ With this component one can configure which database it shall connect to *(As th
 
 # Installation
 
-Execute within `db-router` directory:
+Execute in this directory:
 
 ```bash
 npm install
