@@ -1,4 +1,4 @@
-With [Database-Router](db-router/README.md) one can configure which database it shall connect to <em>(As this configuration capability is not yet implemented you can skip the configuration step, it's always choosen RealmDB for now)</em> .
+With this component one can configure which database it shall connect to <em>(As this configuration capability is not yet implemented you can skip the configuration step, it's always choosen RealmDB for now)</em> .
 
 ### Installation of DB-Router
 
