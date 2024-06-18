@@ -9,7 +9,7 @@ Setting up an information layer in the CDSP involves running a [Database-Router]
 
 ## Installation of Database-Handler
 
-Please follow installation instructions of the chosen [handler](./handlers/)
+Please follow installation instructions of the chosen [handler](./handlers/).
  
 ## [Installation of Database-Router](./router/README.md#Install)
 
