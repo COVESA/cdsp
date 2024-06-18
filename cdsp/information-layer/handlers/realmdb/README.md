@@ -38,4 +38,4 @@ More infos how to run an example together with ATLAS cloud you can find [here](.
 
 ## Starting the RealmDB handler
 
-You do not need to start RealmDB Handler manually. It is started by the DB-Router like described [here](../readme.md#22-installation-of-database-router).
+You do not need to start RealmDB Handler manually. It is started by the DB-Router like described [here](../../router/README.md#Install).
