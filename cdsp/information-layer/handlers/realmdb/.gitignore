@@ -1,0 +1,12 @@
+# MongoDB Realm
+mongodb-realm/
+
+# Node.js
+node_modules/
+package-lock.json
+
+# Credentials Config File
+config.js
+
+# MAC
+**/.DS_Store
