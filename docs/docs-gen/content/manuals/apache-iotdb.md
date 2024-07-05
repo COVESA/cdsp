@@ -111,23 +111,52 @@ At the time of writing the playground docker deployment deploys the single node 
 
 Of course if your cloud development requires higher performance then you can integrate the cluster version.
 
-## UDF and UDF library for data processing
-Whilst IoTDB has a series of built-in timeseries processing functions you can add your own as User Defined Functions (UDF).
+## Data processing functions
+### Built-in functions
+IoTDB has an extensive collection of built-in data processing functions covering areas including:
 
-The [UDF section](https://iotdb.apache.org/UserGuide/latest/User-Manual/Database-Programming.html#user-defined-function-udf) of the IoTDB documentation explains how to develop and register your own.
+- Aggregate Functions, such as `SUM`.
+- Arithmetic Functions, such as `SIN`.
+- Comparison Functions, such as `ON_OFF`.
+- String Processing Functions, such as `STRING_CONTAINS`.
+- Data Type Conversion Function, such as `CAST`.
+- Constant Timeseries Generating Functions, such as `CONST`.
+- Selector Functions, such as `TOP_K`.
+- Continuous Interval Functions, such as `ZERO_DURATION`.
+- Variation Trend Calculation Functions, such as `TIME_DIFFERENCE`.
+- Sampling Functions, such as `M4`.
+- Change Points Function, such as `CHANGE_POINTS`.
 
-The IoTDB project also maintains UDF Library an extensive collection of data processing functions covering:
-- Data Quality
-- Data Profiling
-- Anomaly Detection
-- Frequency Domain Analysis
-- Data Repair
-- Series Discovery
-- Machine Learning
+A full function list with examples can be found in the upstream [IoTDB Function reference manual](https://iotdb.apache.org/UserGuide/latest/Reference/Function-and-Expression.html).
 
-The UDF Library is an optional install. How to install the library is documented [here](https://iotdb.apache.org/UserGuide/latest/User-Manual/Database-Programming.html#data-quality-function-library). Documentation for the functions can be found [here](https://iotdb.apache.org/UserGuide/latest/Reference/UDF-Libraries.html).
+### Data Quality Library functions
+The IoTDB project also maintains a Data Quality Library which provides an additional collection of functions covering:
+- Data Quality, such as `Accuracy`.
+- Data Profiling, such as `Sample`.
+- Anomaly Detection, such as `Outlier`.
+- Frequency Domain Analysis, such as `HighPass`.
+- Data Repair, such as `TimestampRepair`.
+- Series Discovery, such as `ConsecutiveSequences`.
+- Machine Learning, such as `AR`.
 
-The combination of built-in and UDF library functions, built on the low latency queries enabled by IoTDB and its TsFile format gives you a lot to explore.
+A full function list with examples can be found in the upstream [IoTDB Data Quality Library reference manual](https://iotdb.apache.org/UserGuide/latest/Reference/UDF-Libraries.html).
+
+#### Setup
+In the upstream IoTDB project the library is an optional install.
+
+For your convenience it is included in the Playground IoTDB image for you. However to call the functions they must first be registered in the running IoTDB instance, which you only need to do once. The script `/iotdb/sbin/register-UDF.sh` is included in the IoTDB image to do this for you.
+
+Steps:
+
+1. Start the Playground if it is not already running.
+2. From your host execute the following command to run the registration script in the IoTDB container image:
+	```
+	sudo docker exec -ti iotdb-service /iotdb/sbin/register-UDF.sh
+	```
+
+
+### User Defined functions
+IoTDB also allows you intergrate your own functions as User Defined Functions (UDF). The [UDF section](https://iotdb.apache.org/UserGuide/latest/User-Manual/Database-Programming.html#user-defined-function-udf) of the IoTDB documentation explains how to develop and register your own.
 
 ## VISSR (VISS) integration
 As part of the initial development of the playground the team extended VISSR to support connections to Apache IoTDB as a VISSR data store backend and upstreamed the support.
