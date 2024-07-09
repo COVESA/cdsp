@@ -4,7 +4,6 @@ mongodb-realm/
 # Node.js
 node_modules/
 package-lock.json
-.env
 
 # MAC
 **/.DS_Store

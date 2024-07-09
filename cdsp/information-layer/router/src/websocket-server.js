@@ -1,17 +1,17 @@
 const WebSocket = require('ws');
-const RealmDBHandler = require('../../handlers/realmdb/src/realmdb_handler');
+const RealmDBHandler = require('../../handlers/realmdb/src/realmdb-handler');
 const { getHandlerType } = require('../config/config');
-const { validateMessage } = require('../utils/message_validator');
+const { validateMessage } = require('../utils/message-validator');
 
 const handlerType = getHandlerType();
 let handler;
+console.log(`this is the handler type: ${handlerType}`)
 
 switch (handlerType) {
   case 'realmdb':
     handler = new RealmDBHandler();
     break;
   case 'iotdb':
-    // TODO: new IoTDBHandler()
     console.error('IoTDB Handler is not implemented, yet!')
     break;
   default:

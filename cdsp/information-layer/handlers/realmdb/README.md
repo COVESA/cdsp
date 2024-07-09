@@ -1,4 +1,10 @@
 This directory contains the RealmDB Handler as Node.js application. As [RealmDB](https://www.mongodb.com/docs/atlas/device-sdks/sdk/node/) is an embedded database, the RealmDB Handler directly embedds the RealmSDK which creates the [RealmDB database](https://github.com/realm/realm-js) file(s) automatically in the working directory during runtime of RealmDB Handler.
+# Features
+
+- **Authentication**: Authenticates with MongoDB Realm using an API key.
+- **Read Data**: Retrieves data from the Realm database using a primary key.
+- **Subscribe to Changes**: Listens to changes in specific data objects and sends updates to WebSocket clients.
+- **Error Handling**: Logs and handles errors during database operations and synchronization.
 
 # Installation
 
@@ -29,13 +35,36 @@ module.exports = {
 
 > **_IMPORTANT:_** Do not commit this file to github!
 
-## Configure an example vehicle
-
-Change the VIN (Vehicle Identification Number) of the example vehicle in [vehicle-config](./config/vehicle-config.js).
-The default VIN is `1234567`.
-If you do not want to change it ensure, that in your ATLAS cloud instance there is a vehicle _document_ with an `_id: 1234567` in a collection named `Vehicles`.
-More infos how to run an example together with ATLAS cloud you can find [here](../readme.md#case-1-you-choosed-realm-as-database).
-
 ## Starting the RealmDB handler
 
-You do not need to start RealmDB Handler manually. It is started by the DB-Router like described [here](../../router/README.md#Install).
+You do not need to start RealmDB Handler manually. It is started by the DB-Router like described [here](../../router/README.md#Run).
+
+## Usage  
+
+The examples use the VIN (Vehicle Identification Number) `1234567` as object identifier.
+
+### Reading Data
+
+To read data from the Realm database, send a message with the type of request and object ID:
+
+```json
+{
+  "type": "read",
+  "data": {
+    "Vin": 1234567
+  }
+}
+```
+
+### Subscribing to Changes
+
+To subscribe to changes in a specific object, send a message with the type of request and object ID:
+
+```json
+{
+  "type": "subscribe",
+  "data": {
+    "Vin": 1234567
+  }
+}
+```

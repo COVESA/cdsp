@@ -1,7 +1,6 @@
 const Realm = require("realm");
 const Handler = require('../../handler')
 const config = require("../config/config");
-//const vehicleConfig = require("../config/vehicle-config"); // Import vehicle config file
 const { v4: uuidv4 } = require("uuid"); // Importing UUID generator
 
 const MediaElementSchema = {
@@ -28,6 +27,10 @@ const realmConfig = {
   },
 };
 
+const sendMessageToClient = (ws, message) => {
+  ws.send(JSON.stringify(message));
+};
+
 class RealmDBHandler extends Handler {
   constructor() {
     super();
@@ -45,8 +48,12 @@ class RealmDBHandler extends Handler {
       this.realm = await Realm.open(realmConfig);
       console.log("Realm connection established successfully");
 
-      const MediaElements = this.realm.objects("Vehicles").subscribe();
-      console.log(MediaElements); // TODO: Is it necessary to log this?
+      const MediaElements = this.realm.objects("Vehicles").subscribe(); // TODO: Is it necessary to log this, extra function?
+      if (MediaElements) {
+        console.log(MediaElements); 
+      } else {
+        this.sendMessageToClients({ error: "Vehicles collection not found for subscription"});
+      }
     } catch (error) {
       console.error("Failed to authenticate with Realm:", error);
     }
@@ -55,59 +62,49 @@ class RealmDBHandler extends Handler {
   async read(message, ws) {
     try{
       const objectId = message.data.Vin; // Retrieve objectId from config file
-      const mediaElement = this.realm.objectForPrimaryKey("Vehicles", objectId);
-      console.log(mediaElement);
-      if (mediaElement) {
+      const MediaElement = this.realm.objectForPrimaryKey("Vehicles", objectId);
+      if (MediaElement) {
         const response = {
           type: "read_response",
-          data: mediaElement,
+          data: MediaElement,
         };
-        ws.send(JSON.stringify(response));
+        sendMessageToClient(ws, JSON.stringify(response));
       } else {
-        ws.send(JSON.stringify({ error: 'Object not found' }));
+        sendMessageToClient(ws, JSON.stringify({ error: 'Object not found' }));
       }
     } catch (error) {
       console.error("Error reading object from Realm:", error);
-      ws.send(JSON.stringify({ error: 'Error reading object' }));
+      sendMessageToClient(ws, JSON.stringify({ error: 'Error reading object' }));
     }
   }
 
-  async write(message, ws) {
-    // Implement write logic for RealmDB
-  }
-
-  async subscribe(message, ws) {
-    const sendMessageToClient = (message) => {
-      ws.send(JSON.stringify(message));
-    };
-
+  async subscribe(message, ws) {    
     try {
       const objectId = message.data.Vin;
       console.log(`Subscribing element: ${objectId}`)
-      const mediaElement = await this.realm.objectForPrimaryKey("Vehicles", objectId);
-      console.log(mediaElement);
+      const MediaElement = await this.realm.objectForPrimaryKey("Vehicles", objectId);
 
-      if (mediaElement) {
+      if (MediaElement) {
         const websocketId = String(objectId);
-        mediaElement.addListener((mediaElement, changes) =>
-          this.onMediaElementChange(mediaElement, changes, websocketId)
+        MediaElement.addListener((MediaElement, changes) =>
+          this.onMediaElementChange(MediaElement, changes, websocketId)
         );
-        sendMessageToClient({ success: `Subscribed to changes for object ID ${objectId}` })
+        sendMessageToClient(ws, { success: `Subscribed to changes for object ID ${objectId}` })
       } else {
-        sendMessageToClient({ error: "Vehicles collection not found for subscription"});
+        sendMessageToClient(ws, JSON.stringify({ error: 'Object not found' }));
       }
     } catch (error) {
       console.error("Error subscribing to object changes in Realm:", error);
-      sendMessageToClient({ error: 'Error subscribing to object changes' });
+      sendMessageToClient(ws, { error: 'Error subscribing to object changes' });
     }
   }
 
-  onMediaElementChange(mediaElement, changes, websocketId) {
+  onMediaElementChange(MediaElement, changes, websocketId) {
     if (changes.deleted) {
       console.log(`MediaElement is deleted: ${changes.deleted}`);
     } else {
       changes.changedProperties.forEach((prop) => {
-        console.log(`* the value of "${prop}" changed to ${mediaElement[prop]}`);
+        console.log(`* the value of "${prop}" changed to ${MediaElement[prop]}`);
 
         // Generate a meaningful UUID for WebSocket response
         const uuid = uuidv4();
@@ -120,7 +117,7 @@ class RealmDBHandler extends Handler {
           dateTime: new Date().toISOString(),
           node: {
             name: prop, // Sending the property name as node name
-          value: mediaElement[prop], // Sending the property value as node value
+          value: MediaElement[prop], // Sending the property value as node value
           },
         };
         this.sendMessageToClients(message);
