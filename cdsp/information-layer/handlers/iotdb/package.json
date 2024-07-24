@@ -1,0 +1,10 @@
+{
+  "name": "iotdb-handler",
+  "version": "1.0.0",
+  "description": "IoT database handler",
+  "main": "iotdb-handler.js",
+  "dependencies": {
+    "thrift": "^0.20.0",
+    "uuid": "^9.0.1"
+  }
+}
