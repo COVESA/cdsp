@@ -1,5 +1,5 @@
 const Realm = require("realm");
-const Handler = require('../../handler')
+const Handler = require("../../handler");
 const config = require("../config/config");
 const { v4: uuidv4 } = require("uuid"); // Importing UUID generator
 
@@ -50,9 +50,11 @@ class RealmDBHandler extends Handler {
 
       const MediaElements = this.realm.objects("Vehicles").subscribe(); // TODO: Is it necessary to log this, extra function?
       if (MediaElements) {
-        console.log(MediaElements); 
+        console.log(MediaElements);
       } else {
-        this.sendMessageToClients({ error: "Vehicles collection not found for subscription"});
+        this.sendMessageToClients({
+          error: "Vehicles collection not found for subscription",
+        });
       }
     } catch (error) {
       console.error("Failed to authenticate with Realm:", error);
@@ -60,8 +62,8 @@ class RealmDBHandler extends Handler {
   }
 
   async read(message, ws) {
-    try{
-      const objectId = message.data.Vin; // Retrieve objectId from config file
+    try {
+      const objectId = message.data.Vin;
       const MediaElement = this.realm.objectForPrimaryKey("Vehicles", objectId);
       if (MediaElement) {
         const response = {
@@ -70,32 +72,40 @@ class RealmDBHandler extends Handler {
         };
         sendMessageToClient(ws, JSON.stringify(response));
       } else {
-        sendMessageToClient(ws, JSON.stringify({ error: 'Object not found' }));
+        sendMessageToClient(ws, JSON.stringify({ error: "Object not found" }));
       }
     } catch (error) {
       console.error("Error reading object from Realm:", error);
-      sendMessageToClient(ws, JSON.stringify({ error: 'Error reading object' }));
+      sendMessageToClient(
+        ws,
+        JSON.stringify({ error: "Error reading object" })
+      );
     }
   }
 
-  async subscribe(message, ws) {    
+  async subscribe(message, ws) {
     try {
       const objectId = message.data.Vin;
-      console.log(`Subscribing element: ${objectId}`)
-      const MediaElement = await this.realm.objectForPrimaryKey("Vehicles", objectId);
+      console.log(`Subscribing element: ${objectId}`);
+      const MediaElement = await this.realm.objectForPrimaryKey(
+        "Vehicles",
+        objectId
+      );
 
       if (MediaElement) {
         const websocketId = String(objectId);
         MediaElement.addListener((MediaElement, changes) =>
           this.onMediaElementChange(MediaElement, changes, websocketId)
         );
-        sendMessageToClient(ws, { success: `Subscribed to changes for object ID ${objectId}` })
+        sendMessageToClient(ws, {
+          success: `Subscribed to changes for object ID ${objectId}`,
+        });
       } else {
-        sendMessageToClient(ws, JSON.stringify({ error: 'Object not found' }));
+        sendMessageToClient(ws, JSON.stringify({ error: "Object not found" }));
       }
     } catch (error) {
       console.error("Error subscribing to object changes in Realm:", error);
-      sendMessageToClient(ws, { error: 'Error subscribing to object changes' });
+      sendMessageToClient(ws, { error: "Error subscribing to object changes" });
     }
   }
 
@@ -104,11 +114,13 @@ class RealmDBHandler extends Handler {
       console.log(`MediaElement is deleted: ${changes.deleted}`);
     } else {
       changes.changedProperties.forEach((prop) => {
-        console.log(`* the value of "${prop}" changed to ${MediaElement[prop]}`);
+        console.log(
+          `* the value of "${prop}" changed to ${MediaElement[prop]}`
+        );
 
         // Generate a meaningful UUID for WebSocket response
         const uuid = uuidv4();
-        
+
         const message = {
           type: "update",
           tree: "VSS",
@@ -117,7 +129,7 @@ class RealmDBHandler extends Handler {
           dateTime: new Date().toISOString(),
           node: {
             name: prop, // Sending the property name as node name
-          value: MediaElement[prop], // Sending the property value as node value
+            value: MediaElement[prop], // Sending the property value as node value
           },
         };
         this.sendMessageToClients(message);

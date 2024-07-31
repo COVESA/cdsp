@@ -29,12 +29,36 @@ The Hello World example in our case is quite simple. We feed an updated value fo
   ```
 
 ### IoTDB
-- Not yet supported
+- Ensure to start and run Docker containers defined in a [Docker Compose file](/docker/).
+- Ensure that in the IoTDB CLI there is a `root.Vehicles` *database* like this: 
 
+  ``` 
+  IoTDB> show databases;
+  +-------------+----+-----------------------+---------------------+---------------------+
+  |     Database| TTL|SchemaReplicationFactor|DataReplicationFactor|TimePartitionInterval|
+  +-------------+----+-----------------------+---------------------+---------------------+
+  |root.Vehicles|null|                      1|                    1|            604800000|
+  +-------------+----+-----------------------+---------------------+---------------------+
+  Total line number = 1
+  It costs 0.004s
+  ```
+
+- Create two *timeseries* with the `root.Vehicles.VIN` and some VSS data. At the moment only 1 data point is supported, namely `root.Vehicles.Vehicle_Cabin_HVAC_AmbientAirTemperature`. Here you can see how the vehicle document within the *Vehicles* should look like in IoTDB CLI:
+
+  ```
+  IoTDB> show timeseries;
+  +------------------------------------------------------+-----+-------------+--------+--------+-----------+----+----------+--------+------------------+--------+
+  |                                            Timeseries|Alias|     Database|DataType|Encoding|Compression|Tags|Attributes|Deadband|DeadbandParameters|ViewType|
+  +------------------------------------------------------+-----+-------------+--------+--------+-----------+----+----------+--------+------------------+--------+
+  |root.Vehicles.Vehicle_Cabin_HVAC_AmbientAirTemperature| null|root.Vehicles|   FLOAT|     RLE|        LZ4|null|      null|    null|              null|    BASE|
+  |                                     root.Vehicles.VIN| null|root.Vehicles|    TEXT|   PLAIN|        LZ4|null|      null|    null|              null|    BASE|
+  +------------------------------------------------------+-----+-------------+--------+--------+-----------+----+----------+--------+------------------+--------+
+  ```
+ 
 ## [Start](./router/README.md#Run) the Database Router
 
 ## Look out for the Websocket Server message in the console
-Now you can changed the value of `Vehicle_Cabin_HVAC_AmbientAirTemperature` in ATLAS cloud to let's say `23`. After changing you should immediately see this line in console:
+If you are running the RealmDB handler and you change the value of `Vehicle_Cabin_HVAC_AmbientAirTemperature` in ATLAS cloud (let's say `23`), you should immediately see this line in console:
 
 ```
 the value of "Vehicle_Cabin_HVAC_AmbientAirTemperature" changed to 23

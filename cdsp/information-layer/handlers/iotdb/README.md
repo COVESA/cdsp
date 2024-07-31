@@ -23,11 +23,14 @@ Create `config/config.js` with the following format, replacing the app id and th
 
 ```js
 module.exports = {
-  iotdbHost: "your-iotdb-host", // Default "localhost"
-  iotdbPort: 6667, // Set this to the appropriate IotDB Port
-  iotdbUser: "your-iotdb-user", // Default "root"
-  iotdbPassword: "your-iotdb-password", // Default "root"
-  timeZone: "UTC+2", // Set this to the appropriate time zone
+  module.exports = {
+    iotdbHost: "your-iotdb-host", // Default "localhost"
+    iotdbPort: 6667, // Set this to the appropriate IotDB Port
+    iotdbUser: "your-iotdb-user", // Default "root"
+    iotdbPassword: "your-iotdb-password", // Default "root"
+    timeZoneId: Intl.DateTimeFormat().resolvedOptions().timeZone, // Set this to the appropriate time zone
+    fetchSize: 10000, // number of rows that will be fetched from the database at a time when executing a query
+  };
 };
 ```
 
