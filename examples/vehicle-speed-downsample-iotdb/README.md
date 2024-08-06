@@ -23,6 +23,8 @@ The same pattern can be applied to other scenarios such as diagnostics for compo
 Hybrids of in-vehicle and off-board analysis allow flexible reduction of transmission, storage and processing costs and network load.
 
 ## Implementation
+In this section we will summarise how we implemented the extraction of the real drive data into VSS, loaded it into the database and transformed it.
+
 ### Dataset (extract)
 The supporting file `vehicle_speed_rl_dataset.csv` contains a dataset of `Vehicle.Speed` data in the VSS data model for you to experiment with and which we will use throughout the following examples. The file format is Comma-separated values (CSV) for wide compatibility.
 
@@ -33,7 +35,7 @@ The dataset contains just over 13500 values recorded over approximately 5 minute
 ### Load
 In the example we will import the dataset into a VSS `Vehicle.Speed` timeseries within IoTDB.
 
-IoTDB provides [import/export tools](https://iotdb.apache.org/UserGuide/latest/Tools-System/Import-Export-Tool.html) for its native TsFile file format and CSV and which are included in the image. We will use the [`import-csv.sh`](https://iotdb.apache.org/UserGuide/latest/Tools-System/Import-Export-Tool.html#usage-of-import-csv-sh) tool to perform the import.
+IoTDB provides [import/export tools](https://iotdb.apache.org/UserGuide/latest/Tools-System/TsFile-Import-Export-Tool.html) for its native TsFile file format and CSV and which are included in the image. We will use the [`import-csv.sh`](https://iotdb.apache.org/UserGuide/latest/Tools-System/TsFile-Import-Export-Tool.html#usage-of-import-csv-sh) tool to perform the import.
 
 ### Transform
 IoTDB has a library of Data Quality functions which includes the function [`Sample`](https://iotdb.apache.org/UserGuide/latest/Reference/UDF-Libraries.html#sample) for sampling. Sample has three sampling methods: `Reservoir`, `Isometric` and `Triangle`. 
@@ -62,7 +64,7 @@ The following screenshot shows the results graphed in Grafana. The green graph i
 *Figure 1: Grafana visualisation of the results. Key: Green=input data, yellow=down-sampled result*
 
 Tips:
-+ Documentation for each Sample method and the other functions can be found in the [IoTDB library documentation](https://iotdb.apache.org/UserGuide/latest/Reference/UDF-Libraries.html#sample).
++ Documentation for each Sample method and the other functions can be found in the [IoTDB library documentation](https://iotdb.apache.org/UserGuide/latest/Reference/UDF-Libraries.html).
 
 + Triangle uses a *Largest-Triangle-Three-Buckets (LTTB)* algorithm to calculate the output timeseries. Details of which can be found in the originating academic research: [Downsampling Time Series for Visual Representation, Sveinn Steinarsson, 2013](https://skemman.is/bitstream/1946/15343/3/SS_MSthesis.pdf)
 
@@ -78,7 +80,9 @@ If you wish to try algorithms not implemented in IoTDB one starting point would 
 *Programmed*: Whilst the example uses interactive methods, the same can easily be codified.
 
 ## How-To Tutorial
-In this How-To we will use the IoTDB CLI client to send SQL commands on its command line to the database.
+Having explained the implementation in the previous section, in this section we will provide a How-To to illustrate the steps.
+
+We will use the IoTDB CLI client to send SQL commands on its command line to the database.
 ### Preparation
 1. Open a terminal. We will use this to run docker commands.
 2. Open another terminal. We will use this to run the IoTDB CLI client.
@@ -308,10 +312,30 @@ It costs 0.028s
 ### Suggested next steps
 + Repeat the query with the same input data, but with different `k` parameter values to see what affects the number of samples has on the accuracy of the trace compared to the input data.
 + Amend the query with other [SQL clauses](https://iotdb.apache.org/UserGuide/latest/User-Manual/Query-Data.html) to shape what you are interested in, e.g. use `WHERE` to define a time filter.
-+ A great way to explore these sampling queries is by using Grafana. In Grafana you can execute the queries and have it plot the result against other results (e.g. the original data or variations in `k`) in real time.
++ A great way to explore these sampling queries is by using Grafana as discussed below.
 + Try the other [IoTDB data processing functions](https://covesa.github.io/cdsp/manuals/apache-iotdb/#data-processing-functions)
 
 ## Using Grafana to visualise the result
-Using Grafana we can send the same queries to IoTDB whilst visualising the results interactively.
+Using Grafana we can send the same SQL queries to IoTDB and have Grafana visualize the results interactively.
 
-Example with screenshots TBA
+For example, we can ask Grafana to plot both the input data set and the down-sampled data on the same graph as shown below.
+
+![Screenshot of a diagram showing two overlapping graphs of the input and output datasets](images/vss-down-sample-graph.png)
+*Figure 1: Grafana visualisation of the results. Key: Green=input data, yellow=down-sampled result*
+
+If we edit the query for the down-sample to change the `k` parameter to 10 or 1000 and re-run the query we can see the effect of how well it follows the original input data in real time.
+
+This ability to use the same SQL query in the IoTDB CLI Client, any code and Grafana is in-line with our desire to use consistent data models and processes in a data centric architecture. 
+
+### Setup
+#### Grafana connection setup
+The IoTDB project maintains the IoTDB Grafana Plugin to allow Grafana to interact with IoTDB data sources using the IoTDB REST API. This Plugin has been upstreamed into the Grafana project and can be installed from Grafana. Installation and usage instructions can be found in the IoTDB [online documentation](https://iotdb.apache.org/UserGuide/latest/Ecosystem-Integration/Grafana-Plugin.html).
+
+Note: The Plugin install instructions describe enabling the IoTDB REST API, which is disabled by default in IoTDB. This has already been done for you in the Playground IoTDB Docker image.
+
+#### Grafana panel setup
+As stated at the start of this Grafana section we can simply use the same queries we used earlier in the How-To in Grafana.
+
+The screenshot below from Grafana v10.4 shows the Panel setup used to generate the graphs shown in Figure 1. Two queries are added to the Panel, one to return the input timeseries, the other to return the down-sampled data.
+![Screenshot of a diagram showing two overlapping graphs of the input and output datasets](images/grafana-vss-down-sample-query.png)
+*Figure 2: Grafana Panel setup to produce Figure 1.*
