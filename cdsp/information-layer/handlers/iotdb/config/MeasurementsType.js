@@ -1,8 +1,12 @@
 const JSDataType = require("../utils/IoTDBConstants");
 
+/*
+ * Define the supported endpoints and the corresponding data types.
+ */
 const MeasurementType = Object.freeze({
-  VIN: JSDataType.TEXT,
-  Vehicle_Cabin_HVAC_AmbientAirTemperature: JSDataType.FLOAT,
+  VehicleIdentification_VIN: JSDataType.TEXT,
+  CurrentLocation_Latitude: JSDataType.DOUBLE,
+  CurrentLocation_Longitude: JSDataType.DOUBLE,
 });
 
 module.exports = MeasurementType;

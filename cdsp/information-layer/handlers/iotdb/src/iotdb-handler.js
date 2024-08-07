@@ -12,10 +12,94 @@ const config = require("../config/config");
 const SessionDataSet = require("../utils/SessionDataSet");
 const { IoTDBDataInterpreter } = require("../utils/IoTDBDataInterpreter");
 const MeasurementType = require("../config/MeasurementsType");
+const Database = require("../config/Database");
 
 const sendMessageToClient = (ws, message) => {
   ws.send(JSON.stringify(message));
 };
+
+/**
+ * Extracts endpoint names from the given message.
+ *
+ * This function checks if the message has a single node or multiple nodes and
+ * extracts the names accordingly.
+ *
+ * @param {Object} message - The message containing node(s).
+ * @returns {Array<string>} An array of endpoint names.
+ */
+function extractEndpointsFromNodes(message) {
+  let endpoints = [];
+  if (message.node) {
+    endpoints.push(message.node.name);
+  } else if (message.nodes) {
+    endpoints = message.nodes.map((node) => node.name);
+  }
+  return endpoints;
+}
+
+/**
+ * Creates an object to insert data in IoTDB based on the provided message.
+ *
+ * @param {Object} message - The message containing data to be inserted.
+ * @returns {Object} The data object to be inserted.
+ */
+function createObjectToInsert(message) {
+  const data = { VehicleIdentification_VIN: message.id };
+  if (message.node) {
+    data[message.node.name] = message.node.value;
+  } else if (message.nodes) {
+    message.nodes.forEach((node) => {
+      data[node.name] = node.value;
+    });
+  }
+  return data;
+}
+
+/**
+ * Creates an update message object based on the provided message and response nodes.
+ *
+ * @param {Object} message - The original message object containing tree, id, and uuid properties.
+ * @param {Array} responseNodes - An array of response nodes to be included in the update message.
+ * @returns {Object} The constructed update message object.
+ */
+function createUpdateMessage(message, responseNodes) {
+  let updateMessage = {
+    type: "update",
+    tree: message.tree,
+    id: message.id,
+    dateTime: new Date().toISOString(),
+    uuid: message.uuid,
+  };
+  if (responseNodes.length == 1) {
+    updateMessage["node"] = responseNodes[0];
+  } else {
+    updateMessage["nodes"] = responseNodes;
+  }
+  return updateMessage;
+}
+
+/**
+ * Creates a read message object based on the provided message and nodes names.
+ *
+ * @param {Object} message - The message object containing tree, id, and uuid properties.
+ * @param {Array} nodeNames - An array of node names. If the array contains one field, it will be added as 'node'.
+ *                          If the array contains multiple fields, they will be added as 'nodes'.
+ * @returns {Object} The constructed read message object.
+ */
+function createReadMessage(message, nodeNames) {
+  let readMessage = {
+    type: "read",
+    tree: message.tree,
+    id: message.id,
+    uuid: message.uuid,
+  };
+  if (nodeNames.length == 1) {
+    readMessage["node"] = nodeNames[0];
+  } else {
+    readMessage["nodes"] = nodeNames;
+  }
+  return readMessage;
+}
 
 class IoTDBHandler extends Handler {
   constructor() {
@@ -56,48 +140,19 @@ class IoTDBHandler extends Handler {
   }
 
   async read(message, ws) {
-    const objectId = message.data.VIN;
-    const sql = `SELECT * FROM root.Vehicles WHERE root.Vehicles.VIN = '${objectId}'`;
     try {
-      await this.openSession();
-      const sessionDataSet = await this.#executeQueryStatement(sql);
-
-      // Check if the response contains data
-      if (sessionDataSet == {}) {
-        console.log("No data found in query response.");
-        sendMessageToClient(
-          ws,
-          JSON.stringify({ error: "No data found in query response." })
-        );
-      } else {
-        let mediaElements = [];
-        while (sessionDataSet.hasNext()) {
-          const mediaElement = sessionDataSet.next();
-          mediaElements.push(mediaElement);
-        }
-        if (mediaElements.length > 0) {
-          for (let i = 0; i < mediaElements.length; ++i) {
-            const transformedObject =
-              IoTDBDataInterpreter.extractDeviceIdFromTimeseries(
-                mediaElements[i]
-              );
-            const response = {
-              type: "read_response",
-              data: transformedObject,
-            };
-            sendMessageToClient(ws, JSON.stringify(response));
-          }
-        } else {
-          sendMessageToClient(
-            ws,
-            JSON.stringify({ error: "Object not found." })
-          );
-        }
-      }
+      await this.#openSessionIfNeeded();
+      const responseMessage = await this.#queryLastFields(message, ws);
+      console.log(responseMessage);
+      sendMessageToClient(ws, JSON.stringify(responseMessage));
     } catch (error) {
       console.error("Failed to read data from IoTDB: ", error);
+      sendMessageToClient(
+        ws,
+        JSON.stringify({ error: "Error reading object" })
+      );
     } finally {
-      this.closeSession();
+      this.#closeSessionIfNeeded();
     }
   }
 
@@ -105,15 +160,30 @@ class IoTDBHandler extends Handler {
     let measurements = [];
     let dataTypes = [];
     let values = [];
+
     try {
-      await this.openSession();
-      Object.entries(message.data).forEach(async ([key, value]) => {
+      await this.#openSessionIfNeeded();
+      const data = createObjectToInsert(message);
+      const errorUndefinedTypes = [];
+
+      for (const [key, value] of Object.entries(data)) {
+        const dataType = MeasurementType[key];
+        if (dataType == undefined) {
+          errorUndefinedTypes.push(`The endpoint "${key}" is not supported`);
+          continue;
+        }
         measurements.push(key);
         dataTypes.push(MeasurementType[key]);
         values.push(value);
-      });
-      let deviceId = "root.Vehicles";
+      }
+
+      if (errorUndefinedTypes.length > 0) {
+        errorUndefinedTypes.forEach((error) => console.error(error));
+        throw new Error("One or more endpoints are not supported.");
+      }
+
       const timestamp = new Date().getTime();
+      const deviceId = Database[message.tree].database_name;
       const status = await this.#insertRecord(
         deviceId,
         timestamp,
@@ -122,24 +192,40 @@ class IoTDBHandler extends Handler {
         values
       );
 
-      const response = `insert one record to device ${deviceId}, message: ${status.message}`;
-      console.log(response);
-      sendMessageToClient(ws, response);
+      const response = `insert one record to device ${deviceId}, status: `;
+      console.log(response, status);
+
+      let keyList = [];
+      measurements.forEach((key) => {
+        keyList.push({ name: key });
+      });
+
+      const readMessage = createReadMessage(message, keyList);
+      console.log(readMessage);
+
+      const responseMessage = await this.#queryLastFields(message, ws);
+      console.log(responseMessage);
+      this.sendMessageToClients(responseMessage);
     } catch (error) {
       console.error("Failed to write data from IoTDB: ", error);
+      sendMessageToClient(
+        ws,
+        JSON.stringify({ error: "Error writing object" })
+      );
     } finally {
-      this.closeSession();
+      this.#closeSessionIfNeeded();
     }
   }
 
   /**
    * Opens a session with the IoTDB server using the provided credentials and configuration.
    */
-  async openSession() {
+  async #openSession() {
     if (!this.isSessionClosed) {
       console.info("The session is already opened.");
       return;
     }
+
     const openSessionReq = new TSOpenSessionReq({
       username: config.iotdbUser,
       password: config.iotdbPassword,
@@ -173,11 +259,10 @@ class IoTDBHandler extends Handler {
     }
   }
 
-  isSessionOpen() {
-    return !this.isSessionClosed;
-  }
-
-  closeSession() {
+  /**
+   * Closes the current session if it is not already closed.
+   */
+  #closeSession() {
     if (this.isSessionClosed) {
       console.info("Session is already closed.");
       return;
@@ -192,11 +277,23 @@ class IoTDBHandler extends Handler {
     } catch (error) {
       console.error(
         "Error occurs when closing session at server. Maybe server is down. Error message: ",
-        err
+        error
       );
     } finally {
       this.isSessionClosed = true;
       console.log("Session closed!");
+    }
+  }
+
+  async #openSessionIfNeeded() {
+    if (this.isSessionClosed) {
+      await this.#openSession();
+    }
+  }
+
+  async #closeSessionIfNeeded() {
+    if (!this.isSessionClosed) {
+      this.#closeSession();
     }
   }
 
@@ -283,6 +380,64 @@ class IoTDBHandler extends Handler {
       isAligned: isAligned,
     });
     return await this.client.insertRecord(request);
+  }
+
+  /**
+   * Queries the last inserted fields from the database based on the provided message and sends the result back.
+   *
+   * @param {Object} message - The message object containing the query parameters.
+   * @param {WebSocket} ws - The WebSocket connection to send the response back to the client.
+   * @returns {Promise<void>} - A promise that resolves when the query is complete and the response is sent.
+   * @throws {Error} - Throws an error if the query execution fails.
+   */
+  async #queryLastFields(message, ws) {
+    const objectId = message.id;
+    const databaseName = Database[message.tree].database_name;
+    const endpointId = Database[message.tree].endpoint_id;
+    const fieldsToSearch = extractEndpointsFromNodes(message).join(", ");
+    const sql = `SELECT ${fieldsToSearch} FROM ${databaseName} WHERE ${endpointId} = '${objectId}' ORDER BY Time DESC LIMIT 1`;
+
+    try {
+      const sessionDataSet = await this.#executeQueryStatement(sql);
+
+      // Check if the response contains data
+      if (sessionDataSet == {}) {
+        console.log("No data found in query response.");
+        sendMessageToClient(
+          ws,
+          JSON.stringify({ error: "No data found in query response." })
+        );
+      } else {
+        let mediaElements = [];
+        while (sessionDataSet.hasNext()) {
+          const mediaElement = sessionDataSet.next();
+          mediaElements.push(mediaElement);
+        }
+
+        let responseNodes = [];
+
+        if (mediaElements.length > 0) {
+          for (let i = 0; i < mediaElements.length; ++i) {
+            const transformedObject =
+              IoTDBDataInterpreter.extractDeviceIdFromTimeseries(
+                mediaElements[i]
+              );
+            const entries = Object.entries(transformedObject);
+            entries.forEach(([key, value]) => {
+              responseNodes.push({ name: key, value: value });
+            });
+          }
+          return createUpdateMessage(message, responseNodes);
+        } else {
+          sendMessageToClient(
+            ws,
+            JSON.stringify({ error: "Object not found." })
+          );
+        }
+      }
+    } catch (error) {
+      throw new Error(error);
+    }
   }
 }
 

@@ -11,21 +11,24 @@ Setting up an information layer in the CDSP involves running a [Database-Router]
 
 Please follow installation instructions of the chosen [handler](./handlers/).
  
-## [Installation of Database-Router](./router/README.md#Install)
+## Installation of Database-Router
+See [hier](./router/README.md#Install) how to install the Database-Router.
 
 # Running "Hello World" example
 
-The Hello World example in our case is quite simple. We feed an updated value for the HVAC ambient air temperature into the database and we check afterwards in the logs if the DB-router creates a Websocket update message for it.
+The Hello World example in our case is quite simple. We feed an updated value for the `CurrentLocation_Longitude` into the database and we check afterwards in the logs if the DB-router creates a Websocket update message for it.
 
 ## Choose and prepare your Database
 
 ### Realm
-- Ensure that in your [ATLAS cloud](https://cloud.mongodb.com/) app there is a vehicle *document* with an `_id: 1234567` in a collection named *Vehicles*.
-- Ensure that this document as well contains VSS data. At the moment only 1 data point is supported, namely `Vehicle.Cabin.HVAC.AmbientAirTemperature`. Here you can see how the vehicle document within the *Vehicles* should look like in ATLAS:
+- Ensure that in your [ATLAS cloud](https://cloud.mongodb.com/) app there is a vehicle *document* with an `VehicleIdentification_VIN: SMT905JN26J262542` in a collection named *`Vehicles`*.
+- Ensure that this document as well contains VSS data. Here you can see the supported data in a vehicle document within the *Vehicles* should look like in ATLAS:
 
-  ```
-  _id: 1234567 (Int64)
-  Vehicle_Cabin_HVAC_AmbientAirTemperature: 6 (Double)
+  ```  
+  _id: "<SOME_ID>" (string)
+  VehicleIdentification_VIN: "<SOME_VIN>" (string)
+  CurrentLocation_Latitude: <SOME_LATITUDE_VALUE> (Int64)
+  CurrentLocation_Longitude: <SOME_LONGITUDE_VALUE> (Int64)
   ```
 
 ### IoTDB
@@ -43,26 +46,122 @@ The Hello World example in our case is quite simple. We feed an updated value fo
   It costs 0.004s
   ```
 
-- Create two *timeseries* with the `root.Vehicles.VIN` and some VSS data. At the moment only 1 data point is supported, namely `root.Vehicles.Vehicle_Cabin_HVAC_AmbientAirTemperature`. Here you can see how the vehicle document within the *Vehicles* should look like in IoTDB CLI:
+- Create two *timeseries* with the `root.Vehicles.VehicleIdentification_VIN` and some VSS data. Here you can see an example how the vehicle document within the *Vehicles* should look like in IoTDB CLI:
 
   ```
   IoTDB> show timeseries;
-  +------------------------------------------------------+-----+-------------+--------+--------+-----------+----+----------+--------+------------------+--------+
-  |                                            Timeseries|Alias|     Database|DataType|Encoding|Compression|Tags|Attributes|Deadband|DeadbandParameters|ViewType|
-  +------------------------------------------------------+-----+-------------+--------+--------+-----------+----+----------+--------+------------------+--------+
-  |root.Vehicles.Vehicle_Cabin_HVAC_AmbientAirTemperature| null|root.Vehicles|   FLOAT|     RLE|        LZ4|null|      null|    null|              null|    BASE|
-  |                                     root.Vehicles.VIN| null|root.Vehicles|    TEXT|   PLAIN|        LZ4|null|      null|    null|              null|    BASE|
-  +------------------------------------------------------+-----+-------------+--------+--------+-----------+----+----------+--------+------------------+--------+
+  +---------------------------------------+-----+-------------+--------+--------+-----------+----+----------+--------+------------------+--------+
+  |                             Timeseries|Alias|     Database|DataType|Encoding|Compression|Tags|Attributes|Deadband|DeadbandParameters|ViewType|
+  +---------------------------------------+-----+-------------+--------+--------+-----------+----+----------+--------+------------------+--------+
+  |root.Vehicles.VehicleIdentification_VIN| null|root.Vehicles|    TEXT|   PLAIN|        LZ4|null|      null|    null|              null|    BASE|
+  | root.Vehicles.CurrentLocation_Latitude| null|root.Vehicles|  DOUBLE|     RLE|        LZ4|null|      null|    null|              null|    BASE|
+  |root.Vehicles.CurrentLocation_Longitude| null|root.Vehicles|  DOUBLE|     RLE|        LZ4|null|      null|    null|              null|    BASE|
+  +---------------------------------------+-----+-------------+--------+--------+-----------+----+----------+--------+------------------+--------+
   ```
  
-## [Start](./router/README.md#Run) the Database Router
+## Start the Database Router
+
+See [here](./router/README.md#Run) how to start the database router.
 
 ## Look out for the Websocket Server message in the console
-If you are running the RealmDB handler and you change the value of `Vehicle_Cabin_HVAC_AmbientAirTemperature` in ATLAS cloud (let's say `23`), you should immediately see this line in console:
+If you the handler is running and you are subscribed to that element, when you change the value of `CurrentLocation_Longitude` in ATLAS cloud (let's say `-157845.68200000003`), you should immediately see this line in console:
 
 ```
-the value of "Vehicle_Cabin_HVAC_AmbientAirTemperature" changed to 23
+{
+  type: 'update',
+  tree: 'VSS',
+  id: '<your_VIN>',
+  dateTime: '<actual_data_time>',
+  uuid: '<your_uuid>',
+  node: { name: 'CurrentLocation_Longitude', value: `-157845.68200000003` }
+}
 ```
 
-## Connect your own Websocket Client
+# Connect your own Websocket Client
 Connect your own websocket client by connecting to `ws://localhost:8080`
+
+The examples use the VIN (Vehicle Identification Number) as object identifier.
+
+### Reading data
+
+To read data, send a message with the type of request and VIN as object ID:
+
+  * Example for one Node:
+    ```json
+    {
+      "type": "read",
+      "tree": "VSS",
+      "id": "<some_VIN>",
+      "uuid": "<random_string>",
+      "node": {
+        "name": "<some_endpoint>"
+      }
+    }
+    ```
+  * Example for multiple Nodes:
+    ```json
+    {
+      "type": "read",
+      "tree": "VSS",
+      "id": "<some_VIN>",
+      "uuid": "<random-string>",
+      "nodes": [
+        {
+          "name": "<some_endpoint>"
+        },
+        {
+          "name": "<other_endpoint>"
+        }
+      ]
+    }
+    ```
+
+### Writing data
+
+To write data, send a message with the type of request and VIN as object ID (at this moment only with IoTDB available):
+
+  * Example for one Node:
+    ```json
+    {
+      "type": "write",
+      "tree": "VSS",
+      "id": "<some_VIN>",
+      "uuid": "<random_string>",
+      "node": {
+        "name": "<some_endpoint>",
+        "value": "<some_value>"
+      }
+    }
+    ```
+  * Example for multiple Nodes:
+    ```json
+    {
+      "type": "write",
+      "tree": "VSS",
+      "id": "<some_VIN>",
+      "uuid": "<random-string>",
+      "nodes": [
+        {
+          "name": "<some_endpoint>",
+          "value": "<some_value>"
+        },
+        {
+          "name": "<other_endpoint>",
+          "value": "<other_value>"
+        }
+      ]
+    }
+    ```
+### Subscribing to changes
+
+To subscribe to changes in a specific object, send a message with the type of request and VIN as object ID (at this moment only with RealmDB available):
+
+    ```json
+    {
+      "type": "subscribe",
+      "tree": "VSS",
+      "id": "<some_VIN>",
+      "uuid": "<your_uuid>",
+    }
+    ```
+    

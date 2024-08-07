@@ -31,10 +31,15 @@ server.on("connection", (ws) => {
   ws.on("message", (message) => {
     console.log(`Message received: ${message}`);
     const validatedMessage = validateMessage(message);
-    if (validatedMessage) {
-      handler.handleMessage(validatedMessage, ws);
+    if (validatedMessage instanceof Error) {
+      console.error(`Invalid message format: ${validatedMessage.message}`);
+      ws.send(
+        JSON.stringify({
+          error: `Invalid message format`,
+        })
+      );
     } else {
-      ws.send(JSON.stringify({ error: "Invalid message format" }));
+      handler.handleMessage(validatedMessage, ws);
     }
   });
 

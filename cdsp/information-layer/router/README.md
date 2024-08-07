@@ -9,7 +9,6 @@ Execute in this directory:
 
 ```bash
 npm install
-npm install dotenv
 ```
 
 # Run

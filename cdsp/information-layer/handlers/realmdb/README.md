@@ -38,33 +38,3 @@ module.exports = {
 ## Starting the RealmDB handler
 
 You do not need to start RealmDB Handler manually. It is started by the DB-Router like described [here](../../router/README.md#Run).
-
-## Usage  
-
-The examples use the VIN (Vehicle Identification Number) `1234567` as object identifier.
-
-### Reading Data
-
-To read data from the Realm database, send a message with the type of request and object ID:
-
-```json
-{
-  "type": "read",
-  "data": {
-    "Vin": 1234567
-  }
-}
-```
-
-### Subscribing to Changes
-
-To subscribe to changes in a specific object, send a message with the type of request and object ID:
-
-```json
-{
-  "type": "subscribe",
-  "data": {
-    "Vin": 1234567
-  }
-}
-```
