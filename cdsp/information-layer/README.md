@@ -21,14 +21,19 @@ The Hello World example in our case is quite simple. We feed an updated value fo
 ## Choose and prepare your Database
 
 ### Realm
-- Ensure that in your [ATLAS cloud](https://cloud.mongodb.com/) app there is a vehicle *document* with an `VehicleIdentification_VIN: SMT905JN26J262542` in a collection named *`Vehicles`*.
+- Ensure that in your [ATLAS cloud](https://cloud.mongodb.com/) app there is a vehicle *document* with an `Vehicle_VehicleIdentification_VIN` in a collection named *`Vehicles`*.
 - Ensure that this document as well contains VSS data. Here you can see the supported data in a vehicle document within the *Vehicles* should look like in ATLAS:
 
   ```  
-  _id: "<SOME_ID>" (string)
-  VehicleIdentification_VIN: "<SOME_VIN>" (string)
-  CurrentLocation_Latitude: <SOME_LATITUDE_VALUE> (Int64)
-  CurrentLocation_Longitude: <SOME_LONGITUDE_VALUE> (Int64)
+  _id: "<SOME_STRING>" (String)
+  Vehicle_Chassis_SteeringWheel_Angle: <SOME_INT> (Int32)
+  Vehicle_CurrentLocation_Latitude: <SOME_DOUBLE> (Double)
+  Vehicle_CurrentLocation_Longitude: <SOME_DOUBLE> (Double)
+  Vehicle_Powertrain_TractionBattery_NominalVoltage: <SOME_INT> (Int32)
+  Vehicle_Powertrain_TractionBattery_StateOfCharge_CurrentEnergy: <SOME_DOUBLE> (Double)
+  Vehicle_Powertrain_Transmission_CurrentGear: <SOME_INT> (Int32)
+  Vehicle_Speed: <SOME_DOUBLE> (Double)
+  Vehicle_VehicleIdentification_VIN: "<SOME_STRING>" (String)
   ```
 
 ### IoTDB
@@ -70,9 +75,9 @@ If you the handler is running and you are subscribed to that element, when you c
 {
   type: 'update',
   tree: 'VSS',
-  id: '<your_VIN>',
-  dateTime: '<actual_data_time>',
-  uuid: '<your_uuid>',
+  id: '<SOME_VIN>',
+  dateTime: '<ACTUAL_DATA_TIME>',
+  uuid: '<YOUR_UUID>',
   node: { name: 'CurrentLocation_Longitude', value: `-157845.68200000003` }
 }
 ```
@@ -91,10 +96,10 @@ To read data, send a message with the type of request and VIN as object ID:
     {
       "type": "read",
       "tree": "VSS",
-      "id": "<some_VIN>",
-      "uuid": "<random_string>",
+      "id": "<SOME_VIN>",
+      "uuid": "<SOME_UUID>",
       "node": {
-        "name": "<some_endpoint>"
+        "name": "<SOME_ENDPOINT>"
       }
     }
     ```
@@ -103,14 +108,14 @@ To read data, send a message with the type of request and VIN as object ID:
     {
       "type": "read",
       "tree": "VSS",
-      "id": "<some_VIN>",
-      "uuid": "<random-string>",
+      "id": "<SOME_VIN>",
+      "uuid": "<SOME_UUID>",
       "nodes": [
         {
-          "name": "<some_endpoint>"
+          "name": "<SOME_ENDPOINT>"
         },
         {
-          "name": "<other_endpoint>"
+          "name": "<OTHER_ENDPOINT>"
         }
       ]
     }
@@ -125,10 +130,10 @@ To write data, send a message with the type of request and VIN as object ID (at 
     {
       "type": "write",
       "tree": "VSS",
-      "id": "<some_VIN>",
-      "uuid": "<random_string>",
+      "id": "<SOME_VIN>",
+      "uuid": "<SOME_UUID>",
       "node": {
-        "name": "<some_endpoint>",
+        "name": "<SOME_ENDPOINT>",
         "value": "<some_value>"
       }
     }
@@ -138,15 +143,15 @@ To write data, send a message with the type of request and VIN as object ID (at 
     {
       "type": "write",
       "tree": "VSS",
-      "id": "<some_VIN>",
-      "uuid": "<random-string>",
+      "id": "<SOME_VIN>",
+      "uuid": "<SOME_UUID>",
       "nodes": [
         {
-          "name": "<some_endpoint>",
+          "name": "<SOME_ENDPOINT>",
           "value": "<some_value>"
         },
         {
-          "name": "<other_endpoint>",
+          "name": "<OTHER_ENDPOINT>",
           "value": "<other_value>"
         }
       ]
@@ -160,8 +165,8 @@ To subscribe to changes in a specific object, send a message with the type of re
     {
       "type": "subscribe",
       "tree": "VSS",
-      "id": "<some_VIN>",
-      "uuid": "<your_uuid>",
+      "id": "<SOME_VIN>",
+      "uuid": "SOME_UUID",
     }
     ```
     

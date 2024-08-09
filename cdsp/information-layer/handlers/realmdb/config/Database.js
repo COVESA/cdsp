@@ -4,7 +4,7 @@
 const Database = Object.freeze({
   VSS: {
     database_name: "Vehicles", // name of the configured RealmDB for the VSS Database
-    endpoint_id: "VehicleIdentification_VIN", // endpoint used as element ID
+    endpoint_id: "Vehicle_VehicleIdentification_VIN", // endpoint used as element ID
   },
 });
 

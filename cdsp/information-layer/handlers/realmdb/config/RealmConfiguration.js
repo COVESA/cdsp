@@ -5,9 +5,14 @@ const MediaElementSchema = {
   name: Database.VSS.database_name,
   properties: {
     _id: "string",
-    VehicleIdentification_VIN: "string",
-    CurrentLocation_Latitude: "double",
-    CurrentLocation_Longitude: "double",
+    Vehicle_Chassis_SteeringWheel_Angle: "int",
+    Vehicle_CurrentLocation_Latitude: "double",
+    Vehicle_CurrentLocation_Longitude: "double",
+    Vehicle_Powertrain_TractionBattery_NominalVoltage: "int",
+    Vehicle_Powertrain_TractionBattery_StateOfCharge_CurrentEnergy: "float",
+    Vehicle_Powertrain_Transmission_CurrentGear: "int",
+    Vehicle_Speed: "float",
+    Vehicle_VehicleIdentification_VIN: "string",
   },
 };
 
