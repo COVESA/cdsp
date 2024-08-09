@@ -51,18 +51,22 @@ The Hello World example in our case is quite simple. We feed an updated value fo
   It costs 0.004s
   ```
 
-- Create two *timeseries* with the `root.Vehicles.VehicleIdentification_VIN` and some VSS data. Here you can see an example how the vehicle document within the *Vehicles* should look like in IoTDB CLI:
+- Create two *timeseries* with the `root.Vehicles.Vehicle_VehicleIdentification_VIN` and some VSS data. Here you can see an example how the vehicle document within the *Vehicles* should look like in IoTDB CLI:
 
   ```
   IoTDB> show timeseries;
-  +---------------------------------------+-----+-------------+--------+--------+-----------+----+----------+--------+------------------+--------+
-  |                             Timeseries|Alias|     Database|DataType|Encoding|Compression|Tags|Attributes|Deadband|DeadbandParameters|ViewType|
-  +---------------------------------------+-----+-------------+--------+--------+-----------+----+----------+--------+------------------+--------+
-  |root.Vehicles.VehicleIdentification_VIN| null|root.Vehicles|    TEXT|   PLAIN|        LZ4|null|      null|    null|              null|    BASE|
-  | root.Vehicles.CurrentLocation_Latitude| null|root.Vehicles|  DOUBLE|     RLE|        LZ4|null|      null|    null|              null|    BASE|
-  |root.Vehicles.CurrentLocation_Longitude| null|root.Vehicles|  DOUBLE|     RLE|        LZ4|null|      null|    null|              null|    BASE|
-  +---------------------------------------+-----+-------------+--------+--------+-----------+----+----------+--------+------------------+--------+
-  ```
+  +----------------------------------------------------------------------------+-----+-------------+--------+--------+-----------+----+----------+--------+------------------+--------+
+  |                                                                  Timeseries|Alias|     Database|DataType|Encoding|Compression|Tags|Attributes|Deadband|DeadbandParameters|ViewType|
+  +----------------------------------------------------------------------------+-----+-------------+--------+--------+-----------+----+----------+--------+------------------+--------+
+  |                             root.Vehicles.Vehicle_VehicleIdentification_VIN| null|root.Vehicles|    TEXT|   PLAIN|        LZ4|null|      null|    null|              null|    BASE|
+  |                              root.Vehicles.Vehicle_CurrentLocation_Latitude| null|root.Vehicles|  DOUBLE|     RLE|        LZ4|null|      null|    null|              null|    BASE|
+  |                             root.Vehicles.Vehicle_CurrentLocation_Longitude| null|root.Vehicles|  DOUBLE|     RLE|        LZ4|null|      null|    null|              null|    BASE|
+  |                                                 root.Vehicles.Vehicle_Speed| null|root.Vehicles|   FLOAT|     RLE|        LZ4|null|      null|    null|              null|    BASE|
+  |                           root.Vehicles.Vehicle_Chassis_SteeringWheel_Angle| null|root.Vehicles|   INT32|     RLE|        LZ4|null|      null|    null|              null|    BASE|
+  |                   root.Vehicles.Vehicle_Powertrain_Transmission_CurrentGear| null|root.Vehicles|   INT32|     RLE|        LZ4|null|      null|    null|              null|    BASE|
+  |root.Vehicles.Vehicle_Powertrain_TractionBattery_StateOfCharge_CurrentEnergy| null|root.Vehicles|   FLOAT|     RLE|        LZ4|null|      null|    null|              null|    BASE|
+  |             root.Vehicles.Vehicle_Powertrain_TractionBattery_NominalVoltage| null|root.Vehicles|   INT32|     RLE|        LZ4|null|      null|    null|              null|    BASE|
+  +----------------------------------------------------------------------------+-----+-------------+--------+--------+-----------+----+----------+--------+------------------+--------+
  
 ## Start the Database Router
 

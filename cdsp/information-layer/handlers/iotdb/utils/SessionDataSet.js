@@ -1,19 +1,19 @@
-const JSDataType = require("./IoTDBConstants");
+const { IoTDBDataType } = require("./IoTDBConstants");
 const IoTDBRpcDataSet = require("./IoTDBRpcDataSets");
 const { IoTDBDataInterpreter } = require("./IoTDBDataInterpreter");
 
 const dataTypeProcessors = {
-  [JSDataType.BOOLEAN]: (bytes) =>
+  [IoTDBDataType.BOOLEAN]: (bytes) =>
     new Int8Array(new Uint8Array(bytes.slice(0, 1).reverse()).buffer)[0],
-  [JSDataType.INT32]: (bytes) =>
+  [IoTDBDataType.INT32]: (bytes) =>
     new Int32Array(new Uint8Array(bytes.slice(0, 4).reverse()).buffer)[0],
-  [JSDataType.INT64]: (bytes) =>
+  [IoTDBDataType.INT64]: (bytes) =>
     new BigInt64Array(new Uint8Array(bytes.slice(0, 8).reverse()).buffer)[0],
-  [JSDataType.FLOAT]: (bytes) =>
+  [IoTDBDataType.FLOAT]: (bytes) =>
     new Float32Array(new Uint8Array(bytes.slice(0, 4).reverse()).buffer)[0],
-  [JSDataType.DOUBLE]: (bytes) =>
+  [IoTDBDataType.DOUBLE]: (bytes) =>
     new Float64Array(new Uint8Array(bytes.slice(0, 8).reverse()).buffer)[0],
-  [JSDataType.TEXT]: (bytes) => bytes.toString(),
+  [IoTDBDataType.TEXT]: (bytes) => bytes.toString(),
 };
 
 class SessionDataSet {

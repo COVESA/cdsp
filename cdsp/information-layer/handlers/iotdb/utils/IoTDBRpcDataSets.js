@@ -1,4 +1,4 @@
-const JSDataType = require("./IoTDBConstants");
+const { IoTDBDataType } = require("./IoTDBConstants");
 class IoTDBRpcDataSet {
   // Static properties
   static TIMESTAMP_STR = "Time";
@@ -56,7 +56,7 @@ class IoTDBRpcDataSet {
 
     if (!ignoreTimestamp) {
       this.#columnNameList.push(IoTDBRpcDataSet.TIMESTAMP_STR);
-      this.#columnTypeList.push(JSDataType.INT64);
+      this.#columnTypeList.push(IoTDBDataType.INT64);
       this.#columnOrdinalDict.set(IoTDBRpcDataSet.TIMESTAMP_STR, 1);
     }
 
@@ -68,10 +68,9 @@ class IoTDBRpcDataSet {
 
       // Populate column_name_list and column_type_list
       for (let i = 0; i < columnNameList.length; i++) {
-        let name = columnNameList[i];
+        const name = columnNameList[i];
         this.#columnNameList.push(name);
-        this.#columnTypeList.push(JSDataType[columnTypeList[i]]);
-
+        this.#columnTypeList.push(IoTDBDataType[columnTypeList[i]]);
         if (!this.#columnOrdinalDict.has(name)) {
           let index = columnNameIndex[name];
           this.#columnOrdinalDict.set(
@@ -79,7 +78,7 @@ class IoTDBRpcDataSet {
             index + IoTDBRpcDataSet.START_INDEX
           );
           this.#columnTypeDeduplicatedList[index] =
-            JSDataType[columnTypeList[i]];
+            IoTDBDataType[columnTypeList[i]];
         }
       }
     }
@@ -217,27 +216,27 @@ class IoTDBRpcDataSet {
 
         // Simulating buffer based on data type.
         switch (dataType) {
-          case JSDataType.BOOLEAN:
+          case IoTDBDataType.BOOLEAN:
             this.#value[i] = valueBuffer.slice(0, 1);
             this.#queryDataSet.valueList[i] = valueBuffer.slice(1);
             break;
-          case JSDataType.INT32:
+          case IoTDBDataType.INT32:
             this.#value[i] = valueBuffer.slice(0, 4);
             this.#queryDataSet.valueList[i] = valueBuffer.slice(4);
             break;
-          case JSDataType.INT64:
+          case IoTDBDataType.INT64:
             this.#value[i] = valueBuffer.slice(0, 8);
             this.#queryDataSet.valueList[i] = valueBuffer.slice(8);
             break;
-          case JSDataType.FLOAT:
+          case IoTDBDataType.FLOAT:
             this.#value[i] = valueBuffer.slice(0, 4);
             this.#queryDataSet.valueList[i] = valueBuffer.slice(4);
             break;
-          case JSDataType.DOUBLE:
+          case IoTDBDataType.DOUBLE:
             this.#value[i] = valueBuffer.slice(0, 8);
             this.#queryDataSet.valueList[i] = valueBuffer.slice(8);
             break;
-          case JSDataType.TEXT:
+          case IoTDBDataType.TEXT:
             let length = valueBuffer.readInt32BE(0);
             this.#value[i] = valueBuffer.slice(4, 4 + length);
             this.#queryDataSet.valueList[i] = valueBuffer.slice(4 + length);
