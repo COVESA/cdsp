@@ -12,21 +12,21 @@
     <title>Apache IoTDB :: Central Data Service Playground</title>
 
     
-    <link href="/cdsp/css/nucleus.css?1716543461" rel="stylesheet">
-    <link href="/cdsp/css/fontawesome-all.min.css?1716543461" rel="stylesheet">
-    <link href="/cdsp/css/hybrid.css?1716543461" rel="stylesheet">
-    <link href="/cdsp/css/featherlight.min.css?1716543461" rel="stylesheet">
-    <link href="/cdsp/css/perfect-scrollbar.min.css?1716543461" rel="stylesheet">
-    <link href="/cdsp/css/auto-complete.css?1716543461" rel="stylesheet">
-    <link href="/cdsp/css/atom-one-dark-reasonable.css?1716543461" rel="stylesheet">
-    <link href="/cdsp/css/theme.css?1716543461" rel="stylesheet">
-    <link href="/cdsp/css/hugo-theme.css?1716543461" rel="stylesheet">
+    <link href="/cdsp/css/nucleus.css?1723481452" rel="stylesheet">
+    <link href="/cdsp/css/fontawesome-all.min.css?1723481452" rel="stylesheet">
+    <link href="/cdsp/css/hybrid.css?1723481452" rel="stylesheet">
+    <link href="/cdsp/css/featherlight.min.css?1723481452" rel="stylesheet">
+    <link href="/cdsp/css/perfect-scrollbar.min.css?1723481452" rel="stylesheet">
+    <link href="/cdsp/css/auto-complete.css?1723481452" rel="stylesheet">
+    <link href="/cdsp/css/atom-one-dark-reasonable.css?1723481452" rel="stylesheet">
+    <link href="/cdsp/css/theme.css?1723481452" rel="stylesheet">
+    <link href="/cdsp/css/hugo-theme.css?1723481452" rel="stylesheet">
     
-    <link href="/cdsp/css/theme-blue.css?1716543461" rel="stylesheet">
+    <link href="/cdsp/css/theme-blue.css?1723481452" rel="stylesheet">
     
     
 
-    <script src="/cdsp/js/jquery-3.3.1.min.js?1716543461"></script>
+    <script src="/cdsp/js/jquery-3.3.1.min.js?1723481452"></script>
 
     <style>
       :root #header + #content > #left > #rlblock_left{
@@ -59,14 +59,14 @@
     <span data-search-clear=""><i class="fas fa-times"></i></span>
 </div>
 
-<script type="text/javascript" src="/cdsp/js/lunr.min.js?1716543461"></script>
-<script type="text/javascript" src="/cdsp/js/auto-complete.js?1716543461"></script>
+<script type="text/javascript" src="/cdsp/js/lunr.min.js?1723481452"></script>
+<script type="text/javascript" src="/cdsp/js/auto-complete.js?1723481452"></script>
 <script type="text/javascript">
     
         var baseurl = "https:\/\/covesa.github.io\/cdsp\/";
     
 </script>
-<script type="text/javascript" src="/cdsp/js/search.js?1716543461"></script>
+<script type="text/javascript" src="/cdsp/js/search.js?1723481452"></script>
 
     
   </div>
@@ -388,7 +388,13 @@
       </ul>
     </li>
     <li><a href="#single-node-edge-vs-cluster">Single node (Edge) vs Cluster</a></li>
-    <li><a href="#udf-and-udf-library-for-data-processing">UDF and UDF library for data processing</a></li>
+    <li><a href="#data-processing-functions">Data processing functions</a>
+      <ul>
+        <li><a href="#built-in-functions">Built-in functions</a></li>
+        <li><a href="#data-quality-library-functions">Data Quality Library functions</a></li>
+        <li><a href="#user-defined-functions">User Defined functions</a></li>
+      </ul>
+    </li>
     <li><a href="#vissr-viss-integration">VISSR (VISS) integration</a>
       <ul>
         <li><a href="#connector-scope">Connector scope</a></li>
@@ -505,21 +511,47 @@ bash ./sbin/start-cli.sh -h ${host} -p ${rpcPort} -u ${user} -pw ${pass} -e &#34
 <p>The upstream IoTDB project has both standalone single node and cluster deployments, to cover use case requirements from edge to cloud.</p>
 <p>At the time of writing the playground docker deployment deploys the single node IoTDB docker image, as it is most suitable for deployment at the edge in-vehicle, whilst still being able to represent the cloud.</p>
 <p>Of course if your cloud development requires higher performance then you can integrate the cluster version.</p>
-<h2 id="udf-and-udf-library-for-data-processing">UDF and UDF library for data processing</h2>
-<p>Whilst IoTDB has a series of built-in timeseries processing functions you can add your own as User Defined Functions (UDF).</p>
-<p>The <a href="https://iotdb.apache.org/UserGuide/latest/User-Manual/Database-Programming.html#user-defined-function-udf">UDF section</a> of the IoTDB documentation explains how to develop and register your own.</p>
-<p>The IoTDB project also maintains UDF Library an extensive collection of data processing functions covering:</p>
+<h2 id="data-processing-functions">Data processing functions</h2>
+<h3 id="built-in-functions">Built-in functions</h3>
+<p>IoTDB has an extensive collection of built-in data processing functions covering areas including:</p>
 <ul>
-<li>Data Quality</li>
-<li>Data Profiling</li>
-<li>Anomaly Detection</li>
-<li>Frequency Domain Analysis</li>
-<li>Data Repair</li>
-<li>Series Discovery</li>
-<li>Machine Learning</li>
+<li>Aggregate Functions, such as <code>SUM</code>.</li>
+<li>Arithmetic Functions, such as <code>SIN</code>.</li>
+<li>Comparison Functions, such as <code>ON_OFF</code>.</li>
+<li>String Processing Functions, such as <code>STRING_CONTAINS</code>.</li>
+<li>Data Type Conversion Function, such as <code>CAST</code>.</li>
+<li>Constant Timeseries Generating Functions, such as <code>CONST</code>.</li>
+<li>Selector Functions, such as <code>TOP_K</code>.</li>
+<li>Continuous Interval Functions, such as <code>ZERO_DURATION</code>.</li>
+<li>Variation Trend Calculation Functions, such as <code>TIME_DIFFERENCE</code>.</li>
+<li>Sampling Functions, such as <code>M4</code>.</li>
+<li>Change Points Function, such as <code>CHANGE_POINTS</code>.</li>
 </ul>
-<p>The UDF Library is an optional install. How to install the library is documented <a href="https://iotdb.apache.org/UserGuide/latest/User-Manual/Database-Programming.html#data-quality-function-library">here</a>. Documentation for the functions can be found <a href="https://iotdb.apache.org/UserGuide/latest/Reference/UDF-Libraries.html">here</a>.</p>
-<p>The combination of built-in and UDF library functions, built on the low latency queries enabled by IoTDB and its TsFile format gives you a lot to explore.</p>
+<p>A full function list with examples can be found in the upstream <a href="https://iotdb.apache.org/UserGuide/latest/Reference/Function-and-Expression.html">IoTDB Function reference manual</a>.</p>
+<h3 id="data-quality-library-functions">Data Quality Library functions</h3>
+<p>The IoTDB project also maintains a Data Quality Library which provides an additional collection of functions covering:</p>
+<ul>
+<li>Data Quality, such as <code>Accuracy</code>.</li>
+<li>Data Profiling, such as <code>Sample</code>.</li>
+<li>Anomaly Detection, such as <code>Outlier</code>.</li>
+<li>Frequency Domain Analysis, such as <code>HighPass</code>.</li>
+<li>Data Repair, such as <code>TimestampRepair</code>.</li>
+<li>Series Discovery, such as <code>ConsecutiveSequences</code>.</li>
+<li>Machine Learning, such as <code>AR</code>.</li>
+</ul>
+<p>A full function list with examples can be found in the upstream <a href="https://iotdb.apache.org/UserGuide/latest/Reference/UDF-Libraries.html">IoTDB Data Quality Library reference manual</a>.</p>
+<h4 id="setup">Setup</h4>
+<p>In the upstream IoTDB project the library is an optional install.</p>
+<p>For your convenience it is included in the Playground IoTDB image for you. However to call the functions they must first be registered in the running IoTDB instance, which you only need to do once. The script <code>/iotdb/sbin/register-UDF.sh</code> is included in the IoTDB image to do this for you.</p>
+<p>Steps:</p>
+<ol>
+<li>Start the Playground if it is not already running.</li>
+<li>From your host execute the following command to run the registration script in the IoTDB container image:
+<pre tabindex="0"><code>sudo docker exec -ti iotdb-service /iotdb/sbin/register-UDF.sh
+</code></pre></li>
+</ol>
+<h3 id="user-defined-functions">User Defined functions</h3>
+<p>IoTDB also allows you intergrate your own functions as User Defined Functions (UDF). The <a href="https://iotdb.apache.org/UserGuide/latest/User-Manual/Database-Programming.html#user-defined-function-udf">UDF section</a> of the IoTDB documentation explains how to develop and register your own.</p>
 <h2 id="vissr-viss-integration">VISSR (VISS) integration</h2>
 <p>As part of the initial development of the playground the team extended VISSR to support connections to Apache IoTDB as a VISSR data store backend and upstreamed the support.</p>
 <h3 id="connector-scope">Connector scope</h3>
@@ -812,19 +844,19 @@ bash ./sbin/start-cli.sh -h ${host} -p ${rpcPort} -u ${user} -pw ${pass} -e &#34
     <div style="left: -1000px; overflow: scroll; position: absolute; top: -1000px; border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;">
       <div style="border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;"></div>
     </div>
-    <script src="/cdsp/js/clipboard.min.js?1716543461"></script>
-    <script src="/cdsp/js/perfect-scrollbar.min.js?1716543461"></script>
-    <script src="/cdsp/js/perfect-scrollbar.jquery.min.js?1716543461"></script>
-    <script src="/cdsp/js/jquery.sticky.js?1716543461"></script>
-    <script src="/cdsp/js/featherlight.min.js?1716543461"></script>
-    <script src="/cdsp/js/highlight.pack.js?1716543461"></script>
+    <script src="/cdsp/js/clipboard.min.js?1723481452"></script>
+    <script src="/cdsp/js/perfect-scrollbar.min.js?1723481452"></script>
+    <script src="/cdsp/js/perfect-scrollbar.jquery.min.js?1723481452"></script>
+    <script src="/cdsp/js/jquery.sticky.js?1723481452"></script>
+    <script src="/cdsp/js/featherlight.min.js?1723481452"></script>
+    <script src="/cdsp/js/highlight.pack.js?1723481452"></script>
     <script>hljs.initHighlightingOnLoad();</script>
-    <script src="/cdsp/js/modernizr.custom-3.6.0.js?1716543461"></script>
-    <script src="/cdsp/js/learn.js?1716543461"></script>
-    <script src="/cdsp/js/hugo-learn.js?1716543461"></script>
+    <script src="/cdsp/js/modernizr.custom-3.6.0.js?1723481452"></script>
+    <script src="/cdsp/js/learn.js?1723481452"></script>
+    <script src="/cdsp/js/hugo-learn.js?1723481452"></script>
     
         
-            <script src="/cdsp/mermaid/mermaid.js?1716543461"></script>
+            <script src="/cdsp/mermaid/mermaid.js?1723481452"></script>
         
         <script>
             mermaid.initialize({ startOnLoad: true });
