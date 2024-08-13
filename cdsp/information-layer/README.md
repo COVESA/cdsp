@@ -165,12 +165,12 @@ To write data, send a message with the type of request and VIN as object ID (at 
 
 To subscribe to changes in a specific object, send a message with the type of request and VIN as object ID (at this moment only with RealmDB available):
 
-    ```json
-    {
-      "type": "subscribe",
-      "tree": "VSS",
-      "id": "<SOME_VIN>",
-      "uuid": "SOME_UUID",
-    }
-    ```
+  ```json
+  {
+    "type": "subscribe",
+    "tree": "VSS",
+    "id": "<SOME_VIN>",
+    "uuid": "SOME_UUID"
+  }
+  ```
     

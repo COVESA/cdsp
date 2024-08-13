@@ -1,8 +1,8 @@
-const Database = require("./Database");
+const database = require("./databaseParams");
 
 const MediaElementSchema = {
   primaryKey: "_id",
-  name: Database.VSS.database_name,
+  name: database.VSS.databaseName,
   properties: {
     _id: "string",
     Vehicle_Chassis_SteeringWheel_Angle: "int",
