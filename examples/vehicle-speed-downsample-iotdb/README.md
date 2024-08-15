@@ -94,9 +94,23 @@ We will use the IoTDB CLI client to send SQL commands on its command line to the
     ~~~
     $ docker exec -ti iotdb-service /iotdb/sbin/start-cli.sh -h iotdb-service
     ~~~
+
+#### Data Quality Library setup
+The IoTDB Data Library is an optional install. To call the functions they must first be registered in the running IoTDB instance, which you only need to do once. The script /iotdb/sbin/register-UDF.sh is included in the IoTDB image to do this for you.
+
+Execute the script using the Docker `exec` command:
+
+~~~
+$ sudo docker exec -ti iotdb-service /iotdb/sbin/register-UDF.sh
+~~~
+
+Info: See the online documentation site for [details](https://covesa.github.io/cdsp/manuals/apache-iotdb/#setup)
+
 ### Import the dataset
 
 1. Create the database in IoTDB into which we will import
+
+    Using the IoTDB CLI client:
     ~~~sql
     IoTDB> create database root.test2
     ~~~
@@ -109,7 +123,7 @@ We will use the IoTDB CLI client to send SQL commands on its command line to the
     $ cp vehicle_speed_rl_dataset.csv ../../docker/data
     ~~~
 
-    2.2. Import the dataset:
+    2.2. Import the dataset
 
     To import the dataset into IoTDB we need to execute the `import-csv.sh` tool in the IoTDB image. That can be done from the host terminal using the docker `exec` command.
     ~~~
