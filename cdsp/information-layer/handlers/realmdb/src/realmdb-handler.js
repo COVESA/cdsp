@@ -8,50 +8,6 @@ const { v4: uuidv4 } = require("uuid");
 const app = new Realm.App({ id: config.realmAppId });
 const credentials = Realm.Credentials.apiKey(config.realmApiKey);
 
-const sendMessageToClient = (ws, message) => {
-  ws.send(JSON.stringify(message));
-};
-
-/**
- * Creates a message header object with the specified type and properties from the given original messageHeader.
- *
- * @param {Object} messageHeader - The original message header object.
- * @param {string} type - The type of the message header, e.g., "update" or "read".
- * @returns {Object} The newly created message header object.
- */
-const createMessageHeader = (messageHeader, type) => {
-  const header = {
-    type,
-    tree: messageHeader.tree,
-    id: messageHeader.id,
-    uuid: messageHeader.uuid,
-  };
-
-  if (type === "update") {
-    header.dateTime = new Date().toISOString();
-  }
-
-  return header;
-};
-
-/**
- * Creates a new message object with a header and response nodes.
- *
- * @param {string} message - The message content.
- * @param {Array} responseNodes - An array of response nodes.
- * @param {string} type - The type of the message, e.g., "update" or "read".
- * @returns {Object} The newly created message object.
- */
-const createMessage = (message, responseNodes, type) => {
-  const newMessage = createMessageHeader(message, type);
-  if (responseNodes.length === 1) {
-    newMessage.node = responseNodes[0];
-  } else {
-    newMessage.nodes = responseNodes;
-  }
-  return newMessage;
-};
-
 /**
  * Parses the response from a read event.
  *
@@ -121,10 +77,10 @@ class RealmDBHandler extends Handler {
     try {
       const updateMessage = await this.#getMessageData(message, ws);
       console.log(updateMessage);
-      sendMessageToClient(ws, JSON.stringify(updateMessage));
+      this.sendMessageToClient(ws, JSON.stringify(updateMessage));
     } catch (error) {
       console.error("Error reading object from Realm:", error);
-      sendMessageToClient(
+      this.sendMessageToClient(
         ws,
         JSON.stringify({ error: "Error reading object" })
       );
@@ -160,13 +116,17 @@ class RealmDBHandler extends Handler {
       }
 
       let messageNodes = endpoints.map((key) => ({ name: key }));
-      const readMessage = createMessage(message, messageNodes, "read");
+      const readMessage = this.createOrUpdateMessage(
+        message,
+        messageNodes,
+        "read"
+      );
       const updateMessage = await this.#getMessageData(readMessage, ws);
       console.log(updateMessage);
       this.sendMessageToClients(JSON.stringify(updateMessage));
     } catch (error) {
       console.error("Error writing object changes in Realm:", error);
-      sendMessageToClient(ws, { error: "Error writing object changes" });
+      this.sendMessageToClient(ws, { error: "Error writing object changes" });
     }
   }
 
@@ -196,23 +156,28 @@ class RealmDBHandler extends Handler {
               })
           );
           console.log(`Subscribed to changes for Object ID: ${objectId}`);
-          sendMessageToClient(ws, {
+          this.sendMessageToClient(ws, {
             success: `Subscribed to changes for Object ID: ${objectId}`,
           });
         } else {
           console.log(`Object could not be subscribed`);
-          sendMessageToClient(
+          this.sendMessageToClient(
             ws,
             JSON.stringify({ error: "Object could not be subscribed" })
           );
         }
       } else {
         console.log(`Object not found`);
-        sendMessageToClient(ws, JSON.stringify({ error: "Object not found" }));
+        this.sendMessageToClient(
+          ws,
+          JSON.stringify({ error: "Object not found" })
+        );
       }
     } catch (error) {
       console.error("Error subscribing to object changes in Realm:", error);
-      sendMessageToClient(ws, { error: "Error subscribing to object changes" });
+      this.sendMessageToClient(ws, {
+        error: "Error subscribing to object changes",
+      });
     }
   }
 
@@ -229,7 +194,7 @@ class RealmDBHandler extends Handler {
     console.log("mediaElement: ", mediaElement);
     if (mediaElement) {
       const responseNodes = parseReadResponse(message, mediaElement);
-      return createMessage(message, responseNodes, "update");
+      return this.createOrUpdateMessage(message, responseNodes, "update");
     } else {
       throw new Error(`No data found with the Id: ${message.id}`);
     }
@@ -251,7 +216,7 @@ class RealmDBHandler extends Handler {
         .filtered(`${endpointId} = '${id}'`)[0];
     } catch (error) {
       console.error("Error reading object from Realm:", error);
-      sendMessageToClient(
+      this.sendMessageToClient(
         ws,
         JSON.stringify({ error: "Error reading object" })
       );
@@ -273,7 +238,7 @@ class RealmDBHandler extends Handler {
           changes,
           mediaElement
         );
-        const updateMessage = createMessage(
+        const updateMessage = this.createOrUpdateMessage(
           messageHeader,
           responseNodes,
           "update"

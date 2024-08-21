@@ -14,10 +14,6 @@ const { IoTDBDataInterpreter } = require("../utils/IoTDBDataInterpreter");
 const endpointsType = require("../config/endpointsType");
 const database = require("../config/databaseParams");
 
-const sendMessageToClient = (ws, message) => {
-  ws.send(JSON.stringify(message));
-};
-
 /**
  * Creates an object to insert data in IoTDB based on the provided message.
  *
@@ -38,54 +34,6 @@ function createObjectToInsert(message) {
     });
   }
   return data;
-}
-
-/**
- * Creates an update message object based on the provided message and response nodes.
- *
- * @param {Object} message - The original message object containing tree, id, and uuid properties.
- * @param {Array} responseNodes - An array of response nodes to be included in the update message.
- * @returns {Object} The constructed update message object.
- */
-function createUpdateMessage(message, responseNodes) {
-  const { id, tree, uuid } = message;
-  let updateMessage = {
-    type: "update",
-    tree: tree,
-    id: id,
-    dateTime: new Date().toISOString(),
-    uuid: uuid,
-  };
-  if (responseNodes.length == 1) {
-    updateMessage["node"] = responseNodes[0];
-  } else {
-    updateMessage["nodes"] = responseNodes;
-  }
-  return updateMessage;
-}
-
-/**
- * Creates a read message object based on the provided message and nodes names.
- *
- * @param {Object} message - The message object containing tree, id, and uuid properties.
- * @param {Array} nodeNames - An array of node names. If the array contains one field, it will be added as 'node'.
- *                          If the array contains multiple fields, they will be added as 'nodes'.
- * @returns {Object} The constructed read message object.
- */
-function createReadMessage(message, nodeNames) {
-  const { id, tree, uuid } = message;
-  let readMessage = {
-    type: "read",
-    tree: tree,
-    id: id,
-    uuid: uuid,
-  };
-  if (nodeNames.length == 1) {
-    readMessage["node"] = nodeNames[0];
-  } else {
-    readMessage["nodes"] = nodeNames;
-  }
-  return readMessage;
 }
 
 class IoTDBHandler extends Handler {
@@ -131,16 +79,23 @@ class IoTDBHandler extends Handler {
       await this.#openSessionIfNeeded();
       const responseNodes = await this.#queryLastFields(message, ws);
       if (responseNodes.length > 0) {
-        const responseMessage = createUpdateMessage(message, responseNodes);
+        const responseMessage = this.createOrUpdateMessage(
+          message,
+          responseNodes,
+          "update"
+        );
         console.log(responseMessage);
-        sendMessageToClient(ws, responseMessage);
+        this.sendMessageToClient(ws, responseMessage);
       } else {
         console.log("Object not found.");
-        sendMessageToClient(ws, JSON.stringify({ error: "Object not found." }));
+        this.sendMessageToClient(
+          ws,
+          JSON.stringify({ error: "Object not found." })
+        );
       }
     } catch (error) {
       console.error("Failed to read data from IoTDB: ", error);
-      sendMessageToClient(
+      this.sendMessageToClient(
         ws,
         JSON.stringify({ error: "Error reading object" })
       );
@@ -191,22 +146,29 @@ class IoTDBHandler extends Handler {
         name,
       }));
 
-      const readMessage = createReadMessage(message, keyList);
+      const readMessage = this.createOrUpdateMessage(message, keyList, "read");
       console.log(readMessage);
 
       const responseNodes = await this.#queryLastFields(message, ws);
 
       if (responseNodes.length) {
-        const responseMessage = createUpdateMessage(message, responseNodes);
+        const responseMessage = this.createOrUpdateMessage(
+          message,
+          responseNodes,
+          "update"
+        );
         console.log(responseMessage);
         this.sendMessageToClients(responseMessage);
       } else {
         console.log("Object not found.");
-        sendMessageToClient(ws, JSON.stringify({ error: "Object not found." }));
+        this.sendMessageToClient(
+          ws,
+          JSON.stringify({ error: "Object not found." })
+        );
       }
     } catch (error) {
       console.error(`Failed writing data to IoTDB. ${error}`);
-      sendMessageToClient(
+      this.sendMessageToClient(
         ws,
         JSON.stringify({ error: `Failed writing data. ${error}` })
       );
@@ -426,7 +388,7 @@ class IoTDBHandler extends Handler {
       }));
     } catch (error) {
       console.error(error);
-      sendMessageToClient(
+      this.sendMessageToClient(
         ws,
         JSON.stringify({ error: "Internal error constructing read object." })
       );
