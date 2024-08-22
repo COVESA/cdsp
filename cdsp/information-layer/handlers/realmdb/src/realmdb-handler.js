@@ -9,26 +9,6 @@ const app = new Realm.App({ id: config.realmAppId });
 const credentials = Realm.Credentials.apiKey(config.realmApiKey);
 
 /**
- * Parses the response from a read event.
- *
- * @param {Object} message - The message object containing node or nodes information.
- * @param {Object} queryResponseObj - The query response object containing values to be mapped.
- * @returns {Object} - A data object with keys from the message nodes and values from the query response.
- */
-function parseReadResponse(message, queryResponseObj) {
-  const data = [];
-  const nodes = message.node ? [message.node] : message.nodes;
-  nodes.forEach((node) => {
-    const prop = node.name;
-    data.push({
-      name: prop,
-      value: queryResponseObj[prop],
-    });
-  });
-  return data;
-}
-
-/**
  * Parses the response from a media element change event.
  *
  * @param {Object} changes - The object containing the changed properties.
@@ -77,13 +57,10 @@ class RealmDBHandler extends Handler {
     try {
       const updateMessage = await this.#getMessageData(message, ws);
       console.log(updateMessage);
-      this.sendMessageToClient(ws, JSON.stringify(updateMessage));
+      this.sendMessageToClient(ws, updateMessage);
     } catch (error) {
       console.error("Error reading object from Realm:", error);
-      this.sendMessageToClient(
-        ws,
-        JSON.stringify({ error: "Error reading object" })
-      );
+      this.sendMessageToClient(ws, { error: "Error reading object" });
     }
   }
 
@@ -96,8 +73,9 @@ class RealmDBHandler extends Handler {
       if (mediaElement) {
         this.realm.write(() => {
           nodes.forEach(({ name, value }) => {
+            const prop = this.transformEndpointFromMessageNode(name);
             endpoints.push(name);
-            mediaElement[name] = value;
+            mediaElement[prop] = value;
           });
         });
       } else {
@@ -105,8 +83,9 @@ class RealmDBHandler extends Handler {
         let document = { _id: uuidv4(), [endpointId]: message.id };
 
         nodes.forEach(({ name, value }) => {
+          const prop = this.transformEndpointFromMessageNode(name);
           endpoints.push(name);
-          document[name] = value;
+          document[prop] = value;
         });
         const databaseName = database[message.tree].databaseName;
 
@@ -123,7 +102,7 @@ class RealmDBHandler extends Handler {
       );
       const updateMessage = await this.#getMessageData(readMessage, ws);
       console.log(updateMessage);
-      this.sendMessageToClients(JSON.stringify(updateMessage));
+      this.sendMessageToClients(updateMessage);
     } catch (error) {
       console.error("Error writing object changes in Realm:", error);
       this.sendMessageToClient(ws, { error: "Error writing object changes" });
@@ -161,17 +140,13 @@ class RealmDBHandler extends Handler {
           });
         } else {
           console.log(`Object could not be subscribed`);
-          this.sendMessageToClient(
-            ws,
-            JSON.stringify({ error: "Object could not be subscribed" })
-          );
+          this.sendMessageToClient(ws, {
+            error: "Object could not be subscribed",
+          });
         }
       } else {
         console.log(`Object not found`);
-        this.sendMessageToClient(
-          ws,
-          JSON.stringify({ error: "Object not found" })
-        );
+        this.sendMessageToClient(ws, { error: "Object not found" });
       }
     } catch (error) {
       console.error("Error subscribing to object changes in Realm:", error);
@@ -193,7 +168,7 @@ class RealmDBHandler extends Handler {
     const mediaElement = await this.#getMediaElement(message, ws);
     console.log("mediaElement: ", mediaElement);
     if (mediaElement) {
-      const responseNodes = parseReadResponse(message, mediaElement);
+      const responseNodes = this.#parseReadResponse(message, mediaElement);
       return this.createOrUpdateMessage(message, responseNodes, "update");
     } else {
       throw new Error(`No data found with the Id: ${message.id}`);
@@ -216,10 +191,7 @@ class RealmDBHandler extends Handler {
         .filtered(`${endpointId} = '${id}'`)[0];
     } catch (error) {
       console.error("Error reading object from Realm:", error);
-      this.sendMessageToClient(
-        ws,
-        JSON.stringify({ error: "Error reading object" })
-      );
+      this.sendMessageToClient(ws, { error: "Error reading object" });
     }
   }
 
@@ -244,9 +216,29 @@ class RealmDBHandler extends Handler {
           "update"
         );
         console.log(updateMessage);
-        this.sendMessageToClients(JSON.stringify(updateMessage));
+        this.sendMessageToClients(updateMessage);
       }
     }
+  }
+
+  /**
+   * Parses the response from a read event.
+   *
+   * @param {Object} message - The message object containing node or nodes information.
+   * @param {Object} queryResponseObj - The query response object containing values to be mapped.
+   * @returns {Object} - A data object with keys from the message nodes and values from the query response.
+   */
+  #parseReadResponse(message, queryResponseObj) {
+    const data = [];
+    const nodes = message.node ? [message.node] : message.nodes;
+    nodes.forEach((node) => {
+      const prop = this.transformEndpointFromMessageNode(node.name);
+      data.push({
+        name: node.name,
+        value: queryResponseObj[prop],
+      });
+    });
+    return data;
   }
 }
 

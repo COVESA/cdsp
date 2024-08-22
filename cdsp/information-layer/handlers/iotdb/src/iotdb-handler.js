@@ -14,28 +14,6 @@ const { IoTDBDataInterpreter } = require("../utils/IoTDBDataInterpreter");
 const endpointsType = require("../config/endpointsType");
 const database = require("../config/databaseParams");
 
-/**
- * Creates an object to insert data in IoTDB based on the provided message.
- *
- * @param {Object} message - The message containing data to be inserted.
- * @returns {Object} The data object to be inserted.
- */
-function createObjectToInsert(message) {
-  const { id, tree } = message;
-  const data = { [database[tree].endpointId]: id };
-  if (message.node) {
-    data[
-      IoTDBDataInterpreter.transformEndpointFromMessageNode(message.node.name)
-    ] = message.node.value;
-  } else if (message.nodes) {
-    message.nodes.forEach((node) => {
-      data[IoTDBDataInterpreter.transformEndpointFromMessageNode(node.name)] =
-        node.value;
-    });
-  }
-  return data;
-}
-
 class IoTDBHandler extends Handler {
   constructor() {
     super();
@@ -88,17 +66,11 @@ class IoTDBHandler extends Handler {
         this.sendMessageToClient(ws, responseMessage);
       } else {
         console.log("Object not found.");
-        this.sendMessageToClient(
-          ws,
-          JSON.stringify({ error: "Object not found." })
-        );
+        this.sendMessageToClient(ws, { error: "Object not found." });
       }
     } catch (error) {
       console.error("Failed to read data from IoTDB: ", error);
-      this.sendMessageToClient(
-        ws,
-        JSON.stringify({ error: "Error reading object" })
-      );
+      this.sendMessageToClient(ws, { error: "Error reading object" });
     } finally {
       this.#closeSessionIfNeeded();
     }
@@ -107,7 +79,7 @@ class IoTDBHandler extends Handler {
   async write(message, ws) {
     try {
       await this.#openSessionIfNeeded();
-      const data = createObjectToInsert(message);
+      const data = this.#createObjectToInsert(message);
       const errorUndefinedTypes = [];
       let measurements = [];
       let dataTypes = [];
@@ -120,7 +92,6 @@ class IoTDBHandler extends Handler {
           values.push(value);
         } else {
           errorUndefinedTypes.push(`The endpoint "${key}" is not supported`);
-          continue;
         }
       }
 
@@ -161,17 +132,11 @@ class IoTDBHandler extends Handler {
         this.sendMessageToClients(responseMessage);
       } else {
         console.log("Object not found.");
-        this.sendMessageToClient(
-          ws,
-          JSON.stringify({ error: "Object not found." })
-        );
+        this.sendMessageToClient(ws, { error: "Object not found." });
       }
     } catch (error) {
       console.error(`Failed writing data to IoTDB. ${error}`);
-      this.sendMessageToClient(
-        ws,
-        JSON.stringify({ error: `Failed writing data. ${error}` })
-      );
+      this.sendMessageToClient(ws, { error: `Failed writing data. ${error}` });
     } finally {
       this.#closeSessionIfNeeded();
     }
@@ -197,7 +162,7 @@ class IoTDBHandler extends Handler {
     try {
       const resp = await this.client.openSession(openSessionReq);
 
-      if (this.protocolVersion != resp.serverProtocolVersion) {
+      if (this.protocolVersion !== resp.serverProtocolVersion) {
         console.log(
           "Protocol differ, Client version is " +
             this.protocolVersion +
@@ -205,7 +170,7 @@ class IoTDBHandler extends Handler {
             resp.serverProtocolVersion
         );
         // version is less than 0.10
-        if (resp.serverProtocolVersion == 0) {
+        if (resp.serverProtocolVersion === 0) {
           throw new Error("Protocol not supported.");
         }
       }
@@ -320,8 +285,8 @@ class IoTDBHandler extends Handler {
     isAligned = false
   ) {
     if (
-      values.length != dataTypes.length ||
-      values.length != measurements.length
+      values.length !== dataTypes.length ||
+      values.length !== measurements.length
     ) {
       throw "length of data types does not equal to length of values!";
     }
@@ -351,15 +316,14 @@ class IoTDBHandler extends Handler {
   async #queryLastFields(message, ws) {
     const { id: objectId, tree } = message;
     const { databaseName, endpointId } = database[tree];
-    const fieldsToSearch =
-      IoTDBDataInterpreter.extractEndpointsFromNodes(message).join(", ");
+    const fieldsToSearch = this.#extractEndpointsFromNodes(message).join(", ");
     const sql = `SELECT ${fieldsToSearch} FROM ${databaseName} WHERE ${endpointId} = '${objectId}' ORDER BY Time ASC`;
 
     try {
       const sessionDataSet = await this.#executeQueryStatement(sql);
 
       if (!sessionDataSet || Object.keys(sessionDataSet).length === 0) {
-        throw new Error({ error: "Internal error constructing read object." });
+        throw new Error("Internal error constructing read object.");
       }
 
       const mediaElements = [];
@@ -368,13 +332,21 @@ class IoTDBHandler extends Handler {
       }
 
       let latestValues = {};
-
       mediaElements.forEach((mediaElement) => {
+        // extract underscores from media element key
+        const transformedMediaElement = Object.fromEntries(
+          Object.entries(mediaElement).map(([key, value]) => {
+            const newKey = this.transformEndpointFromDatabaseFields(key);
+            return [newKey, value];
+          })
+        );
+
         const transformedObject =
           IoTDBDataInterpreter.extractNodesFromTimeseries(
-            mediaElement,
+            transformedMediaElement,
             databaseName
           );
+
         Object.entries(transformedObject).forEach(([key, value]) => {
           if (value !== null) {
             latestValues[key] = value;
@@ -388,11 +360,52 @@ class IoTDBHandler extends Handler {
       }));
     } catch (error) {
       console.error(error);
-      this.sendMessageToClient(
-        ws,
-        JSON.stringify({ error: "Internal error constructing read object." })
+      this.sendMessageToClient(ws, {
+        error: "Internal error constructing read object.",
+      });
+    }
+  }
+
+  /**
+   * Extracts endpoint names from the given message.
+   *
+   * This function checks if the message has a single node or multiple nodes and
+   * extracts the names accordingly.
+   *
+   * @param {Object} message - The message containing node(s).
+   * @returns {Array<string>} An array of endpoint names.
+   */
+  #extractEndpointsFromNodes(message) {
+    let endpoints = [];
+
+    if (message.node) {
+      endpoints.push(this.transformEndpointFromMessageNode(message.node.name));
+    } else if (message.nodes) {
+      endpoints = message.nodes.map((node) =>
+        this.transformEndpointFromMessageNode(node.name)
       );
     }
+    return endpoints;
+  }
+
+  /**
+   * Creates an object to insert data in IoTDB based on the provided message.
+   *
+   * @param {Object} message - The message containing data to be inserted.
+   * @returns {Object} The data object to be inserted.
+   */
+  #createObjectToInsert(message) {
+    const { id, tree } = message;
+    const data = { [database[tree].endpointId]: id };
+    if (message.node) {
+      data[this.transformEndpointFromMessageNode(message.node.name)] =
+        message.node.value;
+    } else if (message.nodes) {
+      message.nodes.forEach((node) => {
+        data[this.transformEndpointFromMessageNode(node.name)] = node.value;
+      });
+    }
+    return data;
   }
 }
 

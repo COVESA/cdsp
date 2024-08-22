@@ -56,16 +56,40 @@ class Handler {
    * @returns {Object} - The transformed message.
    */
   createOrUpdateMessage(message, nodes, type) {
-    const transformedNodes = nodes.map((node) => ({
-      name: node.name,
-      value: node.value,
-    }));
-    return {
-      ...message,
-      nodes: transformedNodes,
+    const { id, tree, uuid } = message;
+    let newMessage = {
       type,
-      timestamp: new Date().toISOString(),
+      tree,
+      id,
+      dateTime: new Date().toISOString(),
+      uuid,
     };
+    if (nodes.length === 1) {
+      newMessage["node"] = nodes[0];
+    } else {
+      newMessage["nodes"] = nodes;
+    }
+    return newMessage;
+  }
+
+  /**
+   * Transforms a message node by replacing all dots with underscores.
+   *
+   * @param {string} node - The message node to transform.
+   * @returns {string} - The transformed message node with dots replaced by underscores.
+   */
+  transformEndpointFromMessageNode(node) {
+    return `${node}`.replace(/\./g, "_");
+  }
+
+  /**
+   * Transforms a database field name by replacing underscores with all dots.
+   *
+   * @param {string} field - The database filed to transform.
+   * @returns {string} - The transformed to message node replacing underscores by dots.
+   */
+  transformEndpointFromDatabaseFields(field) {
+    return `${field}`.replace(/\_/g, ".");
   }
 }
 

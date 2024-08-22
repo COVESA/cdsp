@@ -188,7 +188,7 @@ class IoTDBRpcDataSet {
    * @returns {boolean} True if there is a cached result, otherwise false.
    */
   #hasCachedResult() {
-    return this.#queryDataSet !== null && this.#queryDataSet.time.length != 0;
+    return this.#queryDataSet !== null && this.#queryDataSet.time.length !== 0;
   }
 
   /**

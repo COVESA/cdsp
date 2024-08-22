@@ -88,7 +88,7 @@ class IoTDBDataInterpreter {
   static extractNodesFromTimeseries(obj, databaseName) {
     return Object.entries(obj).reduce((acc, [key, value]) => {
       if (key.startsWith(databaseName)) {
-        const newKey = key.replace(`${databaseName}.`, "").replace(/_/g, ".");
+        const newKey = key.replace(`${databaseName}.`, "");
         acc[newKey] = value;
       }
       return acc;
@@ -107,38 +107,6 @@ class IoTDBDataInterpreter {
     const timestamp = new BigInt64Array(uinit8Buffer)[0];
 
     return { timestamp };
-  }
-
-  /**
-   * Extracts endpoint names from the given message.
-   *
-   * This function checks if the message has a single node or multiple nodes and
-   * extracts the names accordingly.
-   *
-   * @param {Object} message - The message containing node(s).
-   * @returns {Array<string>} An array of endpoint names.
-   */
-  static extractEndpointsFromNodes(message) {
-    let endpoints = [];
-
-    if (message.node) {
-      endpoints.push(this.transformEndpointFromMessageNode(message.node.name));
-    } else if (message.nodes) {
-      endpoints = message.nodes.map((node) =>
-        this.transformEndpointFromMessageNode(node.name)
-      );
-    }
-    return endpoints;
-  }
-
-  /**
-   * Transforms a message node by replacing all dots with underscores.
-   *
-   * @param {string} node - The message node to transform.
-   * @returns {string} - The transformed message node with dots replaced by underscores.
-   */
-  static transformEndpointFromMessageNode(node) {
-    return `${node}`.replace(/\./g, "_");
   }
 }
 
