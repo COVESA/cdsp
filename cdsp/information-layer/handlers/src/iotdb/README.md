@@ -1,3 +1,5 @@
+# IoTDB
+
 This directory contains the IoTDB Handler as a Node.js application. As [Apache IoTDB](https://iotdb.apache.org/) is a time-series database, the IoTDB Handler connects to an existing IoTDB instance using the Thrift protocol. The handler utilizes the [IoTDB Thrift API](https://github.com/apache/thrift) to communicate with the database and perform operations. Configuration details, such as the IoTDB host, port, user credentials, and time zone, are specified in the handler's configuration file. The IoTDB Handler is designed to manage sessions, execute queries, and interact with the IoTDB instance efficiently during runtime.
 
 # Features
@@ -36,4 +38,4 @@ module.exports = {
 
 ## Starting the IoTDB handler
 
-You do not need to start IotDB Handler manually. It is started by the DB-Router like described [here](../../router/README.md#Run).
+You do not need to start IotDB Handler manually. It is started by the DB-Router like described [here](../../../router/README.md#Run).

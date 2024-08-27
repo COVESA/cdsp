@@ -2,9 +2,9 @@
   "name": "websocket-server",
   "version": "1.0.0",
   "description": "WebSocket server",
-  "main": "websocket-server.js",
+  "main": "src/websocket-server.js",
   "scripts": {
-    "start": "node websocket-server.js"
+    "start": "node src/websocket-server.js"
   },
   "dependencies": {
     "ajv": "^8.17.1",

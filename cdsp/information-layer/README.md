@@ -20,6 +20,9 @@ The Hello World example in our case is quite simple. We feed an updated value fo
 
 ## Choose and prepare your Database
 
+> [!WARNING]
+> Before start the application, ensure that the supported endpoints are correctly defined and configured. See [how](./handlers/config/README.md). 
+
 ### Realm
 - Ensure that in your [ATLAS cloud](https://cloud.mongodb.com/) app there is a vehicle *document* with an `Vehicle_VehicleIdentification_VIN` in a collection named *`Vehicles`*.
 - Ensure that this document as well contains VSS data. Here you can see the supported data in a vehicle document within the *Vehicles* should look like in ATLAS:
@@ -73,15 +76,15 @@ The Hello World example in our case is quite simple. We feed an updated value fo
 See [here](./router/README.md#Run) how to start the database router.
 
 ## Look out for the Websocket Server message in the console
-If you the handler is running and you are subscribed to that element, when you change the value of `CurrentLocation_Longitude` in ATLAS cloud (let's say `-157845.68200000003`), you should immediately see this line in console:
+If the handler is running and you are [subscribed](#subscribing-to-changes) to an element, when you change the value of `CurrentLocation_Longitude` in ATLAS cloud (let's say `-157845.68200000003`), you should immediately see this line in console:
 
 ```
 {
   type: 'update',
   tree: 'VSS',
-  id: '<SOME_VIN>',
+  id: '<SUBSCRIBED_VIN>',
   dateTime: '<ACTUAL_DATA_TIME>',
-  uuid: '<YOUR_UUID>',
+  uuid: '<YOUR_SUBSCRIBED_UUID>',
   node: { name: 'CurrentLocation_Longitude', value: `-157845.68200000003` }
 }
 ```

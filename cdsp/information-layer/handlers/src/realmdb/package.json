@@ -4,7 +4,7 @@
   "description": "Realm database handler",
   "main": "realmdb-handler.js",
   "dependencies": {
-    "realm": "^12.9.0",
+    "realm": "^12.13.1",
     "uuid": "^9.0.1"
   }
 }

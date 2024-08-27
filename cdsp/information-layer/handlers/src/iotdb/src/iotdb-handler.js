@@ -11,25 +11,32 @@ const Handler = require("../../handler");
 const config = require("../config/config");
 const SessionDataSet = require("../utils/SessionDataSet");
 const { IoTDBDataInterpreter } = require("../utils/IoTDBDataInterpreter");
-const endpointsType = require("../config/endpointsType");
+const { createEndpointsSchema } = require("../config/endpointsType");
 const database = require("../config/databaseParams");
+const {
+  logMessage,
+  logWithColor,
+  MessageType,
+  COLORS,
+} = require("../../../../utils/logger");
 
 class IoTDBHandler extends Handler {
   constructor() {
     super();
     this.client = null;
-    this.sendMessageToClients = null;
+    this._sendMessageToClients = null;
     this.sessionId = null;
     this.protocolVersion = TSProtocolVersion.IOTDB_SERVICE_PROTOCOL_V3;
     this.statementId = null;
     this.zoneId = config.timeZoneId;
     this.fetchSize = config.fetchSize;
     this.isSessionClosed = true;
+    this.endpointsSchema = null;
   }
 
   async authenticateAndConnect(sendMessageToClients) {
     try {
-      this.sendMessageToClients = sendMessageToClients;
+      this._sendMessageToClients = sendMessageToClients;
 
       const connection = thrift.createConnection(
         config.iotdbHost,
@@ -42,13 +49,22 @@ class IoTDBHandler extends Handler {
 
       this.client = thrift.createClient(Client, connection);
 
-      connection.on("error", (err) => {
-        console.error("thrift connection error:", err);
+      connection.on("error", (error) => {
+        logMessage(
+          "thrift connection error: ".concat(error),
+          MessageType.ERROR
+        );
       });
 
-      console.log("Successfully connected to IoTDB using thrift.");
+      const supportedEndpoint = this._getSupportedEndpoints();
+      this.endpointsSchema = createEndpointsSchema(supportedEndpoint);
+
+      console.info("Successfully connected to IoTDB using thrift");
     } catch (error) {
-      console.error("Failed to authenticate with IoTDB:", error);
+      logMessage(
+        "Failed to authenticate with IoTDB: ".concat(error),
+        MessageType.ERROR
+      );
     }
   }
 
@@ -57,20 +73,16 @@ class IoTDBHandler extends Handler {
       await this.#openSessionIfNeeded();
       const responseNodes = await this.#queryLastFields(message, ws);
       if (responseNodes.length > 0) {
-        const responseMessage = this.createOrUpdateMessage(
+        const responseMessage = this._createUpdateMessage(
           message,
-          responseNodes,
-          "update"
+          responseNodes
         );
-        console.log(responseMessage);
-        this.sendMessageToClient(ws, responseMessage);
+        this._sendMessageToClient(ws, responseMessage);
       } else {
-        console.log("Object not found.");
-        this.sendMessageToClient(ws, { error: "Object not found." });
+        this._sendMessageToClient(ws, { error: "Object not found." });
       }
     } catch (error) {
-      console.error("Failed to read data from IoTDB: ", error);
-      this.sendMessageToClient(ws, { error: "Error reading object" });
+      this._sendMessageToClient(ws, { error: "Error reading object" });
     } finally {
       this.#closeSessionIfNeeded();
     }
@@ -86,9 +98,9 @@ class IoTDBHandler extends Handler {
       let values = [];
 
       for (const [key, value] of Object.entries(data)) {
-        if (endpointsType.hasOwnProperty(key)) {
+        if (this.endpointsSchema.hasOwnProperty(key)) {
           measurements.push(key);
-          dataTypes.push(endpointsType[key]);
+          dataTypes.push(this.endpointsSchema[key]);
           values.push(value);
         } else {
           errorUndefinedTypes.push(`The endpoint "${key}" is not supported`);
@@ -110,33 +122,26 @@ class IoTDBHandler extends Handler {
         values
       );
 
-      const response = `Insert one record to device ${deviceId}, status: `;
-      console.log(response, status);
-
-      let keyList = measurements.map((name) => ({
-        name,
-      }));
-
-      const readMessage = this.createOrUpdateMessage(message, keyList, "read");
-      console.log(readMessage);
+      logWithColor(
+        `Record inserted to device ${deviceId}, status code: `.concat(
+          JSON.stringify(status)
+        ),
+        COLORS.GREY
+      );
 
       const responseNodes = await this.#queryLastFields(message, ws);
 
       if (responseNodes.length) {
-        const responseMessage = this.createOrUpdateMessage(
+        const responseMessage = this._createUpdateMessage(
           message,
-          responseNodes,
-          "update"
+          responseNodes
         );
-        console.log(responseMessage);
-        this.sendMessageToClients(responseMessage);
+        this._sendMessageToClients(responseMessage);
       } else {
-        console.log("Object not found.");
-        this.sendMessageToClient(ws, { error: "Object not found." });
+        this._sendMessageToClient(ws, { error: "Object not found." });
       }
     } catch (error) {
-      console.error(`Failed writing data to IoTDB. ${error}`);
-      this.sendMessageToClient(ws, { error: `Failed writing data. ${error}` });
+      this._sendMessageToClient(ws, { error: `Failed writing data. ${error}` });
     } finally {
       this.#closeSessionIfNeeded();
     }
@@ -163,7 +168,7 @@ class IoTDBHandler extends Handler {
       const resp = await this.client.openSession(openSessionReq);
 
       if (this.protocolVersion !== resp.serverProtocolVersion) {
-        console.log(
+        console.info(
           "Protocol differ, Client version is " +
             this.protocolVersion +
             ", but Server version is " +
@@ -178,9 +183,12 @@ class IoTDBHandler extends Handler {
       this.sessionId = resp.sessionId;
       this.statementId = await this.client.requestStatementId(this.sessionId);
       this.isSessionClosed = false;
-      console.log("Session started!");
+      console.info("Session started!");
     } catch (error) {
-      console.error("Failed starting session with IoTDB: ", error);
+      logMessage(
+        "Failed starting session with IoTDB: ".concat(error),
+        MessageType.ERROR
+      );
     }
   }
 
@@ -200,13 +208,15 @@ class IoTDBHandler extends Handler {
     try {
       this.client.closeSession(req);
     } catch (error) {
-      console.error(
-        "Error occurs when closing session at server. Maybe server is down. Error message: ",
-        error
+      logMessage(
+        "Error occurs when closing session at server. Maybe server is down. Error message: ".concat(
+          error
+        ),
+        MessageType.ERROR
       );
     } finally {
       this.isSessionClosed = true;
-      console.log("Session closed!");
+      console.info("Session closed!");
     }
   }
 
@@ -261,7 +271,10 @@ class IoTDBHandler extends Handler {
         );
       }
     } catch (error) {
-      console.error("Failed executing query statement: ", error);
+      logMessage(
+        "Failed executing query statement: ".concat(error),
+        MessageType.ERROR
+      );
     }
   }
 
@@ -336,7 +349,7 @@ class IoTDBHandler extends Handler {
         // extract underscores from media element key
         const transformedMediaElement = Object.fromEntries(
           Object.entries(mediaElement).map(([key, value]) => {
-            const newKey = this.transformEndpointFromDatabaseFields(key);
+            const newKey = this._transformEndpointsWithDots(key);
             return [newKey, value];
           })
         );
@@ -359,9 +372,8 @@ class IoTDBHandler extends Handler {
         value,
       }));
     } catch (error) {
-      console.error(error);
-      this.sendMessageToClient(ws, {
-        error: "Internal error constructing read object.",
+      this._sendMessageToClient(ws, {
+        error: "internal error constructing read object",
       });
     }
   }
@@ -379,10 +391,12 @@ class IoTDBHandler extends Handler {
     let endpoints = [];
 
     if (message.node) {
-      endpoints.push(this.transformEndpointFromMessageNode(message.node.name));
+      endpoints.push(
+        this._transformEndpointsWithUnderscores(message.node.name)
+      );
     } else if (message.nodes) {
       endpoints = message.nodes.map((node) =>
-        this.transformEndpointFromMessageNode(node.name)
+        this._transformEndpointsWithUnderscores(node.name)
       );
     }
     return endpoints;
@@ -398,11 +412,11 @@ class IoTDBHandler extends Handler {
     const { id, tree } = message;
     const data = { [database[tree].endpointId]: id };
     if (message.node) {
-      data[this.transformEndpointFromMessageNode(message.node.name)] =
+      data[this._transformEndpointsWithUnderscores(message.node.name)] =
         message.node.value;
     } else if (message.nodes) {
       message.nodes.forEach((node) => {
-        data[this.transformEndpointFromMessageNode(node.name)] = node.value;
+        data[this._transformEndpointsWithUnderscores(node.name)] = node.value;
       });
     }
     return data;

@@ -12,10 +12,10 @@ npm install
 ```
 
 # Run
-
-In the `.env` file are defined the environment variables:
+The `.env` file contains key-value pairs of environment variables that are used during the build and runtime of the Docker container. This allows for easy configuration of the application without changing the source code.
 
 - **HANDLER_TYPE**: Configure `realmdb` to start the RealmDB Handler or `iotdb` to start the IoTDB Handler.
+- **VERSION**: This variable is automatically incremented by the build script, ensuring that every Docker image build has a unique version identifier.
 
 > [!WARNING]
 > Create a `.env` file in the same directory as your `docker-compose.yml`. If it doesn't exist, create it in the same directory as `websocket-server.js`.

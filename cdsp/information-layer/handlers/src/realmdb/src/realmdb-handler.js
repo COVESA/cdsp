@@ -1,13 +1,17 @@
 const Realm = require("realm");
 const Handler = require("../../handler");
 const config = require("../config/config");
-const database = require("../config/databaseParams");
-const realmConfig = require("../config/realmConfiguration");
+const { mediaElementsParams } = require("../config/database-params");
+const realmConfig = require("../config/realm-configuration");
 const { v4: uuidv4 } = require("uuid");
-
 const app = new Realm.App({ id: config.realmAppId });
 const credentials = Realm.Credentials.apiKey(config.realmApiKey);
-
+const {
+  logMessage,
+  logWithColor,
+  MessageType,
+  COLORS,
+} = require("../../../../utils/logger");
 /**
  * Parses the response from a media element change event.
  *
@@ -26,41 +30,49 @@ class RealmDBHandler extends Handler {
   constructor() {
     super();
     this.realm = null;
-    this.sendMessageToClients = null;
+    this._sendMessageToClients = null;
   }
 
   async authenticateAndConnect(sendMessageToClients) {
     try {
-      this.sendMessageToClients = sendMessageToClients;
+      this._sendMessageToClients = sendMessageToClients;
       const user = await app.logIn(credentials);
-      console.log("Successfully authenticated with Realm");
-
-      const realmConfigObj = realmConfig(user);
+      console.info("Successfully authenticated to RealmDB");
+      const supportedEndpoints = this._getSupportedEndpoints();
+      const realmConfigObj = realmConfig(user, supportedEndpoints);
       this.realm = await Realm.open(realmConfigObj);
-      console.log("Realm connection established successfully");
+      console.info("Connection established successfully");
 
-      Object.entries(database).forEach(async ([key, value]) => {
+      Object.entries(mediaElementsParams).forEach(async ([key, value]) => {
         try {
           const databaseName = value.databaseName;
           await this.realm.objects(databaseName).subscribe();
-          console.log(`Subscribed to the database ${key}: ${databaseName}`);
+          console.info(`Subscribed to the database ${key}: ${databaseName}`);
         } catch (error) {
-          throw new Error("Error subscribing databases.");
+          logMessage(
+            "Error subscribing databases: ".concat(error),
+            MessageType.ERROR
+          );
         }
       });
     } catch (error) {
-      console.error("Failed to authenticate with Realm:", error);
+      logMessage(
+        "Failed to authenticate with Realm: ".concat(error),
+        MessageType.ERROR
+      );
     }
   }
 
   async read(message, ws) {
     try {
       const updateMessage = await this.#getMessageData(message, ws);
-      console.log(updateMessage);
-      this.sendMessageToClient(ws, updateMessage);
+      this._sendMessageToClient(ws, updateMessage);
     } catch (error) {
-      console.error("Error reading object from Realm:", error);
-      this.sendMessageToClient(ws, { error: "Error reading object" });
+      logMessage(
+        "Error reading object from Realm: ".concat(error),
+        MessageType.ERROR
+      );
+      this._sendMessageToClient(ws, { error: "Error reading object" });
     }
   }
 
@@ -73,21 +85,21 @@ class RealmDBHandler extends Handler {
       if (mediaElement) {
         this.realm.write(() => {
           nodes.forEach(({ name, value }) => {
-            const prop = this.transformEndpointFromMessageNode(name);
+            const prop = this._transformEndpointsWithUnderscores(name);
             endpoints.push(name);
             mediaElement[prop] = value;
           });
         });
       } else {
-        const endpointId = database[message.tree].endpointId;
+        const endpointId = mediaElementsParams[message.tree].endpointId;
         let document = { _id: uuidv4(), [endpointId]: message.id };
 
         nodes.forEach(({ name, value }) => {
-          const prop = this.transformEndpointFromMessageNode(name);
+          const prop = this._transformEndpointsWithUnderscores(name);
           endpoints.push(name);
           document[prop] = value;
         });
-        const databaseName = database[message.tree].databaseName;
+        const databaseName = mediaElementsParams[message.tree].databaseName;
 
         this.realm.write(() => {
           this.realm.create(databaseName, document);
@@ -95,17 +107,15 @@ class RealmDBHandler extends Handler {
       }
 
       let messageNodes = endpoints.map((key) => ({ name: key }));
-      const readMessage = this.createOrUpdateMessage(
-        message,
-        messageNodes,
-        "read"
-      );
-      const updateMessage = await this.#getMessageData(readMessage, ws);
-      console.log(updateMessage);
-      this.sendMessageToClients(updateMessage);
+
+      const updateMessage = await this.#getMessageData(message, ws);
+      this._sendMessageToClients(updateMessage);
     } catch (error) {
-      console.error("Error writing object changes in Realm:", error);
-      this.sendMessageToClient(ws, { error: "Error writing object changes" });
+      logMessage(
+        "Error writing object changes in Realm: ".concat(error),
+        MessageType.ERROR
+      );
+      this._sendMessageToClient(ws, { error: "Error writing object changes" });
     }
   }
 
@@ -115,9 +125,10 @@ class RealmDBHandler extends Handler {
       if (mediaElement) {
         const objectId = mediaElement._id;
         const { id, tree, uuid } = message;
-        const { databaseName, endpointId } = database[tree];
-        console.log(
-          `Subscribing element: Object ID: ${objectId} with ${endpointId}: '${id}' on ${databaseName}`
+        const { databaseName, endpointId } = mediaElementsParams[tree];
+        logWithColor(
+          `Subscribing element: Object ID: ${objectId} with ${endpointId}: '${id}' on ${databaseName}`,
+          COLORS.GREY
         );
 
         const mediaElementToSubscribe = await this.realm.objectForPrimaryKey(
@@ -128,29 +139,30 @@ class RealmDBHandler extends Handler {
         if (mediaElementToSubscribe) {
           mediaElementToSubscribe.addListener(
             (mediaElementToSubscribe, changes) =>
-              this.#onMediaElementChange(mediaElementToSubscribe, changes, {
-                id: id,
-                tree: tree,
-                uuid: uuid,
-              })
+              this.#onMediaElementChange(
+                mediaElementToSubscribe,
+                changes,
+                {
+                  id: id,
+                  tree: tree,
+                  uuid: uuid,
+                },
+                ws
+              )
           );
-          console.log(`Subscribed to changes for Object ID: ${objectId}`);
-          this.sendMessageToClient(ws, {
-            success: `Subscribed to changes for Object ID: ${objectId}`,
+          this._sendMessageToClient(ws, {
+            success: `subscribed to ${endpointId}: '${id}'`,
           });
         } else {
-          console.log(`Object could not be subscribed`);
-          this.sendMessageToClient(ws, {
+          this._sendMessageToClient(ws, {
             error: "Object could not be subscribed",
           });
         }
       } else {
-        console.log(`Object not found`);
-        this.sendMessageToClient(ws, { error: "Object not found" });
+        this._sendMessageToClient(ws, { error: "Object not found" });
       }
     } catch (error) {
-      console.error("Error subscribing to object changes in Realm:", error);
-      this.sendMessageToClient(ws, {
+      this._sendMessageToClient(ws, {
         error: "Error subscribing to object changes",
       });
     }
@@ -166,10 +178,13 @@ class RealmDBHandler extends Handler {
    */
   async #getMessageData(message, ws) {
     const mediaElement = await this.#getMediaElement(message, ws);
-    console.log("mediaElement: ", mediaElement);
+    logWithColor(
+      `Media Element: \n ${JSON.stringify(mediaElement)}`,
+      COLORS.GREY
+    );
     if (mediaElement) {
       const responseNodes = this.#parseReadResponse(message, mediaElement);
-      return this.createOrUpdateMessage(message, responseNodes, "update");
+      return this._createUpdateMessage(message, responseNodes);
     } else {
       throw new Error(`No data found with the Id: ${message.id}`);
     }
@@ -185,13 +200,12 @@ class RealmDBHandler extends Handler {
   async #getMediaElement(message, ws) {
     try {
       const { id, tree } = message;
-      const { databaseName, endpointId } = database[tree];
+      const { databaseName, endpointId } = mediaElementsParams[tree];
       return await this.realm
         .objects(databaseName)
         .filtered(`${endpointId} = '${id}'`)[0];
     } catch (error) {
-      console.error("Error reading object from Realm:", error);
-      this.sendMessageToClient(ws, { error: "Error reading object" });
+      this._sendMessageToClient(ws, { error: "Error reading object" });
     }
   }
 
@@ -201,22 +215,25 @@ class RealmDBHandler extends Handler {
    * @param {object} changes - An object containing information about the changes.
    * @param {messageHeader} messageHeader - The header information for the message.
    */
-  #onMediaElementChange(mediaElement, changes, messageHeader) {
+  #onMediaElementChange(mediaElement, changes, messageHeader, ws) {
+    logMessage(
+      "Media element changed",
+      MessageType.RECEIVED,
+      `Web-Socket Connection Event Received`
+    );
     if (changes.deleted) {
-      console.log(`MediaElement is deleted: ${changes.deleted}`);
+      logMessage(changes.deleted, COLORS.YELLOW, "MediaElement is deleted");
     } else {
       if (changes.changedProperties.length > 0) {
         const responseNodes = parseOnMediaElementChangeResponse(
           changes,
           mediaElement
         );
-        const updateMessage = this.createOrUpdateMessage(
+        const updateMessage = this._createUpdateMessage(
           messageHeader,
-          responseNodes,
-          "update"
+          responseNodes
         );
-        console.log(updateMessage);
-        this.sendMessageToClients(updateMessage);
+        this._sendMessageToClient(ws, updateMessage);
       }
     }
   }
@@ -232,7 +249,7 @@ class RealmDBHandler extends Handler {
     const data = [];
     const nodes = message.node ? [message.node] : message.nodes;
     nodes.forEach((node) => {
-      const prop = this.transformEndpointFromMessageNode(node.name);
+      const prop = this._transformEndpointsWithUnderscores(node.name);
       data.push({
         name: node.name,
         value: queryResponseObj[prop],

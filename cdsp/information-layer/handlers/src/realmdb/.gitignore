@@ -3,7 +3,4 @@ node_modules/
 package-lock.json
 
 # Credentials Config File
-config.js
-
-# MAC
-**/.DS_Store
+config/config.js

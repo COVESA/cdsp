@@ -1,5 +1,7 @@
-const { IoTDBDataType, MessageDataType } = require("./IoTDBConstants");
-const database = require("../config/databaseParams");
+const {
+  IoTDBDataType,
+  SupportedMessageDataTypes,
+} = require("./IoTDBConstants");
 
 class IoTDBDataInterpreter {
   /**
@@ -9,10 +11,9 @@ class IoTDBDataInterpreter {
    * @returns {Buffer} - Serialized values as a Buffer.
    */
   static serializeValues(dataTypes, values) {
-    // this type is not supported by now, see: cdsp/information-layer/handlers/iotdb/utils/IoTDBConstants.js
-    // function serializeBoolean(value) {
-    //   return [IoTDBDataType.BOOLEAN, value];
-    // }
+    function serializeBoolean(value) {
+      return [IoTDBDataType.BOOLEAN, value];
+    }
 
     function serializeInt32(value) {
       const int32 = new Int32Array([value]);
@@ -20,12 +21,11 @@ class IoTDBDataInterpreter {
       return [IoTDBDataType.INT32, ...uint8];
     }
 
-    // this type is not supported by now, see: cdsp/information-layer/handlers/iotdb/utils/IoTDBConstants.js
-    // function serializeInt64(value) {
-    //   const bigint64 = new BigInt64Array([value]);
-    //   const uint8 = new Uint8Array(bigint64.buffer).reverse();
-    //   return [IoTDBDataType.INT64, ...uint8];
-    // }
+    function serializeInt64(value) {
+      const bigint64 = new BigInt64Array([value]);
+      const uint8 = new Uint8Array(bigint64.buffer).reverse();
+      return [IoTDBDataType.INT64, ...uint8];
+    }
 
     function serializeFloat(value) {
       const float32 = new Float32Array([value]);
@@ -50,29 +50,29 @@ class IoTDBDataInterpreter {
 
     for (let i = 0; i < dataTypes.length; i++) {
       switch (dataTypes[i]) {
-        // case MessageDataType.BOOLEAN: // this type is not supported by now, see: cdsp/information-layer/handlers/iotdb/utils/IoTDBConstants.js
-        //   serializedValues.push(...serializeBoolean(values[i]));
-        //   break;
-        case MessageDataType.INT8:
-        case MessageDataType.INT16:
-        case MessageDataType.UINT16:
-          //case MessageDataType.UINT32:
+        case SupportedMessageDataTypes.boolean:
+          serializedValues.push(...serializeBoolean(values[i]));
+          break;
+        case SupportedMessageDataTypes.int8:
+        case SupportedMessageDataTypes.int16:
+        case SupportedMessageDataTypes.uint8:
+        case SupportedMessageDataTypes.uint16:
           serializedValues.push(...serializeInt32(values[i]));
           break;
-        // case MessageDataType.INT64: // this type is not supported by now, see: cdsp/information-layer/handlers/iotdb/utils/IoTDBConstants.js
+        // case SupportedMessageDataTypes.int64: // this type is not supported by now, see: cdsp/information-layer/handlers/iotdb/utils/IoTDBConstants.js
         //   serializedValues.push(...serializeInt64(values[i]));
         //   break;
-        case MessageDataType.FLOAT:
+        case SupportedMessageDataTypes.float:
           serializedValues.push(...serializeFloat(values[i]));
           break;
-        case MessageDataType.DOUBLE:
+        case SupportedMessageDataTypes.double:
           serializedValues.push(...serializeDouble(values[i]));
           break;
-        case MessageDataType.STRING:
+        case SupportedMessageDataTypes.string:
           serializedValues.push(...serializeText(values[i]));
           break;
         default:
-          throw new Error("Unsupported data type");
+          throw new Error(`Unsupported data type: ${dataTypes[i]}`);
       }
     }
     return Buffer.from(serializedValues);

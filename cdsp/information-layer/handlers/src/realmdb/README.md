@@ -1,4 +1,6 @@
-This directory contains the RealmDB Handler as Node.js application. As [RealmDB](https://www.mongodb.com/docs/atlas/device-sdks/sdk/node/) is an embedded database, the RealmDB Handler directly embedds the RealmSDK which creates the [RealmDB database](https://github.com/realm/realm-js) file(s) automatically in the working directory during runtime of RealmDB Handler.
+# RealmDB
+
+This directory contains the RealmDB Handler as Node.js application. As [RealmDB](https://www.mongodb.com/docs/atlas/device-sdks/sdk/node/) is an embedded database, the RealmDB Handler directly embeds the RealmSDK which creates the [RealmDB database](https://github.com/realm/realm-js) file(s) automatically in the working directory during runtime of RealmDB Handler.
 # Features
 
 - **Authentication**: Authenticates with MongoDB Realm using an API key.
@@ -37,4 +39,4 @@ module.exports = {
 
 ## Starting the RealmDB handler
 
-You do not need to start RealmDB Handler manually. It is started by the DB-Router like described [here](../../router/README.md#Run).
+You do not need to start RealmDB Handler manually. It is started by the DB-Router like described [here](../../../router/README.md#Run).

@@ -242,7 +242,7 @@ class IoTDBRpcDataSet {
             this.#queryDataSet.valueList[i] = valueBuffer.slice(4 + length);
             break;
           default:
-            throw new Error("Unsupported data type.");
+            throw new Error(`Unsupported data type: ${dataType}`);
         }
       }
     }

@@ -120,7 +120,7 @@ class SessionDataSet {
         if (dataTypeProcessors[dataType]) {
           obj[tsName] = dataTypeProcessors[dataType](valueBytes);
         } else {
-          throw new Error("Unsupported data type.");
+          throw new Error(`Unsupported data type: ${dataType}`);
         }
       } else {
         let tsName =
