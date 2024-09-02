@@ -12,21 +12,21 @@
     <title>Playground examples :: Central Data Service Playground</title>
 
     
-    <link href="/cdsp/css/nucleus.css?1723747056" rel="stylesheet">
-    <link href="/cdsp/css/fontawesome-all.min.css?1723747056" rel="stylesheet">
-    <link href="/cdsp/css/hybrid.css?1723747056" rel="stylesheet">
-    <link href="/cdsp/css/featherlight.min.css?1723747056" rel="stylesheet">
-    <link href="/cdsp/css/perfect-scrollbar.min.css?1723747056" rel="stylesheet">
-    <link href="/cdsp/css/auto-complete.css?1723747056" rel="stylesheet">
-    <link href="/cdsp/css/atom-one-dark-reasonable.css?1723747056" rel="stylesheet">
-    <link href="/cdsp/css/theme.css?1723747056" rel="stylesheet">
-    <link href="/cdsp/css/hugo-theme.css?1723747056" rel="stylesheet">
+    <link href="/cdsp/css/nucleus.css?1725298676" rel="stylesheet">
+    <link href="/cdsp/css/fontawesome-all.min.css?1725298676" rel="stylesheet">
+    <link href="/cdsp/css/hybrid.css?1725298676" rel="stylesheet">
+    <link href="/cdsp/css/featherlight.min.css?1725298676" rel="stylesheet">
+    <link href="/cdsp/css/perfect-scrollbar.min.css?1725298676" rel="stylesheet">
+    <link href="/cdsp/css/auto-complete.css?1725298676" rel="stylesheet">
+    <link href="/cdsp/css/atom-one-dark-reasonable.css?1725298676" rel="stylesheet">
+    <link href="/cdsp/css/theme.css?1725298676" rel="stylesheet">
+    <link href="/cdsp/css/hugo-theme.css?1725298676" rel="stylesheet">
     
-    <link href="/cdsp/css/theme-blue.css?1723747056" rel="stylesheet">
+    <link href="/cdsp/css/theme-blue.css?1725298676" rel="stylesheet">
     
     
 
-    <script src="/cdsp/js/jquery-3.3.1.min.js?1723747056"></script>
+    <script src="/cdsp/js/jquery-3.3.1.min.js?1725298676"></script>
 
     <style>
       :root #header + #content > #left > #rlblock_left{
@@ -59,14 +59,14 @@
     <span data-search-clear=""><i class="fas fa-times"></i></span>
 </div>
 
-<script type="text/javascript" src="/cdsp/js/lunr.min.js?1723747056"></script>
-<script type="text/javascript" src="/cdsp/js/auto-complete.js?1723747056"></script>
+<script type="text/javascript" src="/cdsp/js/lunr.min.js?1725298676"></script>
+<script type="text/javascript" src="/cdsp/js/auto-complete.js?1725298676"></script>
 <script type="text/javascript">
     
         var baseurl = "https:\/\/covesa.github.io\/cdsp\/";
     
 </script>
-<script type="text/javascript" src="/cdsp/js/search.js?1723747056"></script>
+<script type="text/javascript" src="/cdsp/js/search.js?1725298676"></script>
 
     
   </div>
@@ -409,29 +409,93 @@
 
 
 
-	<p>Learn how to use the playground by stepping through examples.</p>
+	<p>The following examples are intended to show how to use playground components and how they can be combined to build larger systems.</p>
+<p>They are grouped by categories to help discovery of appropriate examples from different viewpoints.</p>
 <p>Note: There is not a separate section for the VSS data model because the vast majority of the examples will be making use of it.</p>
 <h2 id="getting-started">Getting started</h2>
-<p><a href="https://github.com/COVESA/cdsp/blob/main/docker/README.md">Docker sanity test</a> | <a href="https://github.com/COVESA/cdsp/tree/main/examples/cdsp-hello-world">Hello-world</a></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Relationship to the category</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/COVESA/cdsp/tree/main/docker#deploy-with-docker-compose">Docker sanity test</a></td>
+<td>Simple sanity test for the Playground Docker deployment</td>
+</tr>
+<tr>
+<td><a href="https://github.com/COVESA/cdsp/tree/main/examples/cdsp-hello-world">Hello-world</a></td>
+<td>Simple &ldquo;hello-world&rdquo; example</td>
+</tr>
+</tbody>
+</table>
 <h2 id="data-layer-processing-and-analysis">Data Layer, Processing and Analysis</h2>
-<p>Data Reduction | Data Quality | Events | Data Streams etc.</p>
-<p>Tip: well you wait for some examples consider how you could use the <a href="/cdsp/manuals/apache-iotdb/#data-processing-functions" title="IoTDB data processing">IoTDB data processing functions</a>.</p>
+<p>Topic examples: Data Reduction, Data Quality, Events, Data Streams etc.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Relationship to the category</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/COVESA/cdsp/tree/main/examples/vehicle-speed-downsample-iotdb">vehicle-speed-downsample-iotdb</a></td>
+<td>Accurately down-sample a timeseries of pre-recorded high frequency VSS <code>Vehicle.Speed</code> data using the IoTDB Data Quality Library</td>
+</tr>
+</tbody>
+</table>
+<p>Tip: well you wait for more examples consider how you could use the <a href="/cdsp/manuals/apache-iotdb/#data-processing-functions" title="IoTDB data processing">IoTDB data processing functions</a>.</p>
 <h2 id="knowledge-layer-reasoning-and-data-models">Knowledge Layer, Reasoning and Data Models</h2>
-<p>Data Layer Connector | A | B | C etc.</p>
+<p>Topic examples: Knowledge Layer Connector, Data Layer Connector etc.</p>
 <h2 id="feeders">Feeders</h2>
-<p><a href="https://github.com/COVESA/cdsp/tree/main/examples/remotivelabs-feeder">RemotiveLabs</a> | WAII VISS | etc.</p>
+<p>Topic examples: Virtual signal platforms, VISSR etc.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Relationship to the category</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/COVESA/cdsp/tree/main/examples/remotivelabs-feeder">RemotiveLabs feeder</a></td>
+<td>Example bridge that streams vehicle data from the RemotiveLabs cloud platform into the IoTDB data store</td>
+</tr>
+</tbody>
+</table>
 <h2 id="covesa-touchpoints">COVESA Touchpoints</h2>
-<p>A | B | C</p>
+<p>Topic examples: Low level vehicle abstraction, Mobile devices, Car2Cloud / Cloud etc.</p>
 <h2 id="covesa-technologies">COVESA Technologies</h2>
-<p>vsome/ip (SOME/IP) | uServices | Vehicle API | VISS etc.</p>
+<p>Topic examples: vsome/ip (SOME/IP), uServices, Vehicle API, VISS etc.</p>
 <h2 id="databases">Databases</h2>
-<p>Apache IoTDB | MongoDB Realm | Redis/SQLite/memcache etc.</p>
+<p>Topic examples: Apache IoTDB, MongoDB Realm, Redis/SQLite/memcache etc.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Relationship to the category</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/COVESA/cdsp/tree/main/examples/vehicle-speed-downsample-iotdb">vehicle-speed-downsample-iotdb</a></td>
+<td>Using the IoTDB <a href="/cdsp/manuals/apache-iotdb/#data-processing-functions" title="IoTDB Data Quality Library">Data Quality Library </a> for advanced (VSS) timeseries data processing</td>
+</tr>
+<tr>
+<td><a href="https://github.com/COVESA/cdsp/tree/main/examples/remotivelabs-feeder">RemotiveLabs feeder</a></td>
+<td>Example of streaming (writing) southbound (VSS) timeseries data into IoTDB</td>
+</tr>
+</tbody>
+</table>
 <h2 id="frameworks--protocols">Frameworks / Protocols</h2>
-<p>vsome/ip (SOME/IP) | VISS | uServices/uProtocol/Capabilities | Vehicle API | MQTT | Kafka | Apache Zeppelin etc.</p>
+<p>Topic examples: vsome/ip (SOME/IP), VISS, uServices/uProtocol/Capabilities, Vehicle API, MQTT, Kafka, Apache Zeppelin etc.</p>
 <h2 id="big-data">Big data</h2>
-<p>Hadoop | Flink | Spark | Cloud DB | Nifi etc.</p>
+<p>Topic examples: Hadoop, Flink, Spark, Cloud DB,  Nifi etc.</p>
 <h2 id="other-examples">Other examples</h2>
-<p>A | B | C</p>
+<p>Topics that do not fit into the groups above.</p>
 
 
 
@@ -637,19 +701,19 @@
     <div style="left: -1000px; overflow: scroll; position: absolute; top: -1000px; border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;">
       <div style="border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;"></div>
     </div>
-    <script src="/cdsp/js/clipboard.min.js?1723747056"></script>
-    <script src="/cdsp/js/perfect-scrollbar.min.js?1723747056"></script>
-    <script src="/cdsp/js/perfect-scrollbar.jquery.min.js?1723747056"></script>
-    <script src="/cdsp/js/jquery.sticky.js?1723747056"></script>
-    <script src="/cdsp/js/featherlight.min.js?1723747056"></script>
-    <script src="/cdsp/js/highlight.pack.js?1723747056"></script>
+    <script src="/cdsp/js/clipboard.min.js?1725298676"></script>
+    <script src="/cdsp/js/perfect-scrollbar.min.js?1725298676"></script>
+    <script src="/cdsp/js/perfect-scrollbar.jquery.min.js?1725298676"></script>
+    <script src="/cdsp/js/jquery.sticky.js?1725298676"></script>
+    <script src="/cdsp/js/featherlight.min.js?1725298676"></script>
+    <script src="/cdsp/js/highlight.pack.js?1725298676"></script>
     <script>hljs.initHighlightingOnLoad();</script>
-    <script src="/cdsp/js/modernizr.custom-3.6.0.js?1723747056"></script>
-    <script src="/cdsp/js/learn.js?1723747056"></script>
-    <script src="/cdsp/js/hugo-learn.js?1723747056"></script>
+    <script src="/cdsp/js/modernizr.custom-3.6.0.js?1725298676"></script>
+    <script src="/cdsp/js/learn.js?1725298676"></script>
+    <script src="/cdsp/js/hugo-learn.js?1725298676"></script>
     
         
-            <script src="/cdsp/mermaid/mermaid.js?1723747056"></script>
+            <script src="/cdsp/mermaid/mermaid.js?1725298676"></script>
         
         <script>
             mermaid.initialize({ startOnLoad: true });
