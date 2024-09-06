@@ -40,7 +40,7 @@ Vehicle.Powertrain:
   description: Powertrain data for battery management, etc.
   type: branch
 
-Vehicle.Powertrain.TractionBattery:  
+Vehicle.Powertrain.TractionBattery:
   description: Battery Management data.
   type: branch
 

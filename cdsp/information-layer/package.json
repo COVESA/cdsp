@@ -1,0 +1,22 @@
+{
+  "name": "information-layer",
+  "version": "1.0.0",
+  "description": "WebSocket server with handlers for IoTDB and RealmDB",
+  "private": true,
+  "workspaces": [
+    "handlers/src",
+    "handlers/src/iotdb",
+    "handlers/src/realmdb",
+    "router"
+  ],
+  "main": "router/src/websocket-server.js",
+  "scripts": {
+    "start": "node router/src/websocket-server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "prettier": "3.3.3"
+  }
+}

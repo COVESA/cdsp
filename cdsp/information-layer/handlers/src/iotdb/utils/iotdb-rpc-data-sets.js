@@ -1,4 +1,4 @@
-const { IoTDBDataType } = require("./IoTDBConstants");
+const { IoTDBDataType } = require("./iotdb-constants");
 class IoTDBRpcDataSet {
   // Static properties
   static TIMESTAMP_STR = "Time";
@@ -36,7 +36,7 @@ class IoTDBRpcDataSet {
     sessionId,
     queryDataSet,
     ignoreTimestamp,
-    fetchSize
+    fetchSize,
   ) {
     this.#columnNameList = [];
     this.#columnTypeList = [];
@@ -75,7 +75,7 @@ class IoTDBRpcDataSet {
           let index = columnNameIndex[name];
           this.#columnOrdinalDict.set(
             name,
-            index + IoTDBRpcDataSet.START_INDEX
+            index + IoTDBRpcDataSet.START_INDEX,
           );
           this.#columnTypeDeduplicatedList[index] =
             IoTDBDataType[columnTypeList[i]];
@@ -85,7 +85,7 @@ class IoTDBRpcDataSet {
 
     this.#timeBytes = Buffer.alloc(0);
     this.#currentBitmap = Array(this.#columnTypeDeduplicatedList.length).fill(
-      Buffer.alloc(0)
+      Buffer.alloc(0),
     );
     this.#value = Array(this.#columnTypeDeduplicatedList.length).fill(null);
   }

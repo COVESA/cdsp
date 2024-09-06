@@ -3,35 +3,35 @@ const fs = require("fs");
 const yaml = require("js-yaml");
 const { logMessage, MessageType } = require("../../utils/logger");
 /**
- * Reads and parses an endpoints file in either JSON, YML or YAML format.
+ * Reads and parses a data points file in either JSON, YML or YAML format.
  *
- * @param {string} filePath - The path to the endpoints file.
- * @returns {Object} The parsed content of the endpoints file.
+ * @param {string} filePath - The path to the data points file.
+ * @returns {Object} The parsed content of the data points file.
  * @throws {Error} If the file format is unsupported.
  */
-function readEndpointsFile(filePath) {
+function readDataPointsFile(filePath) {
   const fileContent = fs.readFileSync(filePath, "utf8");
   if (filePath.endsWith(".json")) {
     return JSON.parse(fileContent);
   } else if (filePath.endsWith(".yaml") || filePath.endsWith(".yml")) {
     return yaml.load(fileContent);
   } else {
-    throw new Error("Unsupported endpoints file format");
+    throw new Error("Unsupported data points file format");
   }
 }
 
 /**
- * Recursively extracts data types from an endpoints object.
+ * Recursively extracts data types from a data point object.
  *
- * @param {Object} endpointsObj - The object containing endpoint definitions.
+ * @param {Object} dataPointsObj - The object containing data point definitions.
  * @param {string} [parentKey=""] - The parent key used to build the nested key path.
  * @param {Object} [result={}] - The object to store the extracted data types.
- * @returns {Object} An object mapping endpoint keys to their data types.
+ * @returns {Object} An object mapping data point keys to their data types.
  */
-function extractDataTypes(endpointsObj, parentKey = "", result = {}) {
-  for (const key in endpointsObj) {
-    if (endpointsObj.hasOwnProperty(key)) {
-      const value = endpointsObj[key];
+function extractDataTypes(dataPointsObj, parentKey = "", result = {}) {
+  for (const key in dataPointsObj) {
+    if (dataPointsObj.hasOwnProperty(key)) {
+      const value = dataPointsObj[key];
       const newKey = parentKey ? `${parentKey}.${key}` : key;
       if (value && typeof value === "object") {
         if (value.datatype) {
@@ -58,6 +58,9 @@ class Handler {
         case "subscribe":
           this.subscribe(message, ws);
           break;
+        case "unsubscribe":
+          this.unsubscribe(message, ws);
+          break;
         default:
           ws.send(JSON.stringify({ error: "Unknown message type" }));
       }
@@ -80,6 +83,14 @@ class Handler {
 
   subscribe(message, ws) {
     throw new Error("Subscribe method not implemented yet!");
+  }
+
+  unsubscribe(message, ws) {
+    throw new Error("Unsubscribe method not implemented yet!");
+  }
+
+  unsubscribe_client(uuid) {
+    throw new Error("Unsubscribe client method not implemented yet!");
   }
 
   /**
@@ -125,7 +136,7 @@ class Handler {
    * @param {string} node - The message node to transform.
    * @returns {string} - The transformed message node with dots replaced by underscores.
    */
-  _transformEndpointsWithUnderscores(node) {
+  _transformDatapointsWithUnderscores(node) {
     return `${node}`.replace(/\./g, "_");
   }
 
@@ -135,26 +146,26 @@ class Handler {
    * @param {string} field - The database filed to transform.
    * @returns {string} - The transformed to message node replacing underscores by dots.
    */
-  _transformEndpointsWithDots(field) {
+  _transformDataPointsWithDots(field) {
     return `${field}`.replace(/\_/g, ".");
   }
 
   /**
-   * Retrieves and processes supported endpoints.
+   * Retrieves and processes supported data points.
    *
-   * This method reads the endpoints configuration file, extracts the data types,
-   * and transforms the endpoint names to use underscores. It returns an object
-   * with the transformed endpoint names as keys and their corresponding data types.
+   * This method reads the data points configuration file, extracts the data types,
+   * and transforms the data point names to use underscores. It returns an object
+   * with the transformed data point names as keys and their corresponding data types.
    *
-   * @returns {Object} An object containing the supported endpoints with transformed names and data types.
+   * @returns {Object} An object containing the supported data points with transformed names and data types.
    */
-  _getSupportedEndpoints() {
-    const endpointPath = config.getEndpointsPath();
-    const endpointObj = readEndpointsFile(endpointPath);
-    const supportedEndpoints = extractDataTypes(endpointObj);
+  _getSupportedDataPoints() {
+    const datapointPath = config.getDataPointsPath();
+    const dataPointObj = readDataPointsFile(datapointPath);
+    const supportedDataPoints = extractDataTypes(dataPointObj);
     let result = {};
-    Object.entries(supportedEndpoints).forEach(([node, value]) => {
-      const underscored_node = this._transformEndpointsWithUnderscores(node);
+    Object.entries(supportedDataPoints).forEach(([node, value]) => {
+      const underscored_node = this._transformDatapointsWithUnderscores(node);
       if (value !== null) {
         result[underscored_node] = value;
       }

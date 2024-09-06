@@ -1,6 +1,6 @@
 {
   "Vehicle": {
-    "children": {      
+    "children": {
       "Chassis": {
         "children": {
           "SteeringWheel": {
@@ -28,7 +28,8 @@
             "min": -90,
             "type": "sensor",
             "unit": "degrees"
-          },          "Longitude": {
+          },
+          "Longitude": {
             "datatype": "double",
             "description": "Current longitude of vehicle in WGS 84 geodetic coordinates, as measured at the position of GNSS receiver antenna.",
             "max": 180,

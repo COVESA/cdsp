@@ -1,9 +1,15 @@
 const { mediaElementsParams, databaseConfig } = require("./database-params");
-const dotenv = require("dotenv");
-dotenv.config();
+const { getEnvValue } = require("../../../config/config");
 
-function realmConfig(user, supportedEndpoints) {
-  const mediaElementSchema = createMediaElementSchema(supportedEndpoints);
+/**
+ * Configures the Realm database settings.
+ *
+ * @param {Object} user - The user object for authentication.
+ * @param {Array} supportedEndpoints - List of supported endpoints for the media element schema.
+ * @returns {Object} - The configuration object for the Realm database.
+ */
+function realmConfig(user, supportedDataPoints) {
+  const mediaElementSchema = createMediaElementSchema(supportedDataPoints);
   return {
     schema: [mediaElementSchema],
     path: databaseConfig.storePath,
@@ -25,10 +31,10 @@ function realmConfig(user, supportedEndpoints) {
 }
 
 const getSchemaVersion = () => {
-  const schemaVersion = parseInt(process.env.VERSION, 10);
+  const schemaVersion = parseInt(getEnvValue("VERSION_REALMDB_SCHEMA"), 10);
   if (isNaN(schemaVersion)) {
     throw new Error(
-      "Version must be specified as an ENV variable and it must be 0 or a positive integer"
+      "Version must be specified as an ENV variable and it must be 0 or a positive integer",
     );
   }
   return schemaVersion;
@@ -55,7 +61,7 @@ function createMediaElementSchema(supportedEndpoints) {
         break;
       default:
         throw new Error(
-          `The initialized endpoints contains an unsupported data type: ${value}`
+          `The initialized data points contains an unsupported data type: ${value}`,
         );
     }
   });

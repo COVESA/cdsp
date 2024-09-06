@@ -95,6 +95,14 @@ const schemas = {
     required: itemsHeader,
     additionalProperties: false,
   },
+  unsubscribe: {
+    type: "object",
+    properties: {
+      ...createCommonStructure("unsubscribe"),
+    },
+    required: itemsHeader,
+    additionalProperties: false,
+  },
 };
 
 const validateMessage = (message) => {
@@ -110,6 +118,9 @@ const validateMessage = (message) => {
         break;
       case "subscribe":
         schemaKey = "subscribe";
+        break;
+      case "unsubscribe":
+        schemaKey = "unsubscribe";
         break;
       default:
         throw new Error(ajv.errorsText(validate.errors));

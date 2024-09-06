@@ -1,6 +1,6 @@
-const { IoTDBDataType } = require("./IoTDBConstants");
-const IoTDBRpcDataSet = require("./IoTDBRpcDataSets");
-const { IoTDBDataInterpreter } = require("./IoTDBDataInterpreter");
+const { IoTDBDataType } = require("./iotdb-constants");
+const IoTDBRpcDataSet = require("./iotdb-rpc-data-sets");
+const { IoTDBDataInterpreter } = require("./iotdb-data-interpreter");
 
 const dataTypeProcessors = {
   [IoTDBDataType.BOOLEAN]: (bytes) =>
@@ -39,7 +39,7 @@ class SessionDataSet {
     statementId,
     sessionId,
     queryDataSet,
-    ignoreTimestamp
+    ignoreTimestamp,
   ) {
     this.iotdbRpcDataSet = new IoTDBRpcDataSet(
       columnNameList,
@@ -51,7 +51,7 @@ class SessionDataSet {
       sessionId,
       queryDataSet,
       ignoreTimestamp,
-      1024 // Buffer size or default value
+      1024, // Buffer size or default value
     );
   }
 
@@ -92,7 +92,7 @@ class SessionDataSet {
    */
   constructRowRecordFromValueArray() {
     let time64 = IoTDBDataInterpreter.extractTimestamp(
-      this.iotdbRpcDataSet.getTimeBytes()
+      this.iotdbRpcDataSet.getTimeBytes(),
     );
     let obj = { timestamp: time64 };
 

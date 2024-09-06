@@ -3,6 +3,12 @@ This directory contains files related to the Docker deployment of the Central Da
 # Central Data Service Playground
 The compose file `docker-compose-cdsp.yml` provides a containerized deployment of the playground using docker.
 
+## Table of contents
+- [Docker installation](#docker-installation)
+- [VISSR docker image build setup](#vissr-docker-image-build-setup)
+- [Websocket-Server docker image build setup](#websocket-server-docker-image-build-setup)
+- [Deploy with Docker Compose](#deploy-with-docker-compose)
+
 ## Docker installation
 If you are not familiar with Docker it is a widely deployed and well documented technology. For which you should find numerous tutorials on its use on the internet.
 
@@ -32,7 +38,7 @@ Depending on your distro you may need to setup `GOROOT` and `GOPATH`. This was n
 ### Create persistent local volume `/tmp/docker`
 The upstream Docker compose assumes the existence of the local directory `/tmp/docker` but does not create it. Fix the issue by creating it yourself:
 
-```
+```shell
 $ mkdir /tmp/docker
 ```
 See upstream issue report https://github.com/w3c/automotive-viss2/issues/99 for details.
@@ -44,8 +50,8 @@ See upstream issue report https://github.com/w3c/automotive-viss2/issues/86 for 
 
 ### Disable Access Grant support (agt_public_key.rsa build error)
 There is a current issue with the upstream VISSR VISS Server Dockerfile in which the server fails to build due to a missing public key for the Access Control server. See upstream issue report https://github.com/w3c/automotive-viss2/issues/88 for details. After discussion with the upstream maintainers the current workaround is to comment out the relevant following line from the end of the `vissv2server` section of the Dockerfile. The change should be made to `cdsp/cdsp/vissr/Dockerfile.rlserver`
-```
-#COPY --from=builder /build/server/agt_server/agt_public_key.rsa .
+```shell
+# COPY --from=builder /build/server/agt_server/agt_public_key.rsa .
 ```
 
 If your project requires Access Grant support please discuss enabling it with the VISSR community.
@@ -72,8 +78,8 @@ A solution is to add the CA root certificate to the VISSR Dockerfile which will 
 The VISSR Dockerfile already includes an example of this for a Cisco system which uses the CA root certificate `cisco.crt`.
 
 From `cdsp/vissr/Dockerfile.rlserver`:
-```
-#corporate proxy settings can sometimes cause tls verification error. Add root crt to docker container.
+```dockerfile 
+# corporate proxy settings can sometimes cause tls verification error. Add root crt to docker container.
 COPY testCredGen/cicso-umbrella/cisco.crt /usr/local/share/ca-certificates/cisco.crt
 RUN update-ca-certificates
 ```
@@ -82,7 +88,7 @@ To add your own:
 2. Copy the `.crt` file into `cdsp/vissr/testCredGen`
 3. Add your own line to the Dockerfile to copy the certificate so that it is included when `update-ca-certificates` is run. As shown below.
 
-```
+```dockerfile
 COPY testCredGen/cicso-umbrella/cisco.crt /usr/local/share/ca-certificates/cisco.crt
 COPY testCredGen/<my company .crt>  /usr/local/share/
 RUN update-ca-certificates
@@ -97,39 +103,98 @@ You can start working with the playground by starting the deployment with just t
 In parallel you can work through any VISSR build issues to add VISS support northbound and the other features it supports.
 
 Deploy (start) just IoTDB:
-```
+```shell
 $ sudo docker compose -f docker-compose-cdsp.yml up -d iotdb-service
-[+] Running 1/0
- ✔ Container iotdb-service  Running                 0.0s
+# [+] Running 1/0
+# ✔ Container iotdb-service  Running                 0.0s
+```
+
+## Websocket-Server docker image build setup
+
+This guide provides instructions for deploying the Websocket-Server using Docker Compose. You can choose to deploy the server with either RealmDB or IoTDB as the backend service.
+
+### Prerequisites
+
+- Correct configuration of the `.env` file based on the database you are using (RealmDB or IoTDB)
+
+### Configuring the `.env` File
+
+The `.env` file contains environment variables that need to be configured depending on the database you are using. Detailed instructions on how to configure the `.env` file can be found in the [database handlers README](../cdsp/information-layer/handlers/README.md).
+
+> [!IMPORTANT] 
+> Before proceeding with the deployment, ensure that the `.env` file is correctly configured for the database you plan to use.
+
+### Using RealmDB
+
+To deploy the Websocket-Server with RealmDB, use the following command:
+
+```shell
+$ sudo docker compose -f docker-compose-cdsp.yml up -d websocket-service
+# [+] Running 1/1                                                                                                                                                                                                                                          
+# ✔ Container websocket-service      Started     0.4s  
+```
+### Using IoTDB
+
+When deploying with IoTDB, ensure that the iotdb-service is up and running before starting the Websocket-Server.
+
+> [!IMPORTANT] If required, ensure that the iotdb-service container is started before running the Websocket-Server. You can also configure your own IoTDB connection.
+
+#### Start IoTDB and Websocket-Server
+
+To start both the iotdb-service and websocket-service, use the following commands:
+
+```shell
+$ sudo docker compose -f docker-compose-cdsp.yml up -d iotdb-service
+# [+] Running 1/1
+#  ✔ Container iotdb-service         Started     0.4s                                                                                                                                                                                                             0.4s 
+
+$ sudo docker compose -f docker-compose-cdsp.yml up -d websocket-service
+# [+] Running 1/1                                                                                                                                                                                                                                          
+# ✔ Container websocket-service      Started     0.4s  
+```
+
+### Expected result
+
+Listing should show three running containers as shown below:
+```shell
+$ sudo docker ps
+```
+
+```
+CONTAINER ID   IMAGE                           COMMAND                  CREATED          STATUS          PORTS                                       NAMES
+025b5dd05c56   cdsp-websocket-service          "docker-entrypoint.s…"   16 minutes ago   Up 16 minutes   0.0.0.0:8080->8080/tcp, :::8080->8080/tcp   websocket-service
+e16c8ed4ed42   apache/iotdb:1.2.2-standalone   "/usr/bin/dumb-init …"   23 minutes ago   Up 19 minutes   0.0.0.0:6667->6667/tcp, :::6667->6667/tcp   iotdb-service
 ```
 
 ## Deploy with Docker Compose
 ### Start/stop containers
 Start the containers:
-```
+```shell
 $ sudo docker compose -f docker-compose-cdsp.yml up -d
-[+] Running 4/5
- ⠴ Network cdsp_default               Created                 1.5s
- ✔ Container vissr_container_volumes  Started                 0.5s
- ✔ Container iotdb-service            Started                 0.7s
- ✔ Container app_redis                Started                 1.0s
- ✔ Container vissv2server             Started                 1.3s
+# [+] Running 4/5
+#  ⠴ Network cdsp_default               Created                 1.5s
+#  ✔ Container vissr_container_volumes  Started                 0.5s
+#  ✔ Container iotdb-service            Started                 0.7s
+#  ✔ Container app_redis                Started                 1.0s
+#  ✔ Container vissv2server             Started                 1.3s
 ```
 
 Stop and remove the containers:
-```
+```shell
 $ sudo docker compose -f docker-compose-cdsp.yml down
-[+] Running 5/5
- ✔ Container vissv2server             Removed                 0.0s
- ✔ Container app_redis                Removed                 0.3s
- ✔ Container iotdb-service            Removed                 2.2s
- ✔ Container vissr_container_volumes  Removed                 0.0s
- ✔ Network cdsp_default               Removed                 0.1s
+# [+] Running 5/5
+#  ✔ Container vissv2server             Removed                 0.0s
+#  ✔ Container app_redis                Removed                 0.3s
+#  ✔ Container iotdb-service            Removed                 2.2s
+#  ✔ Container vissr_container_volumes  Removed                 0.0s
+#  ✔ Network cdsp_default               Removed                 0.1s
 ```
 ### Expected Result
 Listing should show three running containers as shown below:
-```
+```shell
 $ sudo docker ps
+```
+```
 NAME            IMAGE                           COMMAND                  SERVICE         CREATED          STATUS          PORTS
 app_redis       redis                           "docker-entrypoint.s…"   redis           10 minutes ago   Up 10 minutes   6379/tcp
 iotdb-service   apache/iotdb:1.2.2-standalone   "/usr/bin/dumb-init …"   iotdb-service   10 minutes ago   Up 10 minutes   0.0.0.0:6667->6667/tcp, :::6667->6667/tcp
@@ -137,8 +202,10 @@ vissv2server    cdsp-vissv2server               "/app/vissv2server -…"   vissv
 ```
 #### Apache IoTDB
 You can confirm the Apache IoTDB server is running by connecting to it with the IoTDB CLI client (_quit_ to exit the client):
-```
+```shell
 $ sudo docker exec -ti iotdb-service /iotdb/sbin/start-cli.sh -h iotdb-service
+```
+```
 ---------------------
 Starting IoTDB Cli
 ---------------------

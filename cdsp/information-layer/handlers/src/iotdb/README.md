@@ -4,16 +4,10 @@ This directory contains the IoTDB Handler as a Node.js application. As [Apache I
 
 # Features
 
-- **Authentication**: Authenticates with IoTDB using the IoTDB host, port, user credentials, and time zone.
+- **Authentication**: Authenticates with IoTDB using the IoTDB host, port, user credentials, number of rows to be fetched, and time zone.
+- **Read Data**: Retrieves data from the IoTDB using a VIN as object ID.
+- **Write Data**: Write data to the IoTDB using a VIN as object ID.
 - **Error Handling**: Logs and handles errors during database operations and synchronization.
-
-# Installation
-
-Execute within `iotdb` directory
-
-```bash
-npm install
-```
 
 # Configure IoTDB
 
@@ -21,21 +15,33 @@ Before the Database-Router can start the IoTDB Handler without any errors you ne
 
 ## Configure of a IoTDB Handler
 
-Create `config/config.js` with the following format, replacing the app id and the api key with yours.
+Create (if it does not exist) `/docker/.env` and add the following environment variables, replacing the values with yours.
 
-```js
-module.exports = {
-  iotdbHost: "your-iotdb-host", // Default "localhost"
-  iotdbPort: 6667, // Set this to the appropriate IotDB Port
-  iotdbUser: "your-iotdb-user", // Default "root"
-  iotdbPassword: "your-iotdb-password", // Default "root"
-  timeZoneId: Intl.DateTimeFormat().resolvedOptions().timeZone, // Set this to the appropriate time zone
-  fetchSize: 10000, // number of rows that will be fetched from the database at a time when executing a query 
-};
+```shell
+    #########################
+    # GENERAL CONFIGURATION #
+    #########################
+    
+    # HANDLER_TYPE define the database to initialize
+    HANDLER_TYPE=iotdb
+    # DATA_POINTS_SCHEMA_FILE is the YAML or JSON file containing all data points supported. See the ../../config/README.md for more information.
+    DATA_POINTS_SCHEMA_FILE=vss_data_points.yaml
+    
+    #######################
+    # IOTDB CONFIGURATION #
+    #######################
+    
+    # Access to iotdb-service. All this are optional, they have an predefine default value
+    IOTDB_HOST="your-iotdb-host" # Docker container name for IoTDB or host, default container name "iotdb-service"
+    IOTDB_PORT=6667 # Set this to the appropriate IotDB Port, default "6667"
+    IOTDB_USER="your-iotdb-user" # Default "root"
+    IOTDB_PASSWORD="your-iotdb-password" # Default "root"
+    IOTDB_TIMEZONE="your-time-zone" # Default your local configured time zone
+    FETCH_SIZE=10000 #number of rows that will be fetched from the database at a time when executing a query, default 10000
 ```
 
-> **_IMPORTANT:_** Do not commit this file to github!
+> **_IMPORTANT:_** Do not commit this file to GitHub!
 
 ## Starting the IoTDB handler
 
-You do not need to start IotDB Handler manually. It is started by the DB-Router like described [here](../../../router/README.md#Run).
+You do not need to start IotDB Handler manually. It is started by the Websocket-Server like described [here](../../../README.md).

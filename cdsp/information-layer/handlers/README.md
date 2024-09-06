@@ -1,11 +1,11 @@
 # Handlers
 
-We support two different databases. 
+We support two different databases. For each of them is required to configurate the corresponding ENV variables in `/docker/.env` file. 
 
-- [IotDB](./src/iotdb)
-- [RealmDB](./src/realmdb)
+- [IotDB](./src/iotdb/README.md)
+- [RealmDB](./src/realmdb/README.md)
 
 > [!WARNING]
-> Before start working with any of them, ensure that the supported endpoints are correctly defined and configured. See [how](./handlers/config/README.md). 
-> 
-See [hier](../../information-layer/router/README.md) how to install the Database-Router.
+> Before start working with any of them, ensure that the supported data points are correctly defined and configured. See [how](./handlers/config/README.md).
+
+See [hier](../../information-layer/README.md) how to install and start the Websocket-Server.

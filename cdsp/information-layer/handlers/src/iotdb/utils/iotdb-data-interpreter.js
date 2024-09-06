@@ -1,9 +1,9 @@
 const {
   IoTDBDataType,
   SupportedMessageDataTypes,
-} = require("./IoTDBConstants");
+} = require("./iotdb-constants");
 
-class IoTDBDataInterpreter {
+class IotdbDataInterpreter {
   /**
    * Serializes values based on the specified data types.
    * @param {Array} dataTypes - Array of data types to serialize the values as.
@@ -59,7 +59,7 @@ class IoTDBDataInterpreter {
         case SupportedMessageDataTypes.uint16:
           serializedValues.push(...serializeInt32(values[i]));
           break;
-        // case SupportedMessageDataTypes.int64: // this type is not supported by now, see: cdsp/information-layer/handlers/iotdb/utils/IoTDBConstants.js
+        // case SupportedMessageDataTypes.int64: // this type is not supported by now, see: cdsp/information-layer/handlers/iotdb/utils/iotdb-constants.js
         //   serializedValues.push(...serializeInt64(values[i]));
         //   break;
         case SupportedMessageDataTypes.float:
@@ -110,4 +110,4 @@ class IoTDBDataInterpreter {
   }
 }
 
-module.exports = { IoTDBDataInterpreter };
+module.exports = { IoTDBDataInterpreter: IotdbDataInterpreter };

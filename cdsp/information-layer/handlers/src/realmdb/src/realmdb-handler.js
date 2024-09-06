@@ -1,17 +1,18 @@
 const Realm = require("realm");
 const Handler = require("../../handler");
-const config = require("../config/config");
-const { mediaElementsParams } = require("../config/database-params");
+const {
+  mediaElementsParams,
+  databaseConfig,
+} = require("../config/database-params");
 const realmConfig = require("../config/realm-configuration");
 const { v4: uuidv4 } = require("uuid");
-const app = new Realm.App({ id: config.realmAppId });
-const credentials = Realm.Credentials.apiKey(config.realmApiKey);
 const {
   logMessage,
   logWithColor,
   MessageType,
   COLORS,
 } = require("../../../../utils/logger");
+
 /**
  * Parses the response from a media element change event.
  *
@@ -31,19 +32,24 @@ class RealmDBHandler extends Handler {
     super();
     this.realm = null;
     this._sendMessageToClients = null;
+    this.listeners = new Map();
   }
 
   async authenticateAndConnect(sendMessageToClients) {
     try {
       this._sendMessageToClients = sendMessageToClients;
+
+      const app = new Realm.App({ id: databaseConfig.realmAppId });
+      const credentials = Realm.Credentials.apiKey(databaseConfig.realmApiKey);
       const user = await app.logIn(credentials);
       console.info("Successfully authenticated to RealmDB");
-      const supportedEndpoints = this._getSupportedEndpoints();
-      const realmConfigObj = realmConfig(user, supportedEndpoints);
+
+      const supportedDataPoints = this._getSupportedDataPoints();
+      const realmConfigObj = realmConfig(user, supportedDataPoints);
       this.realm = await Realm.open(realmConfigObj);
       console.info("Connection established successfully");
 
-      Object.entries(mediaElementsParams).forEach(async ([key, value]) => {
+      for (const [key, value] of Object.entries(mediaElementsParams)) {
         try {
           const databaseName = value.databaseName;
           await this.realm.objects(databaseName).subscribe();
@@ -51,14 +57,14 @@ class RealmDBHandler extends Handler {
         } catch (error) {
           logMessage(
             "Error subscribing databases: ".concat(error),
-            MessageType.ERROR
+            MessageType.ERROR,
           );
         }
-      });
+      }
     } catch (error) {
       logMessage(
         "Failed to authenticate with Realm: ".concat(error),
-        MessageType.ERROR
+        MessageType.ERROR,
       );
     }
   }
@@ -70,7 +76,7 @@ class RealmDBHandler extends Handler {
     } catch (error) {
       logMessage(
         "Error reading object from Realm: ".concat(error),
-        MessageType.ERROR
+        MessageType.ERROR,
       );
       this._sendMessageToClient(ws, { error: "Error reading object" });
     }
@@ -80,23 +86,23 @@ class RealmDBHandler extends Handler {
     try {
       const mediaElement = await this.#getMediaElement(message, ws);
       let nodes = message.node ? [message.node] : message.nodes;
-      const endpoints = [];
+      const dataPoints = [];
 
       if (mediaElement) {
         this.realm.write(() => {
           nodes.forEach(({ name, value }) => {
-            const prop = this._transformEndpointsWithUnderscores(name);
-            endpoints.push(name);
+            const prop = this._transformDatapointsWithUnderscores(name);
+            dataPoints.push(name);
             mediaElement[prop] = value;
           });
         });
       } else {
-        const endpointId = mediaElementsParams[message.tree].endpointId;
-        let document = { _id: uuidv4(), [endpointId]: message.id };
+        const dataPointId = mediaElementsParams[message.tree].dataPointId;
+        let document = { _id: uuidv4(), [dataPointId]: message.id };
 
         nodes.forEach(({ name, value }) => {
-          const prop = this._transformEndpointsWithUnderscores(name);
-          endpoints.push(name);
+          const prop = this._transformDatapointsWithUnderscores(name);
+          dataPoints.push(name);
           document[prop] = value;
         });
         const databaseName = mediaElementsParams[message.tree].databaseName;
@@ -106,14 +112,12 @@ class RealmDBHandler extends Handler {
         });
       }
 
-      let messageNodes = endpoints.map((key) => ({ name: key }));
-
       const updateMessage = await this.#getMessageData(message, ws);
-      this._sendMessageToClients(updateMessage);
+      this._sendMessageToClient(ws, updateMessage);
     } catch (error) {
       logMessage(
         "Error writing object changes in Realm: ".concat(error),
-        MessageType.ERROR
+        MessageType.ERROR,
       );
       this._sendMessageToClient(ws, { error: "Error writing object changes" });
     }
@@ -125,20 +129,25 @@ class RealmDBHandler extends Handler {
       if (mediaElement) {
         const objectId = mediaElement._id;
         const { id, tree, uuid } = message;
-        const { databaseName, endpointId } = mediaElementsParams[tree];
-        logWithColor(
-          `Subscribing element: Object ID: ${objectId} with ${endpointId}: '${id}' on ${databaseName}`,
-          COLORS.GREY
-        );
+        const { databaseName, dataPointId } = mediaElementsParams[tree];
 
-        const mediaElementToSubscribe = await this.realm.objectForPrimaryKey(
-          databaseName,
-          objectId
-        );
+        if (!this.listeners.has(ws)) {
+          this.listeners.set(ws, new Map());
+        }
 
-        if (mediaElementToSubscribe) {
-          mediaElementToSubscribe.addListener(
-            (mediaElementToSubscribe, changes) =>
+        if (!this.listeners.get(ws).has(id)) {
+          logWithColor(
+            `Subscribing element for user '${uuid}': Object ID: ${objectId} with ${dataPointId}: '${id}' on ${databaseName}`,
+            COLORS.GREY,
+          );
+
+          const mediaElementToSubscribe = await this.realm.objectForPrimaryKey(
+            databaseName,
+            objectId,
+          );
+
+          if (mediaElementToSubscribe) {
+            const listener = (mediaElementToSubscribe, changes) =>
               this.#onMediaElementChange(
                 mediaElementToSubscribe,
                 changes,
@@ -147,15 +156,34 @@ class RealmDBHandler extends Handler {
                   tree: tree,
                   uuid: uuid,
                 },
-                ws
-              )
-          );
-          this._sendMessageToClient(ws, {
-            success: `subscribed to ${endpointId}: '${id}'`,
-          });
+                ws,
+              );
+
+            mediaElementToSubscribe.addListener(listener);
+
+            // Store the listener so we can remove it later
+            this.listeners.get(ws).set(id, {
+              objectId: objectId,
+              mediaElement: mediaElementToSubscribe,
+              listener: listener,
+            });
+
+            this._sendMessageToClient(ws, {
+              success: `Subscribed to ${dataPointId}: '${id}'`,
+            });
+
+            logWithColor(
+              `Subscription added! Amount Clients: ${this.listeners.size}`,
+              COLORS.GREY,
+            );
+          } else {
+            this._sendMessageToClient(ws, {
+              error: "Object could not be subscribed",
+            });
+          }
         } else {
           this._sendMessageToClient(ws, {
-            error: "Object could not be subscribed",
+            success: `Subscription was already done to ${dataPointId}: '${id}'`,
           });
         }
       } else {
@@ -166,6 +194,52 @@ class RealmDBHandler extends Handler {
         error: "Error subscribing to object changes",
       });
     }
+  }
+
+  async unsubscribe(message, ws) {
+    const { id, tree, uuid } = message;
+    const { databaseName, dataPointId } = mediaElementsParams[tree];
+
+    if (this.listeners.has(ws)) {
+      const wsListeners = this.listeners.get(ws);
+      if (wsListeners.has(id)) {
+        const listener = wsListeners.get(id);
+        logWithColor(
+          `Unsubscribing element for user '${uuid}': Object ID: ${listener.objectId} with ${dataPointId}: '${id}' on ${databaseName}`,
+          COLORS.GREY,
+        );
+        listener.mediaElement.removeListener(listener.listener);
+        wsListeners.delete(id);
+
+        if (wsListeners.size === 0) {
+          this.listeners.delete(ws);
+        }
+
+        this._sendMessageToClient(ws, {
+          success: `Unsubscribed to ${dataPointId}: '${id}'`,
+        });
+      } else {
+        this._sendMessageToClient(ws, {
+          error: `No subscription found for VIN: ${id}`,
+        });
+      }
+    } else {
+      this._sendMessageToClient(ws, {
+        error: `No subscription found for VIN: ${id}`,
+      });
+    }
+    logWithColor(
+      `Subscription removed! Amount Clients: ${this.listeners.size}`,
+      COLORS.GREY,
+    );
+  }
+
+  async unsubscribe_client(ws) {
+    this.listeners.delete(ws);
+    logWithColor(
+      `All client subscriptions removed! Amount Clients: ${this.listeners.size}`,
+      COLORS.GREY,
+    );
   }
 
   /**
@@ -180,7 +254,7 @@ class RealmDBHandler extends Handler {
     const mediaElement = await this.#getMediaElement(message, ws);
     logWithColor(
       `Media Element: \n ${JSON.stringify(mediaElement)}`,
-      COLORS.GREY
+      COLORS.GREY,
     );
     if (mediaElement) {
       const responseNodes = this.#parseReadResponse(message, mediaElement);
@@ -200,10 +274,10 @@ class RealmDBHandler extends Handler {
   async #getMediaElement(message, ws) {
     try {
       const { id, tree } = message;
-      const { databaseName, endpointId } = mediaElementsParams[tree];
+      const { databaseName, dataPointId } = mediaElementsParams[tree];
       return await this.realm
         .objects(databaseName)
-        .filtered(`${endpointId} = '${id}'`)[0];
+        .filtered(`${dataPointId} = '${id}'`)[0];
     } catch (error) {
       this._sendMessageToClient(ws, { error: "Error reading object" });
     }
@@ -219,7 +293,7 @@ class RealmDBHandler extends Handler {
     logMessage(
       "Media element changed",
       MessageType.RECEIVED,
-      `Web-Socket Connection Event Received`
+      `Web-Socket Connection Event Received`,
     );
     if (changes.deleted) {
       logMessage(changes.deleted, COLORS.YELLOW, "MediaElement is deleted");
@@ -227,11 +301,11 @@ class RealmDBHandler extends Handler {
       if (changes.changedProperties.length > 0) {
         const responseNodes = parseOnMediaElementChangeResponse(
           changes,
-          mediaElement
+          mediaElement,
         );
         const updateMessage = this._createUpdateMessage(
           messageHeader,
-          responseNodes
+          responseNodes,
         );
         this._sendMessageToClient(ws, updateMessage);
       }
@@ -249,7 +323,7 @@ class RealmDBHandler extends Handler {
     const data = [];
     const nodes = message.node ? [message.node] : message.nodes;
     nodes.forEach((node) => {
-      const prop = this._transformEndpointsWithUnderscores(node.name);
+      const prop = this._transformDatapointsWithUnderscores(node.name);
       data.push({
         name: node.name,
         value: queryResponseObj[prop],

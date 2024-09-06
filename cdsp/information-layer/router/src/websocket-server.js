@@ -41,12 +41,12 @@ server.on("connection", (ws) => {
     if (validatedMessage instanceof Error) {
       logMessage(
         `Invalid message format: ${validatedMessage.message}`,
-        MessageType.ERROR
+        MessageType.ERROR,
       );
       ws.send(
         JSON.stringify({
           error: `Invalid message format`,
-        })
+        }),
       );
     } else {
       handler.handleMessage(validatedMessage, ws);
@@ -54,9 +54,11 @@ server.on("connection", (ws) => {
   });
 
   ws.on("close", () => {
-    console.info("* Client disconnected *");
+    // Remove all client listeners
+    handler.unsubscribe_client(ws);
     // Remove disconnected client from the array
     clients = clients.filter((client) => client !== ws);
+    console.info("* Client disconnected *");
   });
 });
 

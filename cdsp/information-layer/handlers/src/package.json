@@ -1,0 +1,8 @@
+{
+  "name": "handlers",
+  "version": "1.0.0",
+  "description": "Database handlers",
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  }
+}
