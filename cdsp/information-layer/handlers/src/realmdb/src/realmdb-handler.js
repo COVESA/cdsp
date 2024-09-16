@@ -12,6 +12,9 @@ const {
   MessageType,
   COLORS,
 } = require("../../../../utils/logger");
+const {
+  createErrorMessage,
+} = require("../../../../utils/error-message-helper");
 
 /**
  * Parses the response from a media element change event.
@@ -70,62 +73,67 @@ class RealmDBHandler extends Handler {
   }
 
   async read(message, ws) {
-    try {
-      const updateMessage = await this.#getMessageData(message, ws);
-      this._sendMessageToClient(ws, updateMessage);
-    } catch (error) {
-      logMessage(
-        "Error reading object from Realm: ".concat(error),
-        MessageType.ERROR,
-      );
-      this._sendMessageToClient(ws, { error: "Error reading object" });
+    if (this.#areNodesValid(message, ws)) {
+      try {
+        const updateMessage = await this.#getMessageData(message);
+        this._sendMessageToClient(ws, updateMessage);
+      } catch (error) {
+        logMessage(
+          `Error reading object from Realm: ${error.message}`,
+          MessageType.ERROR,
+        );
+        this._sendMessageToClient(
+          ws,
+          createErrorMessage("read", 404, JSON.parse(error.message)),
+        );
+      }
     }
   }
 
   async write(message, ws) {
-    try {
-      const mediaElement = await this.#getMediaElement(message, ws);
-      let nodes = message.node ? [message.node] : message.nodes;
-      const dataPoints = [];
+    if (this.#areNodesValid(message, ws)) {
+      try {
+        const mediaElement = await this.#getMediaElement(message);
+        const nodes = message.node ? [message.node] : message.nodes;
 
-      if (mediaElement) {
-        this.realm.write(() => {
+        const transformAndAssign = (element, nodes) => {
           nodes.forEach(({ name, value }) => {
-            const prop = this._transformDatapointsWithUnderscores(name);
-            dataPoints.push(name);
-            mediaElement[prop] = value;
+            const prop = this._transformDataPointsWithUnderscores(name);
+            element[prop] = value;
           });
-        });
-      } else {
-        const dataPointId = mediaElementsParams[message.tree].dataPointId;
-        let document = { _id: uuidv4(), [dataPointId]: message.id };
-
-        nodes.forEach(({ name, value }) => {
-          const prop = this._transformDatapointsWithUnderscores(name);
-          dataPoints.push(name);
-          document[prop] = value;
-        });
-        const databaseName = mediaElementsParams[message.tree].databaseName;
+        };
 
         this.realm.write(() => {
-          this.realm.create(databaseName, document);
+          if (mediaElement) {
+            // Write on existing media element
+            transformAndAssign(mediaElement, nodes);
+          } else {
+            // Create a new media element
+            const dataPointId = mediaElementsParams[message.tree].dataPointId;
+            const document = { _id: uuidv4(), [dataPointId]: message.id };
+            transformAndAssign(document, nodes);
+            const databaseName = mediaElementsParams[message.tree].databaseName;
+            this.realm.create(databaseName, document);
+          }
         });
-      }
 
-      const updateMessage = await this.#getMessageData(message, ws);
-      this._sendMessageToClient(ws, updateMessage);
-    } catch (error) {
-      logMessage(
-        "Error writing object changes in Realm: ".concat(error),
-        MessageType.ERROR,
-      );
-      this._sendMessageToClient(ws, { error: "Error writing object changes" });
+        // Read the updated media element
+        await this.read(message, ws);
+      } catch (error) {
+        const errorMessage = `Schema is not compatible for that media element: ${error.message}`;
+        logMessage(errorMessage, MessageType.ERROR);
+        this._sendMessageToClient(
+          ws,
+          createErrorMessage("write", 404, errorMessage),
+        );
+      }
     }
   }
 
   async subscribe(message, ws) {
     try {
-      const mediaElement = await this.#getMediaElement(message, ws);
+      const mediaElement = await this.#getMediaElement(message);
+
       if (mediaElement) {
         const objectId = mediaElement._id;
         const { id, tree, uuid } = message;
@@ -141,58 +149,61 @@ class RealmDBHandler extends Handler {
             COLORS.GREY,
           );
 
-          const mediaElementToSubscribe = await this.realm.objectForPrimaryKey(
-            databaseName,
-            objectId,
+          const listener = (mediaElement, changes) =>
+            this.#onMediaElementChange(
+              mediaElement,
+              changes,
+              {
+                id: id,
+                tree: tree,
+                uuid: uuid,
+              },
+              ws,
+            );
+
+          mediaElement.addListener(listener);
+
+          // Store the listener so we can remove it later
+          this.listeners.get(ws).set(id, {
+            objectId: objectId,
+            mediaElement: mediaElement,
+            listener: listener,
+          });
+
+          this._sendMessageToClient(
+            ws,
+            this._createSubscribeMessage("subscribe", message, "succeed"),
           );
 
-          if (mediaElementToSubscribe) {
-            const listener = (mediaElementToSubscribe, changes) =>
-              this.#onMediaElementChange(
-                mediaElementToSubscribe,
-                changes,
-                {
-                  id: id,
-                  tree: tree,
-                  uuid: uuid,
-                },
-                ws,
-              );
-
-            mediaElementToSubscribe.addListener(listener);
-
-            // Store the listener so we can remove it later
-            this.listeners.get(ws).set(id, {
-              objectId: objectId,
-              mediaElement: mediaElementToSubscribe,
-              listener: listener,
-            });
-
-            this._sendMessageToClient(ws, {
-              success: `Subscribed to ${dataPointId}: '${id}'`,
-            });
-
-            logWithColor(
-              `Subscription added! Amount Clients: ${this.listeners.size}`,
-              COLORS.GREY,
-            );
-          } else {
-            this._sendMessageToClient(ws, {
-              error: "Object could not be subscribed",
-            });
-          }
+          logWithColor(
+            `Subscription added! Amount Clients: ${this.listeners.size}`,
+            COLORS.GREY,
+          );
         } else {
-          this._sendMessageToClient(ws, {
-            success: `Subscription was already done to ${dataPointId}: '${id}'`,
-          });
+          this._sendMessageToClient(
+            ws,
+            createErrorMessage(
+              "subscribe",
+              400,
+              `Subscription already done to ${dataPointId}: '${id}'`,
+            ),
+          );
         }
       } else {
-        this._sendMessageToClient(ws, { error: "Object not found" });
+        this._sendMessageToClient(
+          ws,
+          createErrorMessage("subscribe", 400, "Object not found"),
+        );
       }
     } catch (error) {
-      this._sendMessageToClient(ws, {
-        error: "Error subscribing to object changes",
-      });
+      this._sendMessageToClient(
+        ws,
+        createErrorMessage(
+          "subscribe",
+          503,
+          "Subscription process could not finish, try again",
+        ),
+      );
     }
   }
 
@@ -215,18 +226,29 @@ class RealmDBHandler extends Handler {
           this.listeners.delete(ws);
         }
 
-        this._sendMessageToClient(ws, {
-          success: `Unsubscribed to ${dataPointId}: '${id}'`,
-        });
+        this._sendMessageToClient(
+          ws,
+          this._createSubscribeMessage("unsubscribe", message, "succeed"),
+        );
       } else {
-        this._sendMessageToClient(ws, {
-          error: `No subscription found for VIN: ${id}`,
-        });
+        this._sendMessageToClient(
+          ws,
+          createErrorMessage(
+            "unsubscribe",
+            400,
+            `No subscription found for VIN: ${id}`,
+          ),
+        );
       }
     } else {
-      this._sendMessageToClient(ws, {
-        error: `No subscription found for VIN: ${id}`,
-      });
+      this._sendMessageToClient(
+        ws,
+        createErrorMessage(
+          "unsubscribe",
+          400,
+          `No subscription found for this client`,
+        ),
+      );
     }
     logWithColor(
       `Subscription removed! Amount Clients: ${this.listeners.size}`,
@@ -243,35 +265,94 @@ class RealmDBHandler extends Handler {
   }
 
   /**
-   * Asynchronously retrieves media element, processes it, and creates an updated message.
+   * Validates the nodes in a message against the schema of a media element.
    *
-   * @param {Object} message - The message object containing the data to be processed.
-   * @param {WebSocket} ws - The WebSocket connection used for communication.
-   * @returns {Promise<Object>} - A promise that resolves to the updated message object.
+   * @param {Object} message - The message object containing details for the request.
+   * @param {WebSocket} ws - The WebSocket object for communication.
+   * @returns {boolean} - Returns true if all nodes are valid against the schema, otherwise false.
+   */
+  #areNodesValid(message, ws) {
+    const { type, tree } = message;
+    const { databaseName } = mediaElementsParams[tree];
+
+    // Get the schema for the mediaElement to check if fields are valid
+    const mediaElementSchema = this.realm.schema.find(
+      (schema) => schema.name === databaseName,
+    );
+
+    const errorData = this._validateNodesAgainstSchema(
+      message,
+      mediaElementSchema.properties,
+    );
+
+    if (errorData) {
+      logMessage(
+        `Error validating message nodes against schema: ${JSON.stringify(errorData)}`,
+        MessageType.ERROR,
+      );
+      this._sendMessageToClient(
+        ws,
+        createErrorMessage(`${type}`, 404, errorData),
+      );
+
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * Asynchronously processes a message to fetch and handle media data.
+   *
+   * @param {Object} message - The message object containing details for the request.
+   * @returns {Promise<Object>} - Returns a promise that resolves to an updated message object.
+   * @throws {Error} - Throws an error if no media element for the message ID is found.
    * @private
    */
-  async #getMessageData(message, ws) {
-    const mediaElement = await this.#getMediaElement(message, ws);
+  async #getMessageData(message) {
+    const mediaElement = await this.#getMediaElement(message);
+
+    if (!mediaElement) {
+      throw new Error(`\"No data found with the Id: ${message.id}\"`);
+    }
+
     logWithColor(
       `Media Element: \n ${JSON.stringify(mediaElement)}`,
       COLORS.GREY,
     );
-    if (mediaElement) {
-      const responseNodes = this.#parseReadResponse(message, mediaElement);
-      return this._createUpdateMessage(message, responseNodes);
-    } else {
-      throw new Error(`No data found with the Id: ${message.id}`);
-    }
+
+    const responseNodes = this.#parseReadResponse(message, mediaElement);
+    return this._createUpdateMessage(message, responseNodes);
+  }
+
+  /**
+   * Parses the response from a read event.
+   *
+   * @param {Object} message - The message object containing node or nodes information.
+   * @param {Object} queryResponseObj - The query response object containing values to be mapped.
+   * @returns {Object} - A data object with keys from the message nodes and values from the query response.
+   * @private
+   */
+  #parseReadResponse(message, queryResponseObj) {
+    const data = [];
+    const nodes = message.node ? [message.node] : message.nodes;
+    nodes.forEach((node) => {
+      const prop = this._transformDataPointsWithUnderscores(node.name);
+      data.push({
+        name: node.name,
+        value: queryResponseObj[prop],
+      });
+    });
+    return data;
   }
 
   /**
    * Asynchronously retrieves a media element from the database based on the provided message.
    *
    * @param {Object} message - The message containing the id and tree information.
-   * @param {WebSocket} ws - The WebSocket connection to send error messages if needed.
    * @returns {Promise<Object>} - The media element object from the database.
+   * @private
    */
-  async #getMediaElement(message, ws) {
+  async #getMediaElement(message) {
     try {
       const { id, tree } = message;
       const { databaseName, dataPointId } = mediaElementsParams[tree];
@@ -279,7 +360,10 @@ class RealmDBHandler extends Handler {
         .objects(databaseName)
         .filtered(`${dataPointId} = '${id}'`)[0];
     } catch (error) {
-      this._sendMessageToClient(ws, { error: "Error reading object" });
+      logMessage(
+        `Error trying to get media element from Realm: ${error.message}`,
+        MessageType.ERROR,
+      );
     }
   }
 
@@ -287,7 +371,9 @@ class RealmDBHandler extends Handler {
    * Handles changes to a media element and sends update messages to clients.
    * @param {mediaElement} mediaElement - The media element that has changed.
    * @param {object} changes - An object containing information about the changes.
-   * @param {messageHeader} messageHeader - The header information for the message.
+   * @param {{tree, id, uuid}} messageHeader - The header information for the message.
+   * @param {WebSocket} ws - The WebSocket object for communication.
+   * @private
    */
   #onMediaElementChange(mediaElement, changes, messageHeader, ws) {
     logMessage(
@@ -310,26 +396,6 @@ class RealmDBHandler extends Handler {
         this._sendMessageToClient(ws, updateMessage);
       }
     }
-  }
-
-  /**
-   * Parses the response from a read event.
-   *
-   * @param {Object} message - The message object containing node or nodes information.
-   * @param {Object} queryResponseObj - The query response object containing values to be mapped.
-   * @returns {Object} - A data object with keys from the message nodes and values from the query response.
-   */
-  #parseReadResponse(message, queryResponseObj) {
-    const data = [];
-    const nodes = message.node ? [message.node] : message.nodes;
-    nodes.forEach((node) => {
-      const prop = this._transformDatapointsWithUnderscores(node.name);
-      data.push({
-        name: node.name,
-        value: queryResponseObj[prop],
-      });
-    });
-    return data;
   }
 }
 

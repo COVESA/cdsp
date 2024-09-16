@@ -18,6 +18,9 @@ const {
   MessageType,
   COLORS,
 } = require("../../../../utils/logger");
+const {
+  createErrorMessage,
+} = require("../../../../utils/error-message-helper");
 
 class IoTDBHandler extends Handler {
   constructor() {
@@ -68,81 +71,95 @@ class IoTDBHandler extends Handler {
   }
 
   async read(message, ws) {
-    try {
-      await this.#openSessionIfNeeded();
-      const responseNodes = await this.#queryLastFields(message, ws);
-      if (responseNodes.length > 0) {
-        const responseMessage = this._createUpdateMessage(
-          message,
-          responseNodes,
+    if (this.#areNodesValid(message, ws)) {
+      try {
+        await this.#openSessionIfNeeded();
+        const responseNodes = await this.#queryLastFields(message, ws);
+        if (responseNodes.length > 0) {
+          const responseMessage = this._createUpdateMessage(
+            message,
+            responseNodes,
+          );
+          this._sendMessageToClient(ws, responseMessage);
+        } else {
+          this._sendMessageToClient(
+            ws,
+            createErrorMessage(
+              "read",
+              404,
+              `No data found with the Id: ${message.id}`,
+            ),
+          );
+        }
+      } catch (error) {
+        this._sendMessageToClient(
+          ws,
+          createErrorMessage("read", 404, error.message),
         );
-        this._sendMessageToClient(ws, responseMessage);
-      } else {
-        this._sendMessageToClient(ws, { error: "Object not found." });
+      } finally {
+        await this.#closeSessionIfNeeded();
       }
-    } catch (error) {
-      this._sendMessageToClient(ws, { error: "Error reading object" });
-    } finally {
-      await this.#closeSessionIfNeeded();
     }
   }
 
   async write(message, ws) {
-    try {
-      await this.#openSessionIfNeeded();
-      const data = this.#createObjectToInsert(message);
-      const errorUndefinedTypes = [];
-      let measurements = [];
-      let dataTypes = [];
-      let values = [];
+    if (this.#areNodesValid(message, ws)) {
+      try {
+        await this.#openSessionIfNeeded();
+        const data = this.#createObjectToInsert(message);
+        let measurements = [];
+        let dataTypes = [];
+        let values = [];
 
-      for (const [key, value] of Object.entries(data)) {
-        if (this.dataPointsSchema.hasOwnProperty(key)) {
+        for (const [key, value] of Object.entries(data)) {
           measurements.push(key);
           dataTypes.push(this.dataPointsSchema[key]);
           values.push(value);
-        } else {
-          errorUndefinedTypes.push(`The data point "${key}" is not supported`);
         }
-      }
 
-      if (errorUndefinedTypes.length) {
-        errorUndefinedTypes.forEach((error) => console.error(error));
-        throw new Error("One or more data points are not supported.");
-      }
-
-      const timestamp = new Date().getTime();
-      const deviceId = databaseParams[message.tree].databaseName;
-      const status = await this.#insertRecord(
-        deviceId,
-        timestamp,
-        measurements,
-        dataTypes,
-        values,
-      );
-
-      logWithColor(
-        `Record inserted to device ${deviceId}, status code: `.concat(
-          JSON.stringify(status),
-        ),
-        COLORS.GREY,
-      );
-
-      const responseNodes = await this.#queryLastFields(message, ws);
-
-      if (responseNodes.length) {
-        const responseMessage = this._createUpdateMessage(
-          message,
-          responseNodes,
+        const timestamp = new Date().getTime();
+        const deviceId = databaseParams[message.tree].databaseName;
+        const status = await this.#insertRecord(
+          deviceId,
+          timestamp,
+          measurements,
+          dataTypes,
+          values,
         );
-        this._sendMessageToClient(ws, responseMessage);
-      } else {
-        this._sendMessageToClient(ws, { error: "Object not found." });
+
+        logWithColor(
+          `Record inserted to device ${deviceId}, status code: `.concat(
+            JSON.stringify(status),
+          ),
+          COLORS.GREY,
+        );
+
+        const responseNodes = await this.#queryLastFields(message, ws);
+
+        if (responseNodes.length) {
+          const responseMessage = this._createUpdateMessage(
+            message,
+            responseNodes,
+          );
+          this._sendMessageToClient(ws, responseMessage);
+        } else {
+          this._sendMessageToClient(
+            ws,
+            createErrorMessage(
+              "write",
+              404,
+              `No data found with the Id: ${message.id}`,
+            ),
+          );
+        }
+      } catch (error) {
+        this._sendMessageToClient(
+          ws,
+          createErrorMessage("write", 503, `Failed writing data. ${error}`),
+        );
+      } finally {
+        await this.#closeSessionIfNeeded();
       }
-    } catch (error) {
-      this._sendMessageToClient(ws, { error: `Failed writing data. ${error}` });
-    } finally {
-      await this.#closeSessionIfNeeded();
     }
   }
 
@@ -229,6 +246,36 @@ class IoTDBHandler extends Handler {
     if (!this.isSessionClosed) {
       this.#closeSession();
     }
+  }
+
+  /**
+   * Validates the nodes in a message against the schema of a media element.
+   *
+   * @param {Object} message - The message object containing details for the request.
+   * @param {WebSocket} ws - The WebSocket object for communication.
+   * @returns {boolean} - Returns true if all nodes are valid against the schema, otherwise false.
+   */
+  #areNodesValid(message, ws) {
+    const { type } = message;
+
+    const errorData = this._validateNodesAgainstSchema(
+      message,
+      this.dataPointsSchema,
+    );
+
+    if (errorData) {
+      logMessage(
+        `Error validating message nodes against schema: ${JSON.stringify(errorData)}`,
+        MessageType.ERROR,
+      );
+      this._sendMessageToClient(
+        ws,
+        createErrorMessage(`${type}`, 404, errorData),
+      );
+
+      return false;
+    }
+    return true;
   }
 
   /**
@@ -360,7 +407,7 @@ class IoTDBHandler extends Handler {
           );
 
         Object.entries(transformedObject).forEach(([key, value]) => {
-          if (value !== null) {
+          if (value !== null && !isNaN(value)) {
             latestValues[key] = value;
           }
         });
@@ -371,9 +418,10 @@ class IoTDBHandler extends Handler {
         value,
       }));
     } catch (error) {
-      this._sendMessageToClient(ws, {
-        error: "internal error constructing read object",
-      });
+      this._sendMessageToClient(
+        ws,
+        createErrorMessage("read", 503, error.message),
+      );
     }
   }
 
@@ -391,11 +439,11 @@ class IoTDBHandler extends Handler {
 
     if (message.node) {
       dataPoints.push(
-        this._transformDatapointsWithUnderscores(message.node.name),
+        this._transformDataPointsWithUnderscores(message.node.name),
       );
     } else if (message.nodes) {
       dataPoints = message.nodes.map((node) =>
-        this._transformDatapointsWithUnderscores(node.name),
+        this._transformDataPointsWithUnderscores(node.name),
       );
     }
     return dataPoints;
@@ -411,11 +459,11 @@ class IoTDBHandler extends Handler {
     const { id, tree } = message;
     const data = { [databaseParams[tree].dataPointId]: id };
     if (message.node) {
-      data[this._transformDatapointsWithUnderscores(message.node.name)] =
+      data[this._transformDataPointsWithUnderscores(message.node.name)] =
         message.node.value;
     } else if (message.nodes) {
       message.nodes.forEach((node) => {
-        data[this._transformDatapointsWithUnderscores(node.name)] = node.value;
+        data[this._transformDataPointsWithUnderscores(node.name)] = node.value;
       });
     }
     return data;

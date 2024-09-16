@@ -1,4 +1,6 @@
 const Ajv = require("ajv");
+const { createErrorMessage } = require("../../utils/error-message-helper");
+
 const ajv = new Ajv({
   allErrors: true,
   strict: true,
@@ -6,6 +8,12 @@ const ajv = new Ajv({
 });
 
 const itemsHeader = ["type", "tree", "id", "uuid"];
+
+const standardError = createErrorMessage(
+  "messageValidation",
+  400,
+  `Received an invalid message.`,
+);
 
 const createCommonStructure = (requestType) => ({
   type: { type: "string", enum: [requestType] },
@@ -105,9 +113,59 @@ const schemas = {
   },
 };
 
+const customizeErrorMessage = (errors) => {
+  return errors.map((err) => {
+    switch (err.keyword) {
+      case "required":
+        return createErrorMessage(
+          "messageValidation",
+          400,
+          `Missing required field: ${err.params.missingProperty}.`,
+        );
+      case "type":
+        return createErrorMessage(
+          "messageValidation",
+          400,
+          `Invalid type for field '${err.instancePath}': expected ${err.params.type}.`,
+        );
+      case "enum":
+        if (err.instancePath === "/tree") {
+          return createErrorMessage(
+            "messageValidation",
+            404,
+            `Unsupported message 'tree': must be one of ${err.params.allowedValues.join(", ")}`,
+          );
+        } else {
+          return standardError;
+        }
+      case "additionalProperties":
+        return createErrorMessage(
+          "messageValidation",
+          404,
+          `Unsupported property '${err.params.additionalProperty}' found`,
+        );
+      default:
+        return createErrorMessage(
+          "messageValidation",
+          400,
+          `Validation error on field '${err.instancePath}': ${err.message}.`,
+        );
+    }
+  });
+};
+
+/**
+ * Validates a JSON message against predefined schemas.
+ *
+ * @param {string} message - The JSON message to be validated.
+ * @returns {Object|Error} - Returns the parsed message if valid, otherwise throws an error.
+ */
 const validateMessage = (message) => {
   try {
+    // Try to parse the JSON message
     const parsedMessage = JSON.parse(message);
+
+    // Determine the schema key based on the message type
     let schemaKey;
     switch (parsedMessage.type) {
       case "read":
@@ -123,20 +181,40 @@ const validateMessage = (message) => {
         schemaKey = "unsubscribe";
         break;
       default:
-        throw new Error(ajv.errorsText(validate.errors));
+        const error = JSON.stringify([
+          createErrorMessage(
+            "messageValidation",
+            404,
+            `Unsupported message type (${parsedMessage.type})`,
+          ),
+        ]);
+        throw new Error(error);
     }
 
-    const schema = schemas[schemaKey];
-    const validate = ajv.compile(schema);
-    const valid = validate(parsedMessage);
+    // Validate the parsed message against the schema
+    const validate = ajv.compile(schemas[schemaKey]);
 
-    if (valid) {
-      return parsedMessage;
-    } else {
-      throw new Error(ajv.errorsText(validate.errors));
+    if (!validate(parsedMessage)) {
+      const customError = customizeErrorMessage(validate.errors);
+      throw new Error(JSON.stringify(customError));
     }
+    return parsedMessage;
   } catch (error) {
-    return new Error(`Invalid JSON message: ${error.message}`);
+    if (error instanceof SyntaxError) {
+      // Handle JSON parsing error
+
+      const error = JSON.stringify([
+        createErrorMessage(
+          "messageValidation",
+          404,
+          "The JSON format in the message is not valid.",
+        ),
+      ]);
+      return new Error(error);
+    } else {
+      // Handle other errors
+      return new Error(error.message);
+    }
   }
 };
 

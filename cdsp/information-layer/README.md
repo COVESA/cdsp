@@ -133,7 +133,7 @@ $ HANDLER_TYPE=iotdb IOTDB_HOST=localhost [ENV_VARIABLE_NAME required_env_variab
 
 ## Look out for the Websocket Server message in the console
 
-If the handler is running and you are [subscribed](#subscribing-to-changes) to an element, when you change the value of `CurrentLocation_Longitude` in ATLAS cloud (let's say `-157845.68200000003`), you should immediately see this line in console:
+If the handler is running, and you are [subscribed](#subscribing-to-changes) to an element, when you change the value of `CurrentLocation_Longitude` in ATLAS cloud (let's say `-157845.68200000003`), you should immediately see this line in console:
 
 ```json
 {
@@ -143,6 +143,16 @@ If the handler is running and you are [subscribed](#subscribing-to-changes) to a
   "dateTime": "<ACTUAL_DATA_TIME>",
   "uuid": "<YOUR_SUBSCRIBED_UUID>",
   "node": { "name": "CurrentLocation_Longitude", "value": "-157845.68200000003" }
+}
+```
+
+If the handler response with some error during any request, the client may get error response similar to this (with the same format):
+
+```json
+{
+  "type": "<MESSAGE_TYPE>:status",
+  "errorCode": 404,
+  "error": "<ERROR_DESCRIPTION>"
 }
 ```
 
@@ -232,11 +242,23 @@ To subscribe to changes in a specific object, send a message with the type of re
   "type": "subscribe",
   "tree": "VSS",
   "id": "<SOME_VIN>",
-  "uuid": "SOME_UUID"
+  "uuid": "<SOME_UUID>"
 }
 ```
 
-### Subscribing to changes
+If the subscription succeed, the server will respond with the following message:
+
+```json
+{
+  "type": "subscribe:status",
+  "tree": "VSS",
+  "id": "<SOME_VIN>",
+  "dateTime": "2024-09-12T15:50:17.232Z",
+  "uuid": "<SOME_UUID>",
+  "status": "succeed"
+}
+```
+### Unsubscribing to changes
 
 To unsubscribe to changes in a specific object, send a message with the type of request and VIN as object ID (at this moment only with RealmDB available):
 
@@ -245,6 +267,18 @@ To unsubscribe to changes in a specific object, send a message with the type of 
   "type": "unsubscribe",
   "tree": "VSS",
   "id": "<SOME_VIN>",
-  "uuid": "SOME_UUID"
+  "uuid": "<SOME_UUID>"
 }
 ```
+If the unsubscription succeed, the server will respond with the following message:
+```json
+{
+  "type": "unsubscribe:status",
+  "tree": "VSS",
+  "id": "WBY11CF080CH470711",
+  "dateTime": "2024-09-12T17:40:00.754Z",
+  "uuid": "CLIENT_1_SUBS",
+  "status": "succeed"
+}
+```
+

@@ -38,16 +38,16 @@ server.on("connection", (ws) => {
   ws.on("message", (message) => {
     logMessage(JSON.stringify(message), MessageType.RECEIVED);
     const validatedMessage = validateMessage(message);
+
     if (validatedMessage instanceof Error) {
       logMessage(
         `Invalid message format: ${validatedMessage.message}`,
-        MessageType.ERROR,
+        MessageType.ERROR
       );
-      ws.send(
-        JSON.stringify({
-          error: `Invalid message format`,
-        }),
-      );
+
+      JSON.parse(validatedMessage.message).forEach((error) => {
+        ws.send(JSON.stringify(error));
+      });
     } else {
       handler.handleMessage(validatedMessage, ws);
     }

@@ -131,12 +131,31 @@ class Handler {
   }
 
   /**
+   * Generic function to create or remove a subscription message.
+   * @param {{"subscribe", "unsubscribe"}} type - Type of subscription message.
+   * @param {Object} message - The original message from client.
+   * @param {String} status - The status of the subscription.
+   * @returns {Object} - The transformed message.
+   */
+  _createSubscribeMessage(type, message, status) {
+    const { id, tree, uuid } = message;
+    return {
+      type: `${type}:status`,
+      tree,
+      id,
+      dateTime: new Date().toISOString(),
+      uuid,
+      status: status,
+    };
+  }
+
+  /**
    * Transforms a message node by replacing all dots with underscores.
    *
    * @param {string} node - The message node to transform.
    * @returns {string} - The transformed message node with dots replaced by underscores.
    */
-  _transformDatapointsWithUnderscores(node) {
+  _transformDataPointsWithUnderscores(node) {
     return `${node}`.replace(/\./g, "_");
   }
 
@@ -165,12 +184,43 @@ class Handler {
     const supportedDataPoints = extractDataTypes(dataPointObj);
     let result = {};
     Object.entries(supportedDataPoints).forEach(([node, value]) => {
-      const underscored_node = this._transformDatapointsWithUnderscores(node);
+      const underscored_node = this._transformDataPointsWithUnderscores(node);
       if (value !== null) {
         result[underscored_node] = value;
       }
     });
     return result;
+  }
+
+  /**
+   * Validates nodes against a given schema.
+   *
+   * @param {Object} message - The message containing nodes to be validated.
+   * @param {Object} dataPointsSchema - The schema against which nodes are validated.
+   * @returns {Object|null} An object containing error details if validation fails, otherwise null.
+   */
+  _validateNodesAgainstSchema(message, dataPointsSchema) {
+    const { type } = message;
+    let nodes = message.node ? [message.node] : message.nodes;
+
+    // Check if all nodes are valid based on the schema
+    const unknownFields = nodes.filter(({ name }) => {
+      const transformedName = this._transformDataPointsWithUnderscores(name);
+      return !dataPointsSchema.hasOwnProperty(transformedName);
+    });
+
+    if (unknownFields.length > 0) {
+      let errors = unknownFields.map(({ name }) => ({
+        name: name,
+        status: "Parent object or node not found.",
+      }));
+
+      const errorData =
+        errors.length === 1 ? { node: errors.at(0) } : { nodes: errors };
+
+      return errorData;
+    }
+    return null;
   }
 }
 
