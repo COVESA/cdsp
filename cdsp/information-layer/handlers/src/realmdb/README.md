@@ -45,7 +45,8 @@ Create (if it does not exist) `/docker/.env` and add the following environment v
     REALMDB_API_KEY="your-api-key"
 ```
 
-> **_IMPORTANT:_** Do not commit this file to GitHub!
+> [!WARNING] 
+> Do not commit this file to GitHub!
 
 ## Starting the RealmDB handler
 

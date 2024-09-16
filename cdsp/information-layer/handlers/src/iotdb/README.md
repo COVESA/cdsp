@@ -40,7 +40,8 @@ Create (if it does not exist) `/docker/.env` and add the following environment v
     FETCH_SIZE=10000 #number of rows that will be fetched from the database at a time when executing a query, default 10000
 ```
 
-> **_IMPORTANT:_** Do not commit this file to GitHub!
+> [!WARNING] 
+> Do not commit this file to GitHub!
 
 ## Starting the IoTDB handler
 

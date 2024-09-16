@@ -1,6 +1,6 @@
 # Handlers
 
-We support two different databases. For each of them is required to configurate the corresponding ENV variables in `/docker/.env` file. 
+We support two different databases. For each of them is required to configure the corresponding ENV variables in `/docker/.env` file. 
 
 - [IotDB](./src/iotdb/README.md)
 - [RealmDB](./src/realmdb/README.md)
