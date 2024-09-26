@@ -30,8 +30,10 @@ const getEnvValue = (envVar) => {
  * @returns {string} The full path to the data points file.
  */
 const getDataPointsPath = () => {
+  const endpoints_file =
+    getEnvValue("DATA_POINTS_SCHEMA_FILE") || ENDPOINTS_FILE;
   const rootPath = path.resolve(`${__dirname}/schema-files`);
-  return path.join(rootPath, ENDPOINTS_FILE);
+  return path.join(rootPath, endpoints_file);
 };
 
 module.exports = { getDataPointsPath, getEnvValue };

@@ -20,5 +20,11 @@ FetchContent_MakeAvailable(json)
 # Output directory for the executable
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
+# Define the project root directory
+set(PROJECT_ROOT_DIR "${CMAKE_SOURCE_DIR}")
+
+# Pass the root directory to your C++ code
+add_compile_definitions(PROJECT_ROOT="${PROJECT_ROOT_DIR}")
+
 # Add subdirectory for the websocket-client
 add_subdirectory(connector/websocket-client)
