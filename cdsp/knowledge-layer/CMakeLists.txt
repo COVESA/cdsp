@@ -8,6 +8,10 @@ set(CMAKE_CXX_STANDARD 17)
 # Find Boost libraries
 find_package(Boost 1.86.0 REQUIRED COMPONENTS system filesystem thread)
 
+if(WIN32)
+    include_directories(${Boost_INCLUDE_DIRS})
+endif()
+
 # FetchContent to include nlohmann/json
 include(FetchContent)
 FetchContent_Declare(

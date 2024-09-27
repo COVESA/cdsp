@@ -14,7 +14,25 @@ Before setting up the project, make sure you have the following installed:
   
 ### Installing Dependencies
 
-1. **Installing Boost (macOS/Linux)**:
+1. **Install g++**:
+   On windows you may use mingw, e.g. you can install mingw64 with msys64 from here: https://www.msys2.org/
+   
+   Open the MSYS2 MinGW64 Shell. Make sure you're using the MSYS2 MinGW64 Shell (not the regular MSYS2 shell), as this is required for using the 64-bit GCC toolchain. You can find this in the Start menu as MSYS2 MinGW 64-bit. Run the following command:
+
+    ```bash
+    pacman -Syu  # Update MSYS2 packages
+    pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-make  # Install 64-bit GCC and Make  
+    ```
+    After the installation, verify that gcc and g++ are installed and accessible in the MSYS2 MinGW64 shell by running:
+    
+    ```bash
+    gcc --version
+    g++ --version
+    ```
+    You should see the version information for the installed GCC toolchain.
+    
+
+2. **Install Boost**:
    If you're on macOS, you can install Boost using Homebrew:
 
    ```bash
@@ -27,7 +45,25 @@ Before setting up the project, make sure you have the following installed:
    sudo apt-get install libboost-all-dev
    ```
 
-2. **Install CMake**:
+   On Windows you can download a zipfile or take an installer, e.g. from here: https://sourceforge.net/projects/boost/files/boost-binaries/. To use all functionality you have to build the boost library with the gcc compiler.
+
+    Open the MSYS2 MinGW64 Shell from the Start menu (not the standard MSYS2 shell), navigate to your Boost directory and build:
+
+   ```bash
+   cd /c/path/to/boost_1_86_0
+   ./bootstrap.sh gcc
+   ./b2 --with-system --with-filesystem --with-thread
+   ```   
+
+   Important Note: When you want to build the projekt with cmake later, cmake often expects specific library names. So if it does not find the libraries, you have to rename them, e.g.: 
+
+
+   **libboost_system-mgw14-mt-x64-1_86.a** to **libboost_system.a** for the release version and
+   **libboost_system-mgw14-mt-d-x64-1_86.a** tp **libboost_system-d.a** for the debug version.
+   
+   And the same for filesystem, thread, atomic and chrono.
+
+3. **Install CMake**:
    Ensure you have CMake installed:
 
    ```bash
@@ -35,11 +71,16 @@ Before setting up the project, make sure you have the following installed:
    sudo apt-get install cmake  # For Linux
    ```
 
+   On Windows you can get an installer here: https://cmake.org/download/. 
+   
+   Make sure you have Windows SDK 10 installed. To check start the Visual Studio Installer (https://developer.microsoft.com/en-us/windows/downloads/windows-sdk/) and look for Visual Studio Build Tools. Here look for the component 'Desktop development with C++' and install it if required.
+
+   
 ## Project Setup
 
 **Build the WebSocket Client**:
 
-   The WebSocket client is located in the `connector/websocket-client/` directory. To build it from this directory:
+   The WebSocket client is located in the `cdsp/knowledge_layer/` directory. To build it from this directory:
 
    ```bash
    # Create a build directory
@@ -47,7 +88,10 @@ Before setting up the project, make sure you have the following installed:
    cd build
 
    # Run CMake to generate build files
+   # For Mac:
    cmake ..
+   # For Windows you have to specify the location of the boost libraries:
+   cmake -DBOOST_ROOT=<path/to/boost> -DBOOST_LIBRARYDIR=<path/to/boost>/stage/lib ..
 
    # Build the project
    make
