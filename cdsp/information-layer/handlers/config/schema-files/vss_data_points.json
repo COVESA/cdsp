@@ -1,0 +1,108 @@
+{
+  "Vehicle": {
+    "children": {
+      "Chassis": {
+        "children": {
+          "SteeringWheel": {
+            "children": {
+              "Angle": {
+                "datatype": "int16",
+                "description": "Steering wheel angle. Positive = degrees to the left. Negative = degrees to the right.",
+                "type": "sensor",
+                "unit": "degrees"
+              }
+            },
+            "description": "Steering wheel signals",
+            "type": "branch"
+          }
+        },
+        "description": "All data concerning steering, suspension, wheels, and brakes.",
+        "type": "branch"
+      },
+      "CurrentLocation": {
+        "children": {
+          "Latitude": {
+            "datatype": "double",
+            "description": "Current latitude of vehicle in WGS 84 geodetic coordinates, as measured at the position of GNSS receiver antenna.",
+            "max": 90,
+            "min": -90,
+            "type": "sensor",
+            "unit": "degrees"
+          },
+          "Longitude": {
+            "datatype": "double",
+            "description": "Current longitude of vehicle in WGS 84 geodetic coordinates, as measured at the position of GNSS receiver antenna.",
+            "max": 180,
+            "min": -180,
+            "type": "sensor",
+            "unit": "degrees"
+          }
+        },
+        "description": "The current latitude and longitude of the vehicle.",
+        "type": "branch"
+      },
+      "Powertrain": {
+        "children": {
+          "TractionBattery": {
+            "children": {
+              "NominalVoltage": {
+                "comment": "Nominal voltage typically refers to voltage of fully charged battery when delivering rated capacity.",
+                "datatype": "uint16",
+                "description": "Nominal Voltage of the battery.",
+                "type": "attribute",
+                "unit": "V"
+              },
+              "StateOfCharge": {
+                "children": {
+                  "CurrentEnergy": {
+                    "comment": "Current energy could be calculated as .StateOfCharge.Current * .NetCapacity.",
+                    "datatype": "float",
+                    "description": "Physical state of charge of high voltage battery expressed in kWh.",
+                    "type": "sensor",
+                    "unit": "kWh"
+                  }
+                },
+                "description": "Information on the state of charge of the vehicle's high voltage battery.",
+                "type": "branch"
+              }
+            },
+            "description": "Battery Management data.",
+            "type": "branch"
+          },
+          "Transmission": {
+            "children": {
+              "CurrentGear": {
+                "datatype": "int8",
+                "description": "The current gear. 0=Neutral, 1/2/..=Forward, -1/-2/..=Reverse.",
+                "type": "sensor"
+              }
+            },
+            "description": "Transmission-specific data, stopping at the drive shafts.",
+            "type": "branch"
+          }
+        },
+        "description": "Powertrain data for battery management, etc.",
+        "type": "branch"
+      },
+      "Speed": {
+        "datatype": "float",
+        "description": "Vehicle speed.",
+        "type": "sensor",
+        "unit": "km/h"
+      },
+      "VehicleIdentification": {
+        "children": {
+          "VIN": {
+            "datatype": "string",
+            "description": "17-character Vehicle Identification Number (VIN) as defined by ISO 3779.",
+            "type": "attribute"
+          }
+        },
+        "description": "Attributes that identify a vehicle.",
+        "type": "branch"
+      }
+    },
+    "description": "High-level vehicle data.",
+    "type": "branch"
+  }
+}

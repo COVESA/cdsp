@@ -1,0 +1,72 @@
+bmw:VehicleWBY11CF080CH470711 a bmw:Vehicle.
+
+
+bmw:ChassisWBY11CF080CH470711 a bmw:Chassis.
+
+bmw:VehicleWBY11CF080CH470711 bmw:hasPart bmw:ChassisWBY11CF080CH470711.
+
+bmw:SteeringWheelWBY11CF080CH470711 a bmw:SteeringWheel.
+bmw:VehicleWBY11CF080CH470711 bmw:hasPart bmw:SteeringWheelWBY11CF080CH470711.
+   
+bmw:CurrentLocationWBY11CF080CH470711 a bmw:CurrentLocation.
+bmw:VehicleWBY11CF080CH470711 bmw:hasSignal bmw:CurrentLocationWBY11CF080CH470711.
+
+
+bmw:PowertrainWBY11CF080CH470711 a bmw:Powertrain.
+
+bmw:VehicleWBY11CF080CH470711 bmw:hasPart bmw:PowertrainWBY11CF080CH470711.
+
+bmw:TransmissionWBY11CF080CH470711 a bmw:Transmission.
+
+bmw:PowertrainWBY11CF080CH470711 bmw:hasPart bmw:TransmissionWBY11CF080CH470711.
+
+bmw:TractionBatteryWBY11CF080CH470711 a bmw:TractionBattery.
+
+bmw:PowertrainWBY11CF080CH470711 bmw:hasPart bmw:TractionBatteryWBY11CF080CH470711.
+
+bmw:StateOfChargeWBY11CF080CH470711 a bmw:StateOfCharge.
+
+bmw:TractionBatteryWBY11CF080CH470711 bmw:hasSignal bmw:StateOfChargeWBY11CF080CH470711.
+
+
+bmw:Observation20181116155027 a sosa:Observation ; # observation_dateTime
+    sosa:hasFeatureOfInterest bmw:CurrentLocationWBY11CF080CH470711 ; #last second element of the the data point 
+    sosa:hasSimpleResult "30"^^xsd:double ; # value
+    sosa:observedProperty bmw:latitude ;    #last  element of the data point 
+    sosa:phenomenonTime "2018-11-16 15:50:27"^^xsd:dateTime .#dateTime
+
+bmw:Observation20181116155027 a sosa:Observation ;
+    sosa:hasFeatureOfInterest bmw:CurrentLocationWBY11CF080CH470711 ;
+    sosa:hasSimpleResult "50"^^xsd:double ;
+    sosa:observedProperty bmw:longitude ;
+    sosa:phenomenonTime "2018-11-16 15:50:27"^^xsd:dateTime .
+
+bmw:Observation20181116155027 a sosa:Observation ;
+    sosa:hasFeatureOfInterest bmw:VehicleWBY11CF080CH470711 ;
+    sosa:hasSimpleResult "50"^^xsd:int ;
+    sosa:observedProperty bmw:speed ;
+    sosa:phenomenonTime "2018-11-16 15:50:27"^^xsd:dateTime .
+
+bmw:Observation20181116155027 a sosa:Observation ;
+    sosa:hasFeatureOfInterest bmw:SteeringWheelWBY11CF080CH470711 ;
+    sosa:hasSimpleResult "10"^^xsd:int ;
+    sosa:observedProperty bmw:angle ;
+    sosa:phenomenonTime "2018-11-16 15:50:27"^^xsd:dateTime .
+
+bmw:Observation20181116155027 a sosa:Observation ;
+    sosa:hasFeatureOfInterest bmw:TransmissionWBY11CF080CH470711 ;
+    sosa:hasSimpleResult "10"^^xsd:int ;
+    sosa:observedProperty bmw:currentGear ;
+    sosa:phenomenonTime "2018-11-16 15:50:27"^^xsd:dateTime .
+
+bmw:Observation20181116155027 a sosa:Observation ;
+    sosa:hasFeatureOfInterest bmw:StateOfChargeWBY11CF080CH470711 ;
+    sosa:hasSimpleResult "98.6"^^xsd:float ;
+    sosa:observedProperty bmw:CurrentEnergy ;
+    sosa:phenomenonTime "2018-11-16 15:50:27"^^xsd:dateTime .
+
+bmw:Observation20181116155027 a sosa:Observation ;
+    sosa:hasFeatureOfInterest bmw:TractionBatteryWBY11CF080CH470711 ;
+    sosa:hasSimpleResult "55"^^xsd:int ;
+    sosa:observedProperty bmw:NominalVoltage ;
+    sosa:phenomenonTime "2018-11-16 15:50:27"^^xsd:dateTime .

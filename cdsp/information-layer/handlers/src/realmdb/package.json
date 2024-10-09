@@ -1,0 +1,10 @@
+{
+  "name": "realmdb-handler",
+  "version": "1.0.0",
+  "description": "Realm database handler",
+  "main": "realmdb-handler.js",
+  "dependencies": {
+    "realm": "^12.13.1",
+    "uuid": "^9.0.1"
+  }
+}
