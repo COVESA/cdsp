@@ -130,3 +130,9 @@ After successfully building the client, you can run it with the following comman
 ```bash
 ./build/bin/websocket_client
 ```
+
+To display a list of available environment variables and their default values, run the application with the `--help` flag:
+
+```bash
+./websocket_client --help
+```

@@ -22,6 +22,41 @@ std::string getEnvVariable(const std::string& envVar, const std::string& default
     return valueEnv ? std::string(valueEnv) : defaultValue;
 }
 
+void displayHelp() {
+    std::string bold = "\033[1m";
+    std::string lightRed = "\033[91m";
+    std::string reset = "\033[0m";
+
+    std::cout << bold << "Usage: websocket_client [--help]\n\n" << reset;
+
+    std::cout << "This table contains a lists environment variables set for the WebSocket client "
+                 "and their descriptions.\n\n";
+    // Table header
+    std::cout << bold << std::left << std::setw(50) << "Variable" << std::setw(50) << "Description"
+              << "Value" << reset << "\n";
+    std::cout << std::string(140, '-') << "\n";  // Line separator
+
+    std::cout << std::left << std::setw(50) << "HOST_WEBSOCKET_SERVER" << std::setw(50)
+              << "IP address of the WebSocket server"
+              << getEnvVariable(" - HOST_WEBSOCKET_SERVER", DefaultHostWebsocketServer) << "\n";
+    std::cout << std::left << std::setw(50) << "PORT_WEBSOCKET_SERVER" << std::setw(50)
+              << "Port number of the WebSocket server"
+              << getEnvVariable(" - PORT_WEBSOCKET_SERVER", DefaultPortWebSocketServer) << "\n";
+    std::cout << std::left << std::setw(50) << "VIN" << std::setw(50)
+              << "Object ID to be used in communication"
+              << getEnvVariable("VIN", lightRed + "`Not Set (Required)`" + reset) << "\n";
+    std::cout << std::left << std::setw(50) << "REQUIRED_VSS_DATA_POINTS_FILE" << std::setw(50)
+              << "Path to the model configuration file"
+              << getEnvVariable(" - REQUIRED_VSS_DATA_POINTS_FILE",
+                                DefaultRequiredVSSDataPointsFile)
+              << "\n";
+
+    std::cout << "\n" << bold << "Description:\n" << reset;
+    std::cout << "This client connects to a WebSocket server and processes incoming messages based "
+                 "on the defined input.\n";
+    std::cout << "The above environment variables are used to configure the application.\n\n";
+}
+
 /**
  * @brief Reads a file and returns a list of required data points.
  *
@@ -71,7 +106,12 @@ InitConfig AddInitConfig() {
     return init_config;
 }
 
-int main() {
+int main(int argc, char* argv[]) {
+    // Check for --help flag
+    if (argc > 1 && std::string(argv[1]) == "--help") {
+        displayHelp();
+        return EXIT_SUCCESS;
+    }
     try {
         InitConfig init_config = AddInitConfig();
         std ::cout << "** Starting client! **" << std::endl;
