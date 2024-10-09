@@ -108,8 +108,7 @@ The project requires certain environment variables to work with the WebSocket se
 
 - **HOST_WEBSOCKET_SERVER:** Specifies the hostname of the WebSocket server. The default is `localhost`.
 - **PORT_WEBSOCKET_SERVER:** Specifies the port for connecting to the WebSocket server. The default is `8080`.
-- **VIN:** The Vehicle Identification Number (VIN) is required to subscribe and retrieve information for a specific vehicle. Use the VIN configured in the [`information-layer`](../information-layer/README.md).
-- **REQUIRED_VSS_DATA_POINTS_FILE:** The name of the TXT file containing all the required data points to start the application. See more details [here](symbolic-reasoner/examples/usecase-model/inputs/README.md). The default value is `vss_data_required.txt`.
+- **OBJECT_ID:** The object id is required to subscribe and retrieve information for a specific object (e.g. VIN (Vehicle Identification Number) for VSS (Vehicle Signal Specification) data). Use the object id (in this case VIN) configured in the [`information-layer`](../information-layer/README.md).
 
 You can customize the WebSocket server configuration by adding the following environment variables in the `/docker/.env` file. Below is an example of what the file could look like:
 
@@ -120,8 +119,7 @@ You can customize the WebSocket server configuration by adding the following env
 
 HOST_WEBSOCKET_SERVER="your_custom_host"
 PORT_WEBSOCKET_SERVER="your_custom_port"
-VIN="VIN_TO_SUBSCRIBE"
-REQUIRED_VSS_DATA_POINTS_FILE=vss_data_required.txt
+OBJECT_ID="OBJECT_ID_TO_SUBSCRIBE"
 ```
 
 ### Start the Websocket Client

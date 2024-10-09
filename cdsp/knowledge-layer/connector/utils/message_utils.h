@@ -14,10 +14,10 @@ using json = nlohmann::json;
 json createMessageHeader(const std::string& type, const std::string& tree, const std::string& id,
                          const std::string& uuid);
 
-void createSubscription(const std::string& uuid, const std::string& vin,
+void createSubscription(const std::string& uuid, const std::string& oid, const std::string& tree,
                         std::vector<json>& reply_messages_queue);
 
-void createReadMessage(const std::string& uuid, const std::string& tree, const std::string& vin,
+void createReadMessage(const std::string& uuid, const std::string& tree, const std::string& oid,
                        const std::vector<std::string>& data_points,
                        std::vector<json>& reply_messages_queue);
 

@@ -2,15 +2,33 @@
 #define DATA_TYPES_DATA_TYPES_H
 
 #include <chrono>
+#include <map>
 #include <string>
 #include <vector>
+
+struct ReasonerSettings {
+    std::string inference_engine;
+    std::string output_format;
+    std::vector<std::string> supported_tree_types;
+};
+
+struct ModelConfig {
+    std::map<std::string, std::vector<std::string>> system_data_points;
+    std::string output_file_path;
+    std::vector<std::string> ontology_files;
+    std::vector<std::string> shacl_shapes_files;
+    std::map<std::string, std::vector<std::string>> triple_assembler_queries_files;
+    std::string output_queries_path;
+    std::vector<std::string> rules_files;
+    ReasonerSettings reasoner_settings;
+};
 
 struct InitConfig {
     std::string uuid;
     std::string host_websocket_server;
     std::string port_websocket_server;
-    std::string vin;
-    std::vector<std::string> system_vss_data_points;
+    std::string oid;
+    ModelConfig model_config;
 };
 
 struct MessageHeader {

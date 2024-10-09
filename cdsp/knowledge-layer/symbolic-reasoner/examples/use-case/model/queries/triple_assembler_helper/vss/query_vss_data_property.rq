@@ -1,0 +1,21 @@
+prefix pdmo: <http://usecase-specific-ontology-extensions-because-not-contained-in-EKG#>
+prefix bmw: <http://groupontology.bmwgroup.net/bmw-ont#>
+prefix middleware: <http://target-nameospace-for-data-middleware#>
+prefix sh: <http://www.w3.org/ns/shacl#>
+prefix val: <http://groupontology.bmwgroup.net/validation#>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+prefix ut: <http://www.bmw-carit.de/Foresight/UserTrip/Ontologies/High#>
+
+
+ SELECT ?class1 ?data_property ?datatype
+ WHERE {
+   ?S sh:name "%A%";
+      sh:targetClass ?class1;
+      sh:property [ sh:name ?data_point_name;
+                    sh:path ?data_property;
+                    sh:datatype  ?datatype
+                   ].
+ FILTER (contains("%B%", ?data_point_name)) #The first value is from the data sigle point
+ }
+
+

@@ -89,7 +89,8 @@ $ docker build -t webserver-service .
 
 To run `RealmDB` use:
 
-> [!IMPORTANT] See [here](./handlers/src/realmdb/README.md) all the required ENV variables.
+> [!IMPORTANT] 
+> See [here](./handlers/src/realmdb/README.md) all the required ENV variables.
 
 ```shell
 $ docker run --name websocket-service -e HANDLER_TYPE=realmdb [-e required_env_variables] -p 8080:8080 websocket-service
@@ -97,7 +98,8 @@ $ docker run --name websocket-service -e HANDLER_TYPE=realmdb [-e required_env_v
 
 To run `IoTDB` use:
 
-> [!IMPORTANT] See [here](./handlers/src/iotdb/README.md) all the required ENV variables. These are optional, because by default it uses the local configuration to connect to the `iotdb-service` container.
+> [!IMPORTANT] 
+> See [here](./handlers/src/iotdb/README.md) all the required ENV variables. These are optional, because by default it uses the local configuration to connect to the `iotdb-service` container.
 
 ```shell
 $ docker run --name websocket-service -e HANDLER_TYPE=iotdb --network cdsp_default [-e required_env_variables] -p 8080:8080 websocket-service
@@ -117,7 +119,8 @@ To start the websocket-server using `RealmDB` execute the command:
 
 To run `RealmDB` use:
 
-> [!IMPORTANT] See [here](./handlers/src/realmdb/README.md) all the required ENV variables.
+> [!IMPORTANT] 
+> See [here](./handlers/src/realmdb/README.md) all the required ENV variables.
  
 ```shell
 $ HANDLER_TYPE=realm [ENV_VARIABLE_NAME required_env_variables] npm start
@@ -125,7 +128,8 @@ $ HANDLER_TYPE=realm [ENV_VARIABLE_NAME required_env_variables] npm start
 
 To start the websocket-server using `IoTDB` execute the command:
 
-> [!IMPORTANT] See [here](./handlers/src/iotdb/README.md) all the required ENV variables. These are optional, because by default it uses the local configuration to connect to the `iotdb-service` container.
+> [!IMPORTANT] 
+> See [here](./handlers/src/iotdb/README.md) all the required ENV variables. These are optional, because by default it uses the local configuration to connect to the `iotdb-service` container.
 
 ```shell
 $ HANDLER_TYPE=iotdb IOTDB_HOST=localhost [ENV_VARIABLE_NAME required_env_variables] npm start 

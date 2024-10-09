@@ -23,16 +23,17 @@ json createMessageHeader(const MessageType& type, const std::string& tree, const
  * @brief Creates a subscription message and adds it to the reply messages queue.
  *
  * This function generates a subscription message header using the provided
- * uuid and vin, and then appends this message to the reply messages queue.
+ * uuid and oid, and then appends this message to the reply messages queue.
  *
  * @param uuid Used as a client identifier.
- * @param vin The vehicle identification number.
+ * @param oid The object identification number.
+ * @param tree The tree identifier for the message.
  * @param reply_messages_queue A reference to the queue where the subscription message will be
  * added.
  */
-void createSubscription(const std::string& uuid, const std::string& vin,
+void createSubscription(const std::string& uuid, const std::string& oid, const std::string& tree,
                         std::vector<json>& reply_messages_queue) {
-    reply_messages_queue.push_back(createMessageHeader(MessageType::SUBSCRIBE, "VSS", vin, uuid));
+    reply_messages_queue.push_back(createMessageHeader(MessageType::SUBSCRIBE, tree, oid, uuid));
 }
 
 /**
@@ -43,15 +44,15 @@ void createSubscription(const std::string& uuid, const std::string& vin,
  *
  * @param uuid The client identifier.
  * @param tree The tree identifier for the message.
- * @param vin The vehicle identification number.
+ * @param oid The object identification number.
  * @param data_points A vector of data point names to be included in the message.
  * @param reply_messages_queue A reference to the queue where the constructed message will be
  * appended.
  */
-void createReadMessage(const std::string& uuid, const std::string& tree, const std::string& vin,
+void createReadMessage(const std::string& uuid, const std::string& tree, const std::string& oid,
                        const std::vector<std::string>& data_points,
                        std::vector<json>& reply_messages_queue) {
-    auto message = createMessageHeader(MessageType::READ, tree, vin, uuid);
+    auto message = createMessageHeader(MessageType::READ, tree, oid, uuid);
 
     json nodes = json::array();
     for (const auto& data_point : data_points) {

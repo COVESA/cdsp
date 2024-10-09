@@ -3,6 +3,8 @@
 #include <iostream>
 #include <variant>
 
+#include "helper.h"
+
 namespace {
 void Fail(beast::error_code error_code, const std::string& what) {
     std::cerr << what << ": " << error_code.message() << "\n";
@@ -62,9 +64,14 @@ void WebSocketClient::handshake(beast::error_code ec) {
               << std::endl
               << std::endl;
 
-    createSubscription(init_config_.uuid, init_config_.vin, reply_messages_queue_);
-    createReadMessage(init_config_.uuid, "VSS", init_config_.vin,
-                      init_config_.system_vss_data_points, reply_messages_queue_);
+    for (const std::string& tree_type :
+         init_config_.model_config.reasoner_settings.supported_tree_types) {
+        createSubscription(init_config_.uuid, init_config_.oid, tree_type, reply_messages_queue_);
+        createReadMessage(init_config_.uuid, tree_type, init_config_.oid,
+                          init_config_.model_config.system_data_points[toLowercase(tree_type)],
+                          reply_messages_queue_);
+    }
+
     writeReplyMessagesOnQueue();
 }
 
