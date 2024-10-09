@@ -6,7 +6,8 @@ The compose file `docker-compose-cdsp.yml` provides a containerized deployment o
 ## Table of contents
 - [Docker installation](#docker-installation)
 - [VISSR docker image build setup](#vissr-docker-image-build-setup)
-- [Websocket-Server docker image build setup](#websocket-server-docker-image-build-setup)
+- [Websocket-Server (CDSP - information layer) docker image build setup](#websocket-server-cdsp---information-layer-docker-image-build-setup)
+- [Websocket-Client (CDSP - knowledge layer) docker image build setup](#websocket-client-cdsp---knowledge-layer-docker-image-build-setup)
 - [Deploy with Docker Compose](#deploy-with-docker-compose)
 
 ## Docker installation
@@ -109,8 +110,7 @@ $ sudo docker compose -f docker-compose-cdsp.yml up -d iotdb-service
 # ✔ Container iotdb-service  Running                 0.0s
 ```
 
-## Websocket-Server docker image build setup
-
+## Websocket-Server (CDSP - information layer) docker image build setup
 This guide provides instructions for deploying the Websocket-Server using Docker Compose. You can choose to deploy the server with either RealmDB or IoTDB as the backend service.
 
 ### Prerequisites
@@ -137,7 +137,8 @@ $ sudo docker compose -f docker-compose-cdsp.yml up -d websocket-service
 
 When deploying with IoTDB, ensure that the iotdb-service is up and running before starting the Websocket-Server.
 
-> [!IMPORTANT] If required, ensure that the iotdb-service container is started before running the Websocket-Server. You can also configure your own IoTDB connection.
+> [!IMPORTANT] 
+>  If required, ensure that the iotdb-service container is started before running the Websocket-Server. You can also configure your own IoTDB connection.
 
 #### Start IoTDB and Websocket-Server
 
@@ -164,6 +165,50 @@ $ sudo docker ps
 CONTAINER ID   IMAGE                           COMMAND                  CREATED          STATUS          PORTS                                       NAMES
 025b5dd05c56   cdsp-websocket-service          "docker-entrypoint.s…"   16 minutes ago   Up 16 minutes   0.0.0.0:8080->8080/tcp, :::8080->8080/tcp   websocket-service
 e16c8ed4ed42   apache/iotdb:1.2.2-standalone   "/usr/bin/dumb-init …"   23 minutes ago   Up 19 minutes   0.0.0.0:6667->6667/tcp, :::6667->6667/tcp   iotdb-service
+```
+
+## Websocket client (CDSP - knowledge layer) docker image build setup
+
+### RDFox RESTful API
+
+In order to get access to `RDFox RESTfull API` it is required to build two Docker images (`rdfox-init` and `rdfox-service`).
+
+### Prerequisites
+
+- **Running Websocket-Server:** See how to start the information layer [here](#websocket-server-cdsp---information-layer-docker-image-build-setup).
+- **RDFox.lic:** this is the license file required by RDFox, containing information that authorizes the use of RDFox, expiry time and usage. **The license file must be provided when running RDFox images to activate the software.**. The path of the file should be provided using the environment variable `RDFOX_LIC_PATH="<your_path>/RDFox.lic"` in the `.env` file in this folder. The file is generally provided when you acquire a license from [Oxford Semantic Technologies](https://www.oxfordsemantic.tech/).
+
+#### 1. **Initialization (`rdfox-init` Image)**:
+- The `rdfox-init` image is used to set up the RDFox server directory, define roles, and configure persistence.
+- It only needs to be run **once** for a fresh setup or if you need to reset the server's configuration (e.g., to initialize roles, passwords, and persistence settings).
+- Running this command creates a persistent volume (`rdfox-server-directory`) that stores RDFox's state, including the role configuration, data stores, and settings.
+
+> [!IMPORTANT] 
+> The image `rdfox-init` need to run only ones to initialize the RDFox server directory.
+
+#### 2. **Daemon (`rdfox-service` Image)**:
+- The `rdfox-service` image runs the **RDFox server (daemon)**, which continuously serves requests on port 12110.
+- Once initialized, you can start this container (as a daemon) and it will use the `rdfox-server-directory` volume created by the `rdfox-init` command.
+- You can restart the daemon multiple times using the same persistent volume, and it will retain all previously initialized settings and data.
+- The daemon is initialized with a default role `root` and password `admin`.
+
+> [!WARNING]
+> Before build the `rdfox-service`, ensure that the `rdfox-init` were compiled correctly. Only if the logs show successful completion, you can then proceed to start the RDFox daemon.
+
+Use the following commands to start both images:
+
+```shell
+$ docker compose -f docker-compose-cdsp.yml up -d rdfox-init
+# ...
+# [+] Running 2/2
+# ✔ Volume "cdsp_rdfox-server-directory"  created     0.0s 
+# ✔ Container rdfox-init                  Started     0.4s
+
+$ docker compose -f docker-compose-cdsp.yml up -d rdfox-service 
+# ...
+# [+] Running 2/2
+# ✔ Container rdfox-init     Started    0.4s 
+# ✔ Container rdfox-service  Started    0.9s 
 ```
 
 ## Deploy with Docker Compose

@@ -1,6 +1,8 @@
 # Docker generated files
 data/
 logs/
+test-model/
+rdfox/
 
 # Enviroment variables containing secrets
 .env

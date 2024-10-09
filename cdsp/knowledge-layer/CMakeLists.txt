@@ -32,3 +32,4 @@ add_compile_definitions(PROJECT_ROOT="${PROJECT_ROOT_DIR}")
 
 # Add subdirectory for the websocket-client
 add_subdirectory(connector/websocket-client)
+add_subdirectory(symbolic-reasoner/rdfox/rdfox-install-test)

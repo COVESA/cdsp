@@ -123,10 +123,10 @@ OBJECT_ID="OBJECT_ID_TO_SUBSCRIBE"
 ```
 
 ### Start the Websocket Client
-After successfully building the client, you can run it with the following command:
+After successfully building the client, you can run it with the following command (VIN is required, if any docker for the knowledge layer is running):
 
 ```bash
-./build/bin/websocket_client
+VIN=<VIN_TO_SUBSCRIBE> ./build/bin/websocket_client
 ```
 
 To display a list of available environment variables and their default values, run the application with the `--help` flag:

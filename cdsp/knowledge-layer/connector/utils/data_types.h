@@ -4,6 +4,7 @@
 #include <chrono>
 #include <map>
 #include <string>
+#include <variant>
 #include <vector>
 
 struct ReasonerSettings {

@@ -42,6 +42,38 @@ services:
     env_file:
       - .env
 
+  # RDFox Initialization (run once)
+  rdfox-init:
+    image: oxfordsemantic/rdfox-init:latest
+    container_name: rdfox-init
+    platform: linux/amd64
+    volumes:
+      - ${RDFOX_LIC_PATH}:/opt/RDFox/RDFox.lic  # License file on host
+      - rdfox-server-directory:/home/rdfox/.RDFox
+    environment:
+      - RDFOX_ROLE=root
+      - RDFOX_PASSWORD=admin
+    command: |
+      -persistence file
+    restart: "no"
+
+  # RDFox Daemon (persistent service)
+  rdfox-service:
+    image: oxfordsemantic/rdfox:latest
+    container_name: rdfox-service
+    platform: linux/amd64
+    depends_on:
+      - rdfox-init
+    ports:
+      - "12110:12110"
+    volumes:
+      - ${RDFOX_LIC_PATH}:/opt/RDFox/RDFox.lic  # License file on host
+      - rdfox-server-directory:/home/rdfox/.RDFox
+    environment:
+      - RDFOX_ROLE=root
+      - RDFOX_PASSWORD=admin
+    command: daemon
+
  # VISSR acting as VISS Data Server
 
   tmp:
@@ -85,3 +117,6 @@ services:
      - ./logs/vssr:/app/logs
    volumes_from:
      - tmp
+
+volumes:
+  rdfox-server-directory:
