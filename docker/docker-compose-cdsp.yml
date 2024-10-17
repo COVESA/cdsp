@@ -73,6 +73,12 @@ services:
       - RDFOX_ROLE=root
       - RDFOX_PASSWORD=admin
     command: daemon
+    deploy:
+      resources:
+        limits:
+          memory: 8g
+          cpus: "2.0"
+    restart: "always"
 
  # VISSR acting as VISS Data Server
 

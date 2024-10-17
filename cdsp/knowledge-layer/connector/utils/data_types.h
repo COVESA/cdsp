@@ -24,10 +24,16 @@ struct ModelConfig {
     ReasonerSettings reasoner_settings;
 };
 
+struct ServerData {
+    std::string host;
+    std::string port;
+    std::string auth_base64;
+};
+
 struct InitConfig {
     std::string uuid;
-    std::string host_websocket_server;
-    std::string port_websocket_server;
+    ServerData websocket_server;
+    ServerData rdfox_server;
     std::string oid;
     ModelConfig model_config;
 };

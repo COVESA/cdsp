@@ -1,5 +1,7 @@
 #include "helper.h"
 
+#include <algorithm>
+
 /**
  * @brief Converts a given string to lowercase.
  *

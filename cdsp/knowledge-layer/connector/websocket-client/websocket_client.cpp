@@ -31,7 +31,7 @@ WebSocketClient::WebSocketClient(const InitConfig& init_config)
 
 void WebSocketClient::run() {
     resolver_.async_resolve(
-        init_config_.host_websocket_server, init_config_.port_websocket_server,
+        init_config_.websocket_server.host, init_config_.websocket_server.port,
         beast::bind_front_handler(&WebSocketClient::onResolve, shared_from_this()));
 
     // Run the io_context to process asynchronous events
@@ -52,7 +52,7 @@ void WebSocketClient::onConnect(boost::system::error_code ec,
         return Fail(ec, "Connection failed:");
     }
 
-    ws_.async_handshake(init_config_.host_websocket_server, "/",
+    ws_.async_handshake(init_config_.websocket_server.host, "/",
                         beast::bind_front_handler(&WebSocketClient::handshake, shared_from_this()));
 }
 
@@ -60,7 +60,7 @@ void WebSocketClient::handshake(beast::error_code ec) {
     if (ec) {
         return Fail(ec, "Handshake failed:");
     }
-    std::cout << "Connected to WebSocket server: " << init_config_.host_websocket_server
+    std::cout << "Connected to WebSocket server: " << init_config_.websocket_server.host
               << std::endl
               << std::endl;
 

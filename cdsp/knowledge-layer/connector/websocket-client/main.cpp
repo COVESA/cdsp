@@ -18,6 +18,9 @@ std::string DefaultHostWebsocketServer{"127.0.0.1"};
 std::string DefaultPortWebSocketServer{"8080"};
 std::string ModelConfigurationFile{std::string(PROJECT_ROOT) +
                                    "/symbolic-reasoner/examples/use-case/model/model_config.json"};
+std::string DefaultRDFoxServer{"127.0.0.1"};
+std::string DefaultPortRDFoxServer{"12110"};
+std::string DefaultAuthRDFoxServerBase64{"cm9vdDphZG1pbg=="};  // For 'root:admin' encoded in base64
 
 std::string getEnvVariable(const std::string& envVar, const std::string& defaultValue = "") {
     const char* valueEnv = std::getenv(envVar.c_str());
@@ -34,24 +37,28 @@ void displayHelp() {
     std::cout << "This table contains a lists environment variables set for the WebSocket client "
                  "and their descriptions.\n\n";
     // Table header
-    std::cout << bold << std::left << std::setw(50) << "Variable" << std::setw(50) << "Description"
+    std::cout << bold << std::left << std::setw(35) << "Variable" << std::setw(65) << "Description"
               << "Value" << reset << "\n";
     std::cout << std::string(140, '-') << "\n";  // Line separator
 
-    std::cout << std::left << std::setw(50) << "HOST_WEBSOCKET_SERVER" << std::setw(50)
+    std::cout << std::left << std::setw(35) << "HOST_WEBSOCKET_SERVER" << std::setw(65)
               << "IP address of the WebSocket server"
-              << getEnvVariable(" - HOST_WEBSOCKET_SERVER", DefaultHostWebsocketServer) << "\n";
-    std::cout << std::left << std::setw(50) << "PORT_WEBSOCKET_SERVER" << std::setw(50)
+              << getEnvVariable("HOST_WEBSOCKET_SERVER", DefaultHostWebsocketServer) << "\n";
+    std::cout << std::left << std::setw(35) << "PORT_WEBSOCKET_SERVER" << std::setw(65)
               << "Port number of the WebSocket server"
-              << getEnvVariable(" - PORT_WEBSOCKET_SERVER", DefaultPortWebSocketServer) << "\n";
-    std::cout << std::left << std::setw(50) << "VIN" << std::setw(50)
+              << getEnvVariable("PORT_WEBSOCKET_SERVER", DefaultPortWebSocketServer) << "\n";
+    std::cout << std::left << std::setw(35) << "OBJECT_ID" << std::setw(65)
               << "Object ID to be used in communication"
-              << getEnvVariable("VIN", lightRed + "`Not Set (Required)`" + reset) << "\n";
-    std::cout << std::left << std::setw(50) << "REQUIRED_VSS_DATA_POINTS_FILE" << std::setw(50)
-              << "Path to the model configuration file"
-              << getEnvVariable(" - REQUIRED_VSS_DATA_POINTS_FILE",
-                                DefaultRequiredVSSDataPointsFile)
-              << "\n";
+              << getEnvVariable("OBJECT_ID", lightRed + "`Not Set (Required)`" + reset) << "\n";
+    std::cout << std::left << std::setw(35) << "HOST_RDFOX_SERVER" << std::setw(65)
+              << "IP address of the RDFox server"
+              << getEnvVariable("HOST_RDFOX_SERVER", DefaultRDFoxServer) << "\n";
+    std::cout << std::left << std::setw(35) << "PORT_RDFOX_SERVER" << std::setw(65)
+              << "Port number of the RDFox server"
+              << getEnvVariable("PORT_RDFOX_SERVER", DefaultPortRDFoxServer) << "\n";
+    std::cout << std::left << std::setw(35) << "AUTH_RDFOX_SERVER_BASE64" << std::setw(65)
+              << "Authentication credentials for RDFox Server encoded in base64"
+              << getEnvVariable("AUTH_RDFOX_SERVER_BASE64", DefaultAuthRDFoxServerBase64) << "\n";
 
     std::cout << "\n" << bold << "Description:\n" << reset;
     std::cout << "This client connects to a WebSocket server and processes incoming messages based "
@@ -74,13 +81,16 @@ InitConfig AddInitConfig() {
     loadModelConfig(ModelConfigurationFile, model_config);
 
     InitConfig init_config;
-    init_config.host_websocket_server =
+    init_config.websocket_server.host =
         getEnvVariable("HOST_WEBSOCKET_SERVER", DefaultHostWebsocketServer);
-    init_config.port_websocket_server =
+    init_config.websocket_server.port =
         getEnvVariable("PORT_WEBSOCKET_SERVER", DefaultPortWebSocketServer);
     init_config.uuid = boost::uuids::to_string(uuidGenerator());
     init_config.oid = getEnvVariable("OBJECT_ID");
     init_config.model_config = model_config;
+    init_config.rdfox_server.host = getEnvVariable("HOST_RDFOX_SERVER");
+    init_config.rdfox_server.port = getEnvVariable("PORT_RDFOX_SERVER");
+    init_config.rdfox_server.auth_base64 = getEnvVariable("AUTH_RDFOX_SERVER_BASE64");
     return init_config;
 }
 

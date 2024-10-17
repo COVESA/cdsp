@@ -1,5 +1,7 @@
 # Define the RDFox test target
-add_executable(rdfox_test rdfox_test_main.cpp)
+add_executable(
+    rdfox_test rdfox_test_main.cpp
+)
 
 # Link Boost libraries
 target_link_libraries(rdfox_test Boost::system Boost::filesystem Boost::thread)

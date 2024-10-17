@@ -30,6 +30,9 @@ set(PROJECT_ROOT_DIR "${CMAKE_SOURCE_DIR}")
 # Pass the root directory to your C++ code
 add_compile_definitions(PROJECT_ROOT="${PROJECT_ROOT_DIR}")
 
+enable_testing()
+
 # Add subdirectory for the websocket-client
 add_subdirectory(connector/websocket-client)
-add_subdirectory(symbolic-reasoner/rdfox/rdfox-install-test)
+add_subdirectory(symbolic-reasoner/rdfox/rdfox-service-test)
+add_subdirectory(symbolic-reasoner/rdfox/tests)

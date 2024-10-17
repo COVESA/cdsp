@@ -1,5 +1,11 @@
 # Define the WebSocket client target
-add_executable(websocket_client main.cpp websocket_client.cpp ../utils/message_utils.cpp ../utils/helper.cpp ../utils/model_config.cpp)
+add_executable(
+    websocket_client main.cpp
+    websocket_client.cpp
+    ../utils/message_utils.cpp
+    ../utils/helper.cpp
+    ../utils/model_config.cpp
+)
 
 # Link libraries
 target_link_libraries(websocket_client Boost::system Boost::filesystem Boost::thread)
