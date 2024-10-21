@@ -78,9 +78,9 @@ OPTIONAL_CUSTOM_VARIABLES="value"
 > [!WARNING] 
 > Do not commit this file to GitHub!
 
-In order to work with your custom database handler, it is required to initialize it in the [websocket-server.js](../../router/src/websocket-server.js). 
+In order to work with your custom database handler, it is required to initialize it in the [websocket-server.ts](../../router/src/websocket-server.ts). 
 
-```js
+```ts
 switch (handlerType) {
   case "realmdb":
     handler = new RealmDBHandler();
@@ -102,7 +102,7 @@ Run the WebSocket server, and connect with your handler by sending WebSocket mes
 ### Existing Handlers
 
 You can check the following examples to understand how to structure your new handler:
-- **RealmDB Handler**: [RealmHandler](./realmdb/src/realmdb-handler.js) provides an example of how to interact with RealmDB.
-- **IoTDB Handler**: A similar implementation can be followed for [IoTDBHandler](./iotdb/src/iotdb-handler.js) .
+- **RealmDB Handler**: [RealmHandler](./realmdb/src/realmdb-handler.ts) provides an example of how to interact with RealmDB.
+- **IoTDB Handler**: A similar implementation can be followed for [IoTDBHandler](./iotdb/src/iotdb-handler.ts).
 
-For additional logging, you can utilize the `logMessage` function from [logger.js](../../utils/logger.js).
+For additional logging, you can utilize the `logMessage` function from [logger.ts](../../utils/logger.ts).

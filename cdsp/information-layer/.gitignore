@@ -3,4 +3,6 @@ mongodb-realm/
 
 # Node.js
 node_modules/
-package-lock.json
+
+# typescript migration
+dist

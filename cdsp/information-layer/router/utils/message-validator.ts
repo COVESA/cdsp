@@ -1,27 +1,38 @@
-const Ajv = require("ajv");
-const { createErrorMessage } = require("../../utils/error-message-helper");
+import Ajv, { ErrorObject } from "ajv";
+import { createErrorMessage } from "../../utils/error-message-helper";
+import {
+  ErrorMessage,
+  Message,
+  STATUS_ERRORS,
+} from "../../handlers/utils/data_types";
 
+// Initialize AJV with specific options
 const ajv = new Ajv({
   allErrors: true,
   strict: true,
   allowUnionTypes: true,
 });
 
+// Define the headers for validation
 const itemsHeader = ["type", "tree", "id", "uuid"];
+const ERROR_CATEGORY = "messageValidation";
 
-const standardError = createErrorMessage(
-  "messageValidation",
-  400,
-  `Received an invalid message.`,
-);
+// Standard error message template
+const standardError: ErrorMessage = {
+  category: ERROR_CATEGORY,
+  statusCode: STATUS_ERRORS.BAD_REQUEST,
+  message: "Received an invalid message.",
+};
 
-const createCommonStructure = (requestType) => ({
+// Helper to create the common structure for different message types
+const createCommonStructure = (requestType: string) => ({
   type: { type: "string", enum: [requestType] },
   tree: { type: "string", enum: ["VSS"] },
   id: { type: "string" },
   uuid: { type: "string" },
 });
 
+// Define the schemas for message validation
 const schemas = {
   read: {
     type: "object",
@@ -113,60 +124,68 @@ const schemas = {
   },
 };
 
-const customizeErrorMessage = (errors) => {
+// Function to customize error messages from AJV validation
+const customizeErrorMessage = (
+  errors: ErrorObject[] | null | undefined,
+): ErrorMessage[] => {
+  if (!errors) return [standardError];
+
   return errors.map((err) => {
-    switch (err.keyword) {
+    const { keyword, instancePath, params } = err;
+
+    switch (keyword) {
       case "required":
         return createErrorMessage(
-          "messageValidation",
-          400,
-          `Missing required field: ${err.params.missingProperty}.`,
+          ERROR_CATEGORY,
+          STATUS_ERRORS.BAD_REQUEST,
+          `Missing required field: ${params.missingProperty}.`,
         );
       case "type":
         return createErrorMessage(
-          "messageValidation",
-          400,
-          `Invalid type for field '${err.instancePath}': expected ${err.params.type}.`,
+          ERROR_CATEGORY,
+          STATUS_ERRORS.BAD_REQUEST,
+          `Invalid type for field '${instancePath}': expected ${params.type}.`,
         );
       case "enum":
         if (err.instancePath === "/tree") {
           return createErrorMessage(
-            "messageValidation",
-            404,
-            `Unsupported message 'tree': must be one of ${err.params.allowedValues.join(", ")}`,
+            ERROR_CATEGORY,
+            STATUS_ERRORS.NOT_FOUND,
+            `Unsupported message 'tree': must be one of ${params.allowedValues?.join(", ")}`,
           );
-        } else {
-          return standardError;
         }
+        break;
       case "additionalProperties":
         return createErrorMessage(
-          "messageValidation",
-          404,
-          `Unsupported property '${err.params.additionalProperty}' found`,
+          ERROR_CATEGORY,
+          STATUS_ERRORS.NOT_FOUND,
+          `Unsupported property '${params.additionalProperty}' found`,
         );
       default:
         return createErrorMessage(
-          "messageValidation",
-          400,
-          `Validation error on field '${err.instancePath}': ${err.message}.`,
+          ERROR_CATEGORY,
+          STATUS_ERRORS.BAD_REQUEST,
+          `Validation error on field '${instancePath}': ${err.message}.`,
         );
     }
+
+    return standardError;
   });
 };
 
 /**
  * Validates a JSON message against predefined schemas.
  *
- * @param {string} message - The JSON message to be validated.
- * @returns {Object|Error} - Returns the parsed message if valid, otherwise throws an error.
+ * @param message - The JSON message to be validated.
+ * @returns The parsed message if valid, otherwise throws an error.
  */
-const validateMessage = (message) => {
+export const validateMessage = (message: string): Message | Error => {
   try {
     // Try to parse the JSON message
-    const parsedMessage = JSON.parse(message);
+    const parsedMessage: Message = JSON.parse(message);
 
     // Determine the schema key based on the message type
-    let schemaKey;
+    let schemaKey: keyof typeof schemas;
     switch (parsedMessage.type) {
       case "read":
         schemaKey = parsedMessage.nodes ? "multiNodeRead" : "read";
@@ -184,7 +203,7 @@ const validateMessage = (message) => {
         const error = JSON.stringify([
           createErrorMessage(
             "messageValidation",
-            404,
+            STATUS_ERRORS.NOT_FOUND,
             `Unsupported message type (${parsedMessage.type})`,
           ),
         ]);
@@ -199,25 +218,21 @@ const validateMessage = (message) => {
       throw new Error(JSON.stringify(customError));
     }
     return parsedMessage;
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof SyntaxError) {
       // Handle JSON parsing error
-
-      const error = JSON.stringify([
+      const jsonError = JSON.stringify([
         createErrorMessage(
           "messageValidation",
-          404,
+          STATUS_ERRORS.NOT_FOUND,
           "The JSON format in the message is not valid.",
         ),
       ]);
-      return new Error(error);
+      return new Error(jsonError);
     } else {
       // Handle other errors
-      return new Error(error.message);
+      const errMsg = error instanceof Error ? error.message : "Unknown error";
+      return new Error(errMsg);
     }
   }
-};
-
-module.exports = {
-  validateMessage,
 };

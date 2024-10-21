@@ -1,52 +1,52 @@
-const {
-  IoTDBDataType,
-  SupportedMessageDataTypes,
-} = require("./iotdb-constants");
+import { IoTDBDataType, SupportedMessageDataTypes } from "./iotdb-constants";
 
-class IotdbDataInterpreter {
+export class IoTDBDataInterpreter {
   /**
    * Serializes values based on the specified data types.
-   * @param {Array} dataTypes - Array of data types to serialize the values as.
-   * @param {Array} values - Array of values to be serialized.
-   * @returns {Buffer} - Serialized values as a Buffer.
+   * @param dataTypes - Array of data types to serialize the values as.
+   * @param values - Array of values to be serialized.
+   * @returns Serialized values as a Buffer.
    */
-  static serializeValues(dataTypes, values) {
-    function serializeBoolean(value) {
+  static serializeValues(
+    dataTypes: (keyof typeof SupportedMessageDataTypes)[],
+    values: any[],
+  ): Buffer {
+    function serializeBoolean(value: boolean): (number | boolean)[] {
       return [IoTDBDataType.BOOLEAN, value];
     }
 
-    function serializeInt32(value) {
+    function serializeInt32(value: number): (number | Uint8Array)[] {
       const int32 = new Int32Array([value]);
       const uint8 = new Uint8Array(int32.buffer).reverse();
       return [IoTDBDataType.INT32, ...uint8];
     }
 
-    function serializeInt64(value) {
+    function serializeInt64(value: bigint): (number | Uint8Array)[] {
       const bigint64 = new BigInt64Array([value]);
       const uint8 = new Uint8Array(bigint64.buffer).reverse();
       return [IoTDBDataType.INT64, ...uint8];
     }
 
-    function serializeFloat(value) {
+    function serializeFloat(value: number): (number | Uint8Array)[] {
       const float32 = new Float32Array([value]);
       const uint8 = new Uint8Array(float32.buffer).reverse();
       return [IoTDBDataType.FLOAT, ...uint8];
     }
 
-    function serializeDouble(value) {
+    function serializeDouble(value: number): (number | Uint8Array)[] {
       const float64 = new Float64Array([value]);
       const uint8 = new Uint8Array(float64.buffer).reverse();
       return [IoTDBDataType.DOUBLE, ...uint8];
     }
 
-    function serializeText(value) {
+    function serializeText(value: string): (number | Uint8Array)[] {
       const utf8arr = Buffer.from(value);
       const int32 = new Uint32Array([utf8arr.length]);
       const uint8 = new Uint8Array(int32.buffer).reverse();
       return [IoTDBDataType.TEXT, ...uint8, ...utf8arr];
     }
 
-    const serializedValues = [];
+    const serializedValues: (number | Uint8Array | boolean)[] = [];
 
     for (let i = 0; i < dataTypes.length; i++) {
       switch (dataTypes[i]) {
@@ -75,33 +75,43 @@ class IotdbDataInterpreter {
           throw new Error(`Unsupported data type: ${dataTypes[i]}`);
       }
     }
-    return Buffer.from(serializedValues);
+    // Convert to Uint8Array and pass it to Buffer.from
+    const flattenedValues = new Uint8Array(
+      serializedValues.flat().map((val) => Number(val)),
+    );
+    return Buffer.from(flattenedValues);
   }
 
   /**
    * Extracts and transforms timeseries nodes from the given object with the required message format.
    *
-   * @param {Object} obj - The object containing timeseries data.
-   * @param {string} databaseName - The database name to match and remove from the keys.
-   * @returns {Object} - A new object with transformed keys and their corresponding values.
+   * @param obj - The object containing timeseries data.
+   * @param databaseName - The database name to match and remove from the keys.
+   * @returns A new object with transformed keys and their corresponding values.
    */
-  static extractNodesFromTimeseries(obj, databaseName) {
-    return Object.entries(obj).reduce((acc, [key, value]) => {
-      if (key.startsWith(databaseName)) {
-        const newKey = key.replace(`${databaseName}.`, "");
-        acc[newKey] = value;
-      }
-      return acc;
-    }, {});
+  static extractNodesFromTimeseries(
+    obj: Record<string, any>,
+    databaseName: string,
+  ): Record<string, any> {
+    return Object.entries(obj).reduce(
+      (acc: Record<string, any>, [key, value]) => {
+        if (key.startsWith(databaseName)) {
+          const newKey = key.replace(`${databaseName}.`, "");
+          acc[newKey] = value;
+        }
+        return acc;
+      },
+      {},
+    );
   }
 
   /**
    * This function converts a buffer to a BigInt64Array and extracts the timestamp.
    *
-   * @param {Buffer} buffer - The buffer containing the timestamp.
-   * @returns {{ timestamp: BigInt }} An object containing the extracted timestamp.
+   * @param buffer - The buffer containing the timestamp.
+   * @returns An object containing the extracted timestamp.
    */
-  static extractTimestamp(buffer) {
+  static extractTimestamp(buffer: Buffer): { timestamp: bigint } {
     const reverseBuffer = Buffer.from(buffer.subarray(0, 8).reverse());
     const uinit8Buffer = new Uint8Array(reverseBuffer).buffer;
     const timestamp = new BigInt64Array(uinit8Buffer)[0];
@@ -109,5 +119,3 @@ class IotdbDataInterpreter {
     return { timestamp };
   }
 }
-
-module.exports = { IoTDBDataInterpreter: IotdbDataInterpreter };

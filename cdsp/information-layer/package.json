@@ -3,20 +3,40 @@
   "version": "1.0.0",
   "description": "WebSocket server with handlers for IoTDB and RealmDB",
   "private": true,
-  "workspaces": [
-    "handlers/src",
-    "handlers/src/iotdb",
-    "handlers/src/realmdb",
-    "router"
-  ],
-  "main": "router/src/websocket-server.js",
+  "main": "dist/router/src/websocket-server.js",
   "scripts": {
-    "start": "node router/src/websocket-server.js"
+    "copy-files": "npx copyfiles -u 3 ./handlers/config/schema-files/**/* ./dist/handlers/config/schema-files/",
+    "check-format": "prettier --check './**/*.{ts,tsx}'",
+    "prebuild": "rimraf /dist",
+    "lint": "eslint",
+    "lint-and-fix": "eslint --fix",
+    "build": "tsc && npm run copy-files",
+    "start": "node ./dist/router/src/websocket-server.js"
   },
   "dependencies": {
-    "dotenv": "^16.4.5"
+    "ajv": "^8.17.1",
+    "dotenv": "^16.4.5",
+    "js-yaml": "^4.1.0",
+    "realm": "^12.13.1",
+    "thrift": "^0.21.0",
+    "uuid": "^10.0.0",
+    "ws": "^8.18.0"
   },
   "devDependencies": {
-    "prettier": "3.3.3"
+    "@types/ajv": "^0.0.5",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.7.0",
+    "@types/thrift": "^0.10.17",
+    "@types/uuid": "^10.0.0",
+    "@types/ws": "^8.5.12",
+    "copyfiles": "^2.4.1",
+    "eslint": "^9.9.1",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.2.1",
+    "prettier": "^3.3.3",
+    "rimraf": "^6.0.1",
+    "ts-jest": "^29.2.5",
+    "typescript": "^5.6.2",
+    "typescript-eslint": "^8.4.0"
   }
 }
