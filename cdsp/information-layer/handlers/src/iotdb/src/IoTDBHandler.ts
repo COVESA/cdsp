@@ -1,16 +1,13 @@
 import { SupportedMessageDataTypes } from "./../utils/iotdb-constants";
-import { Client as ThriftClient } from "../gen-nodejs/IClientRPCService";
-import {
+const Client = require("../gen-nodejs/IClientRPCService");
+const {
   TSExecuteStatementReq,
   TSOpenSessionReq,
-  TSOpenSessionResp,
   TSProtocolVersion,
   TSCloseSessionReq,
   TSInsertRecordReq,
-  Int64,
-} from "../gen-nodejs/IClientRPCService_types";
+}: any = require("../gen-nodejs/client_types");
 import thrift from "thrift";
-import { IotDBInt64 } from "../utils/Int64";
 import { HandlerBase } from "../../HandlerBase";
 import { SessionDataSet } from "../utils/SessionDataSet";
 import { IoTDBDataInterpreter } from "../utils/IoTDBDataInterpreter";
@@ -32,29 +29,23 @@ import { createErrorMessage } from "../../../../utils/error-message-helper";
 import { WebSocket, Message, STATUS_ERRORS } from "../../../utils/data_types";
 
 export class IoTDBHandler extends HandlerBase {
-  private client: ThriftClient | null;
+  private client: any = null;
   private sendMessageToClients:
     | ((ws: WebSocket, message: Message) => void)
-    | null;
-  private sessionId: Int64 | undefined;
-  private readonly protocolVersion: number;
-  private statementId: Int64 | undefined;
-  private readonly fetchSize: number;
-  private dataPointsSchema: SupportedDataPoints;
+    | null = null;
+  private sessionId: number | null = null;
+  private readonly protocolVersion: any =
+    TSProtocolVersion.IOTDB_SERVICE_PROTOCOL_V3;
+  private statementId: number | null = null;
+  private fetchSize: number;
+  private dataPointsSchema: SupportedDataPoints = {};
 
   constructor() {
     super();
     if (!databaseConfig) {
       throw new Error("Invalid database configuration.");
     }
-
-    this.client = null;
-    this.sendMessageToClients = null;
-    this.sessionId = undefined;
-    this.protocolVersion = TSProtocolVersion.IOTDB_SERVICE_PROTOCOL_V3;
-    this.statementId = undefined;
-    this.fetchSize = databaseConfig.fetchSize;
-    this.dataPointsSchema = {};
+    this.fetchSize = databaseConfig?.fetchSize ?? 1000;
   }
 
   async authenticateAndConnect(
@@ -76,7 +67,7 @@ export class IoTDBHandler extends HandlerBase {
         `Connect to IoTDB, host: ${databaseConfig!.iotdbHost} port: ${databaseConfig!.iotdbPort}`
       );
 
-      this.client = thrift.createClient(ThriftClient, connection);
+      this.client = thrift.createClient(Client, connection);
 
       connection.on("error", (error: Error) => {
         logError("thrift connection error", error);
@@ -208,15 +199,14 @@ export class IoTDBHandler extends HandlerBase {
       password: databaseConfig!.iotdbPassword,
       client_protocol: this.protocolVersion,
       zoneId: databaseConfig!.timeZoneId,
-      configuration: new Map<string, string>([["version", "V_0_13"]]),
+      configuration: { version: "V_0_13" },
     });
 
     try {
       if (!this.client) {
         throw new Error("Client is not initialized");
       }
-      const resp: TSOpenSessionResp =
-        await this.client.openSession(openSessionReq);
+      const resp = await this.client.openSession(openSessionReq);
 
       if (this.protocolVersion !== resp.serverProtocolVersion) {
         logMessage(
@@ -232,15 +222,14 @@ export class IoTDBHandler extends HandlerBase {
       }
 
       this.sessionId = resp.sessionId;
-      if (this.sessionId) {
-        this.statementId = await this.client?.requestStatementId(
-          this.sessionId
-        );
-      } else {
+
+      if (!this.sessionId) {
         throw new Error(
           "Session ID is undefined, cannot request statement ID."
         );
       }
+
+      this.statementId = await this.client.requestStatementId(this.sessionId);
       logMessage("Session started!");
     } catch (error: unknown) {
       logError("Failed starting session with IoTDB", error);
@@ -259,14 +248,14 @@ export class IoTDBHandler extends HandlerBase {
     const req = new TSCloseSessionReq({ sessionId: this.sessionId! });
 
     try {
-      await this.client?.closeSession(req);
+      await this.client.closeSession(req);
     } catch (error: unknown) {
       logError(
         "Error occurs when closing session at server. Maybe server is down. Error message",
         error
       );
     } finally {
-      this.sessionId = undefined;
+      this.sessionId = null;
       logMessage("Session closed!");
     }
   }
@@ -317,6 +306,109 @@ export class IoTDBHandler extends HandlerBase {
   }
 
   /**
+   * Executes a SQL query statement asynchronously.
+   *
+   * @param sql - The SQL query statement to be executed.
+   * @returns - Returns a SessionDataSet object if the query is successful,
+   *                                             otherwise returns an empty object.
+   * @throws - Throws an error if the session is not open.
+   */
+  private async executeQueryStatement(
+    sql: string
+  ): Promise<SessionDataSet | {}> {
+    try {
+      if (!this.sessionId) {
+        throw new Error("Session is not open. Please authenticate first.");
+      }
+      if (!this.statementId) {
+        throw new Error("Missing statement ID");
+      }
+
+      const request = new TSExecuteStatementReq({
+        sessionId: this.sessionId,
+        statement: sql,
+        statementId: this.statementId,
+        fetchSize: this.fetchSize,
+        timeout: 0,
+      });
+
+      const resp = await this.client.executeQueryStatement(request);
+      if (!resp || !resp.queryDataSet || !resp.queryDataSet.valueList) {
+        return {};
+      }
+      return new SessionDataSet(
+        resp.columns,
+        resp.dataTypeList,
+        resp.columnNameIndexMap,
+        resp.queryId,
+        this.client,
+        this.statementId,
+        this.sessionId,
+        resp.queryDataSet,
+        resp.ignoreTimeStamp
+      );
+    } catch (error: unknown) {
+      logError("Failed executing query statement", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Inserts a record into the time series database.
+   * @param deviceId - The ID of the device.
+   * @param measurements - Array of measurement names.
+   * @param dataTypes - Array of data types for each value.
+   * @param values - Array of values to be inserted.
+   * @param isAligned - Flag indicating if the data is aligned.
+   * @returns - A promise that resolves with the result of the insertion.
+   * @throws - Throws an error if lengths of data types, values, and measurements do not match.
+   */
+  private async insertRecord(
+    deviceId: string,
+    measurements: string[],
+    dataTypes: string[],
+    values: any[],
+    isAligned = false
+  ): Promise<any> {
+    if (!this.sessionId) {
+      throw new Error("Session is not open. Please authenticate first.");
+    }
+    if (
+      values.length !== dataTypes.length ||
+      values.length !== measurements.length
+    ) {
+      throw "Length of data types does not equal to length of values!";
+    }
+
+    // Validate the dataTypes before using them
+    const validatedDataTypes: (keyof typeof SupportedMessageDataTypes)[] = [];
+
+    dataTypes.forEach((dataType) => {
+      if (isSupportedDataPoint(dataType)) {
+        validatedDataTypes.push(dataType); // Add valid data types
+      } else {
+        throw new Error(`Unsupported data type: ${dataType}`);
+      }
+    });
+
+    const valuesInBytes = IoTDBDataInterpreter.serializeValues(
+      validatedDataTypes,
+      values
+    );
+
+    const request = new TSInsertRecordReq({
+      sessionId: this.sessionId!,
+      prefixPath: deviceId,
+      measurements: measurements,
+      values: valuesInBytes,
+      timestamp: Date.now(),
+      isAligned: isAligned,
+    });
+
+    return await this.client.insertRecord(request);
+  }
+
+  /**
    * Queries the last fields from the database based on the provided message and sends the response to the client.
    *
    * @param message - The message object containing the query details.
@@ -339,6 +431,7 @@ export class IoTDBHandler extends HandlerBase {
     }
     const { databaseName, dataPointId } =
       databaseParams[tree as keyof typeof databaseParams];
+
     const fieldsToSearch = this.extractDataPointsFromNodes(message).join(", ");
     const sql = `SELECT ${fieldsToSearch} FROM ${databaseName} WHERE ${dataPointId} = '${objectId}' ORDER BY Time ASC`;
 
@@ -394,110 +487,6 @@ export class IoTDBHandler extends HandlerBase {
   }
 
   /**
-   * Executes a SQL query statement asynchronously.
-   *
-   * @param sql - The SQL query statement to be executed.
-   * @returns - Returns a SessionDataSet object if the query is successful,
-   *                                             otherwise returns an empty object.
-   * @throws - Throws an error if the session is not open.
-   */
-  private async executeQueryStatement(sql: string): Promise<SessionDataSet> {
-    try {
-      if (!this.sessionId) {
-        throw new Error("Session is not open. Please authenticate first.");
-      }
-      if (!this.statementId) {
-        throw new Error("Missing statement ID");
-      }
-
-      const request = new TSExecuteStatementReq({
-        sessionId: this.sessionId,
-        statement: sql,
-        statementId: this.statementId,
-        fetchSize: this.fetchSize,
-        timeout: 0,
-      });
-
-      const resp = await this.client?.executeQueryStatement(request);
-      if (!resp || !resp.queryDataSet || !resp.queryDataSet.valueList) {
-        throw new Error("Failed to execute query or retrieve valid data.");
-      }
-      return new SessionDataSet(
-        resp.columns ?? [],
-        resp.dataTypeList ?? [],
-        resp.columnNameIndexMap
-          ? Object.fromEntries(resp.columnNameIndexMap)
-          : {},
-        resp.queryId ?? new IotDBInt64(-1),
-        this.client!,
-        this.statementId!,
-        this.sessionId!,
-        resp.queryDataSet,
-        resp.ignoreTimeStamp ?? false
-      );
-    } catch (error: unknown) {
-      logError("Failed executing query statement", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Inserts a record into the time series database.
-   * @param deviceId - The ID of the device.
-   * @param timestamp - The timestamp of the record.
-   * @param measurements - Array of measurement names.
-   * @param dataTypes - Array of data types for each value.
-   * @param values - Array of values to be inserted.
-   * @param isAligned - Flag indicating if the data is aligned.
-   * @returns - A promise that resolves with the result of the insertion.
-   * @throws - Throws an error if lengths of data types, values, and measurements do not match.
-   */
-  private async insertRecord(
-    deviceId: string,
-    measurements: string[],
-    dataTypes: string[],
-    values: any[],
-    isAligned = false
-  ): Promise<any> {
-    if (!this.sessionId) {
-      throw new Error("Session is not open. Please authenticate first.");
-    }
-    if (
-      values.length !== dataTypes.length ||
-      values.length !== measurements.length
-    ) {
-      throw "Length of data types does not equal to length of values!";
-    }
-
-    // Validate the dataTypes before using them
-    const validatedDataTypes: (keyof typeof SupportedMessageDataTypes)[] = [];
-
-    dataTypes.forEach((dataType) => {
-      if (isSupportedDataPoint(dataType)) {
-        validatedDataTypes.push(dataType); // Add valid data types
-      } else {
-        throw new Error(`Unsupported data type: ${dataType}`);
-      }
-    });
-
-    const valuesInBytes = IoTDBDataInterpreter.serializeValues(
-      validatedDataTypes,
-      values
-    );
-
-    const request = new TSInsertRecordReq({
-      sessionId: this.sessionId!,
-      prefixPath: deviceId,
-      measurements: measurements,
-      values: valuesInBytes,
-      timestamp: new IotDBInt64(Date.now()),
-      isAligned: isAligned,
-    });
-
-    return await this.client?.insertRecord(request);
-  }
-
-  /**
    * Extracts data point names from the given message.
    *
    * This function checks if the message has a single node or multiple nodes and
@@ -549,5 +538,3 @@ export class IoTDBHandler extends HandlerBase {
     return data;
   }
 }
-
-export default IoTDBHandler;

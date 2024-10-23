@@ -8,10 +8,16 @@ COPY utils ./utils
 COPY router ./router
 
 # Install dependencies, including workspaces
-RUN npm install --production
+RUN npm install
+
+# Transpile TypeScript to JavaScript
+RUN npm run build
+
+# Remove devDependencies to reduce the final image size
+RUN npm prune --omit=dev
 
 # Expose the necessary port
 EXPOSE 8080
 
 # Command to run the WebSocket server
-CMD ["node", "router/src/websocket-server.js"]
+CMD ["node", "./dist/router/src/websocket-server.js"]

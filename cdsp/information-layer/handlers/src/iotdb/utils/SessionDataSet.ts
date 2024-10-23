@@ -1,12 +1,11 @@
 import { IoTDBDataType } from "./iotdb-constants";
 import { IoTDBRpcDataSet } from "./IoTDBRpcDataSet";
 import { IoTDBDataInterpreter } from "./IoTDBDataInterpreter";
-import { Int64 } from "../gen-nodejs/IClientRPCService_types";
 
 // Define the dataTypeProcessors map with specific function types
 const dataTypeProcessors: {
   [key in IoTDBDataType]: (
-    bytes: Uint8Array | Buffer,
+    bytes: Uint8Array | Buffer
   ) => number | bigint | string;
 } = {
   [IoTDBDataType.BOOLEAN]: (bytes) =>
@@ -29,12 +28,12 @@ export class SessionDataSet {
     columnNameList: string[],
     columnTypeList: IoTDBDataType[],
     columnNameIndex: { [key: string]: number },
-    queryId: Int64,
+    queryId: number,
     client: any,
-    statementId: Int64,
-    sessionId: Int64,
+    statementId: number,
+    sessionId: any,
     queryDataSet: any,
-    ignoreTimestamp: boolean,
+    ignoreTimestamp: boolean
   ) {
     this.iotdbRpcDataSet = new IoTDBRpcDataSet(
       columnNameList,
@@ -46,7 +45,7 @@ export class SessionDataSet {
       sessionId,
       queryDataSet,
       ignoreTimestamp,
-      1024, // Buffer size or default value
+      1024 // Buffer size or default value
     );
   }
 
@@ -66,7 +65,7 @@ export class SessionDataSet {
 
   private constructRowRecordFromValueArray(): { [key: string]: any } {
     const time64 = IoTDBDataInterpreter.extractTimestamp(
-      this.iotdbRpcDataSet.getTimeBytes(),
+      this.iotdbRpcDataSet.getTimeBytes()
     );
     const obj: { [key: string]: any } = { timestamp: time64 };
 
@@ -86,12 +85,16 @@ export class SessionDataSet {
 
       if (!this.iotdbRpcDataSet.isNullByIndex(dataSetColumnIndex)) {
         const valueBytes = this.iotdbRpcDataSet.getValues()[location];
-        const dataType =
+        let dataType =
           this.iotdbRpcDataSet.getColumnTypeDeduplicatedList()[location];
         const tsName =
           this.iotdbRpcDataSet.findColumnNameByIndex(dataSetColumnIndex);
 
         if (dataType !== null && valueBytes !== null) {
+          if (typeof dataType === "string") {
+            dataType = IoTDBDataType[dataType as keyof typeof IoTDBDataType];
+          }
+
           if (dataTypeProcessors[dataType]) {
             obj[tsName] = dataTypeProcessors[dataType](valueBytes);
           } else {

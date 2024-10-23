@@ -1,5 +1,4 @@
 import { IoTDBDataType } from "./iotdb-constants";
-import { Int64 } from "../gen-nodejs/IClientRPCService_types";
 
 export class IoTDBRpcDataSet {
   // Static properties
@@ -11,10 +10,10 @@ export class IoTDBRpcDataSet {
   private sql: string | null = null;
   private columnNameList: string[];
   private columnTypeList: IoTDBDataType[];
-  private queryId: Int64;
+  private queryId: number;
   private client: any;
-  private statementId: Int64;
-  private sessionId: Int64;
+  private statementId: number;
+  private sessionId: any;
   private queryDataSet: any;
   private ignoreTimestamp: boolean;
   private fetchSize: number;
@@ -32,10 +31,10 @@ export class IoTDBRpcDataSet {
     columnNameList: string[],
     columnTypeList: IoTDBDataType[],
     columnNameIndex: { [key: string]: number } | null,
-    queryId: Int64,
+    queryId: number,
     client: any,
-    statementId: Int64,
-    sessionId: Int64,
+    statementId: number,
+    sessionId: any,
     queryDataSet: any,
     ignoreTimestamp: boolean,
     fetchSize: number
@@ -173,7 +172,11 @@ export class IoTDBRpcDataSet {
 
       if (!this.isNull(i, this.rowsIndex)) {
         const valueBuffer = this.queryDataSet.valueList[i];
-        const dataType = this.columnTypeDeduplicatedList[i];
+        let dataType = this.columnTypeDeduplicatedList[i];
+
+        if (typeof dataType === "string") {
+          dataType = IoTDBDataType[dataType as keyof typeof IoTDBDataType];
+        }
 
         switch (dataType) {
           case IoTDBDataType.BOOLEAN:
@@ -211,11 +214,15 @@ export class IoTDBRpcDataSet {
   }
 
   private isNull(index: number, rowNum: number): boolean {
-    const bitmap = this.currentBitmap[index];
     const shift = rowNum % 8;
-    const bitmapValue = bitmap.readUInt8(0); // Read the first byte as an unsigned integer
+    const bitmapValue: number = Buffer.isBuffer(this.currentBitmap[index])
+      ? this.currentBitmap[index].readInt8(0)
+      : this.currentBitmap[index];
+
     return ((IoTDBRpcDataSet.FLAG >> shift) & (bitmapValue & 0xff)) === 0;
   }
+
+  private returnCurrentBitmapAsNumber() {}
 
   private fetchResults(): void {
     this.rowsIndex = 0;
