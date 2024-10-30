@@ -9,15 +9,15 @@ Clients can interact with it using websockets and JSON payload.
 The information-layer consists of two logical components:
 - database handler: Interaction with the chosen database, configurable
 - router: API provider that connects to the database handler
-```
-                                                            | CLOUD
-                                               +---------+  |  +---------+
-                                               | realm_h | <-> | realmDB |
-+--------+     +--------+     +----------+ <-> +---------+  |  +---------+
-| client | <-> | router | <-> | handlers |
-+--------+     +--------+     +----------+ <-> +---------+     +-------+
-                                               | iotdb_h | <-> | iotdb |
-                                               +---------+     +-------+
+
+```mermaid
+flowchart LR
+    client <--> router
+    router <--> handlers
+    handlers <--> realm_handler
+    handlers <--> iotdb_handler
+    realm_handler <--> realmdb
+    iotdb_handler <--> iotdb
 ```
 
 # Hello World Setup
