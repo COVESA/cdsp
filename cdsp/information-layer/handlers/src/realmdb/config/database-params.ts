@@ -1,5 +1,5 @@
 import { getEnvValue } from "../../../config/config";
-import { DatabaseParamsRecord } from "../../../utils/data_types";
+import { DatabaseParamsRecord } from "../../../utils/data-types";
 
 interface RealmDBConfig {
   storePath: string;

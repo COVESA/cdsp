@@ -12,7 +12,7 @@ import {
   logErrorStr,
 } from "../../../../utils/logger";
 import { createErrorMessage } from "../../../../utils/error-message-helper";
-import { WebSocket, Message, STATUS_ERRORS } from "../../../utils/data_types";
+import { WebSocket, Message, STATUS_ERRORS } from "../../../utils/data-types";
 
 // Define a type for changes
 interface Changes {
@@ -373,7 +373,7 @@ export class RealmDBHandler extends HandlerBase {
     );
 
     const responseNodes = this.parseReadResponse(message, mediaElement);
-    return this.createUpdateMessage(message, responseNodes);
+    return this.createUpdateMessage(message.id, message.tree, message.uuid, responseNodes);
   }
 
   /**
@@ -453,7 +453,7 @@ export class RealmDBHandler extends HandlerBase {
           mediaElement
         );
         const updateMessage = this.createUpdateMessage(
-          messageHeader,
+          messageHeader.id, messageHeader.tree, messageHeader.uuid,
           responseNodes
         );
         this.sendMessageToClient(ws, updateMessage);

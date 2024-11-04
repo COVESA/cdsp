@@ -1,4 +1,4 @@
-import { ErrorMessage } from "../handlers/utils/data_types";
+import { ErrorMessage } from "../handlers/utils/data-types";
 
 /**
  * Creates an error message object with the specified category, status code, and message.

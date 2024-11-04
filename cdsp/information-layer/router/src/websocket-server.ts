@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import WebSocket, { RawData } from "ws";
 import { RealmDBHandler } from "../../handlers/src/realmdb/src/RealmDbHandler";
 import { IoTDBHandler } from "../../handlers/src/iotdb/src/IoTDBHandler";
@@ -11,7 +12,7 @@ import {
   MessageType,
   COLORS,
 } from "../../utils/logger";
-import { Message } from "../../handlers/utils/data_types";
+import { Message, WebSocketWithId } from "../../handlers/utils/data-types";
 
 // Define the handler as the base class type
 let handler: HandlerBase;
@@ -35,13 +36,17 @@ switch (handlerType) {
 // WebSocket server creation
 const server = new WebSocket.Server({ port: 8080 });
 
-// Define clients array globally to store connected clients
-let clients: WebSocket[] = [];
+// Define clients Map globally to store connected clients
+const clients = new Map<string, WebSocket>();
 
 // Handle new client connections
 server.on("connection", (ws: WebSocket) => {
-  logWithColor("* Client connected *", COLORS.YELLOW);
-  clients.push(ws); // Add client to the array
+  // add a uuid to the websocket connection
+  const connectionId = uuidv4();
+  const wsWithId = ws as unknown as WebSocketWithId;
+  wsWithId.id = connectionId;
+  clients.set(connectionId, ws); // Add client to the Map
+  logWithColor(`Client connected with id ${connectionId}`, COLORS.YELLOW);
 
   // Handle messages from the client
   ws.on("message", (message: WebSocket.RawData) => {
@@ -56,15 +61,15 @@ server.on("connection", (ws: WebSocket) => {
       });
     } else {
       // Pass the validated message to the handler
-      handler.handleMessage(validatedMessage, ws);
+      handler.handleMessage(validatedMessage, connectionId, wsWithId);
     }
   });
 
   // Handle client disconnection
   ws.on("close", () => {
     handler.unsubscribe_client(ws); // Remove all client listeners
-    clients = clients.filter((client) => client !== ws); // Remove client from array
-    logMessage("* Client disconnected *");
+    clients.delete(connectionId);
+    logWithColor(`Client disconnected with ID ${connectionId}`, COLORS.ORANGE);
   });
 });
 

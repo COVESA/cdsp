@@ -3,10 +3,11 @@ import yaml from "js-yaml";
 import {
   Message,
   WebSocket,
+  WebSocketWithId,
   DataPointSchema,
   MessageBase,
   ErrorMessage,
-} from "../utils/data_types";
+} from "../utils/data-types";
 import { getDataPointsPath } from "../config/config";
 import { logMessage, MessageType } from "../../utils/logger";
 
@@ -39,7 +40,7 @@ export abstract class HandlerBase {
     logMessage("unsubscribe_client() is not implemented", MessageType.WARNING);
   }
 
-  handleMessage(message: Message, ws: WebSocket): void {
+  handleMessage(message: Message, connectionId: string, ws: WebSocketWithId): void {
     try {
       switch (message.type) {
         case "read":
@@ -81,10 +82,9 @@ export abstract class HandlerBase {
    * @returns - The transformed message.
    */
   protected createUpdateMessage(
-    message: Pick<Message, "id" | "tree" | "uuid">,
+    id: string, tree: string, uuid: string,
     nodes: Array<{ name: string; value: any }>
   ): Message {
-    const { id, tree, uuid } = message;
     return {
       type: "update",
       tree,
@@ -127,15 +127,6 @@ export abstract class HandlerBase {
    */
   protected transformDataPointsWithUnderscores(node: string): string {
     return node.replace(/\./g, "_");
-  }
-
-  /**
-   * Transforms a database field name by replacing underscores with dots.
-   * @param field - The database filed to transform.
-   * @returns - The transformed to message node replacing underscores by dots.
-   */
-  protected transformDataPointsWithDots(field: string): string {
-    return field.replace(/\_/g, ".");
   }
 
   /**

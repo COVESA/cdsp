@@ -1,5 +1,5 @@
 import { getEnvValue } from "../../../config/config";
-import { DatabaseParamsRecord } from "../../../utils/data_types";
+import { DatabaseParamsRecord } from "../../../utils/data-types";
 
 /**
  * Defines the shape of the IoTDB configuration object.
@@ -11,6 +11,7 @@ interface IotDBConfig {
   iotdbPassword: string;
   fetchSize: number;
   timeZoneId: string;
+  pollIntervalLenInSec: number;
 }
 
 /*
@@ -42,6 +43,7 @@ const getDatabaseConfig = (): Readonly<IotDBConfig> => {
     timeZoneId:
       getEnvValue("IOTDB_TIME_ZONE_ID") ||
       Intl.DateTimeFormat().resolvedOptions().timeZone,
+    pollIntervalLenInSec: Number(getEnvValue("IOTDB_POLL_INTERVAL_LEN_IN_SEC")) || 5,   
   };
 
   return iotdb_config;

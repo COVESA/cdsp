@@ -7,6 +7,7 @@ export enum COLORS {
   PALE_WHITE = "\x1b[37m",
   GREY = "\x1b[90m",
   YELLOW = "\x1b[33m",
+  ORANGE = "\x1b[38;5;208m",
   BOLD = "\x1b[1m",
 }
 

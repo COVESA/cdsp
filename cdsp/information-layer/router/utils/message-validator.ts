@@ -4,7 +4,7 @@ import {
   ErrorMessage,
   Message,
   STATUS_ERRORS,
-} from "../../handlers/utils/data_types";
+} from "../../handlers/utils/data-types";
 
 // Initialize AJV with specific options
 const ajv = new Ajv({

@@ -1,13 +1,11 @@
+import thrift from "thrift";
+import { Session } from "./Session";
+import { SubscriptionSimulator } from "./SubscriptionSimulator";
 import { SupportedMessageDataTypes } from "./../utils/iotdb-constants";
 const Client = require("../gen-nodejs/IClientRPCService");
 const {
-  TSExecuteStatementReq,
-  TSOpenSessionReq,
-  TSProtocolVersion,
-  TSCloseSessionReq,
   TSInsertRecordReq,
 }: any = require("../gen-nodejs/client_types");
-import thrift from "thrift";
 import { HandlerBase } from "../../HandlerBase";
 import { SessionDataSet } from "../utils/SessionDataSet";
 import { IoTDBDataInterpreter } from "../utils/IoTDBDataInterpreter";
@@ -22,22 +20,19 @@ import {
   logError,
   logErrorStr,
   logWithColor,
-  MessageType,
   COLORS,
 } from "../../../../utils/logger";
 import { createErrorMessage } from "../../../../utils/error-message-helper";
-import { WebSocket, Message, STATUS_ERRORS } from "../../../utils/data_types";
+import { WebSocket, Message, STATUS_ERRORS, WebSocketWithId } from "../../../utils/data-types";
+import { transformSessionDataSet } from "../utils/database-helper";
 
 export class IoTDBHandler extends HandlerBase {
   private client: any = null;
   private sendMessageToClients:
     | ((ws: WebSocket, message: Message) => void)
     | null = null;
-  private sessionId: number | null = null;
-  private readonly protocolVersion: any =
-    TSProtocolVersion.IOTDB_SERVICE_PROTOCOL_V3;
-  private statementId: number | null = null;
-  private fetchSize: number;
+  private session: Session;
+  private subscriptionSimulator: SubscriptionSimulator;
   private dataPointsSchema: SupportedDataPoints = {};
 
   constructor() {
@@ -45,7 +40,8 @@ export class IoTDBHandler extends HandlerBase {
     if (!databaseConfig) {
       throw new Error("Invalid database configuration.");
     }
-    this.fetchSize = databaseConfig?.fetchSize ?? 1000;
+    this.session = new Session();
+    this.subscriptionSimulator = new SubscriptionSimulator(this.session, this.sendMessageToClient, this.createUpdateMessage);
   }
 
   async authenticateAndConnect(
@@ -68,6 +64,7 @@ export class IoTDBHandler extends HandlerBase {
       );
 
       this.client = thrift.createClient(Client, connection);
+      this.session.setClient(this.client);
 
       connection.on("error", (error: Error) => {
         logError("thrift connection error", error);
@@ -83,14 +80,26 @@ export class IoTDBHandler extends HandlerBase {
     }
   }
 
+  protected subscribe(message: Message, ws: WebSocketWithId): void {
+    this.subscriptionSimulator.subscribe(message, ws);
+  }
+
+  protected unsubscribe(message: Message, ws: WebSocketWithId): void {
+    this.subscriptionSimulator.unsubscribe(message, ws);
+  }
+
+  unsubscribe_client(ws: WebSocketWithId): void {
+     this.subscriptionSimulator.unsubscribeClient(ws);
+  }
+  
   protected async read(message: Message, ws: WebSocket): Promise<void> {
     if (this.areNodesValid(message, ws)) {
       try {
-        await this.openSessionIfNeeded();
+        await this.session.openSession();
         const responseNodes = await this.queryLastFields(message, ws);
         if (responseNodes.length > 0) {
           const responseMessage = this.createUpdateMessage(
-            message,
+            message.id, message.tree, message.uuid,
             responseNodes
           );
           this.sendMessageToClient(ws, responseMessage);
@@ -111,7 +120,7 @@ export class IoTDBHandler extends HandlerBase {
           createErrorMessage("read", STATUS_ERRORS.NOT_FOUND, errMsg)
         );
       } finally {
-        await this.closeSessionIfNeeded();
+        await this.session.closeSession();
       }
     }
   }
@@ -119,7 +128,7 @@ export class IoTDBHandler extends HandlerBase {
   protected async write(message: Message, ws: WebSocket): Promise<void> {
     if (this.areNodesValid(message, ws)) {
       try {
-        await this.openSessionIfNeeded();
+        await this.session.openSession();
         const data = this.createObjectToInsert(message);
         let measurements: string[] = [];
         let dataTypes: string[] = [];
@@ -155,7 +164,7 @@ export class IoTDBHandler extends HandlerBase {
 
         if (responseNodes.length) {
           const responseMessage = this.createUpdateMessage(
-            message,
+            message.id, message.tree, message.uuid,
             responseNodes
           );
           this.sendMessageToClient(ws, responseMessage);
@@ -180,95 +189,8 @@ export class IoTDBHandler extends HandlerBase {
           )
         );
       } finally {
-        await this.closeSessionIfNeeded();
+        await this.session.closeSession();
       }
-    }
-  }
-
-  /**
-   * Opens a session with the IoTDB server using the provided credentials and configuration.
-   */
-  private async openSession(): Promise<void> {
-    if (this.sessionId) {
-      logMessage("The session is already opened.");
-      return;
-    }
-
-    const openSessionReq = new TSOpenSessionReq({
-      username: databaseConfig!.iotdbUser,
-      password: databaseConfig!.iotdbPassword,
-      client_protocol: this.protocolVersion,
-      zoneId: databaseConfig!.timeZoneId,
-      configuration: { version: "V_0_13" },
-    });
-
-    try {
-      if (!this.client) {
-        throw new Error("Client is not initialized");
-      }
-      const resp = await this.client.openSession(openSessionReq);
-
-      if (this.protocolVersion !== resp.serverProtocolVersion) {
-        logMessage(
-          "Protocol differ, Client version is " +
-            this.protocolVersion +
-            ", but Server version is " +
-            resp.serverProtocolVersion
-        );
-        // version is less than 0.10
-        if (resp.serverProtocolVersion === 0) {
-          throw new Error("Protocol not supported.");
-        }
-      }
-
-      this.sessionId = resp.sessionId;
-
-      if (!this.sessionId) {
-        throw new Error(
-          "Session ID is undefined, cannot request statement ID."
-        );
-      }
-
-      this.statementId = await this.client.requestStatementId(this.sessionId);
-      logMessage("Session started!");
-    } catch (error: unknown) {
-      logError("Failed starting session with IoTDB", error);
-    }
-  }
-
-  /**
-   * Closes the current session if it is not already closed.
-   */
-  private async closeSession(): Promise<void> {
-    if (!this.sessionId) {
-      logMessage("Session is already closed.");
-      return;
-    }
-
-    const req = new TSCloseSessionReq({ sessionId: this.sessionId! });
-
-    try {
-      await this.client.closeSession(req);
-    } catch (error: unknown) {
-      logError(
-        "Error occurs when closing session at server. Maybe server is down. Error message",
-        error
-      );
-    } finally {
-      this.sessionId = null;
-      logMessage("Session closed!");
-    }
-  }
-
-  private async openSessionIfNeeded(): Promise<void> {
-    if (!this.sessionId) {
-      await this.openSession();
-    }
-  }
-
-  private async closeSessionIfNeeded(): Promise<void> {
-    if (this.sessionId) {
-      this.closeSession();
     }
   }
 
@@ -306,54 +228,6 @@ export class IoTDBHandler extends HandlerBase {
   }
 
   /**
-   * Executes a SQL query statement asynchronously.
-   *
-   * @param sql - The SQL query statement to be executed.
-   * @returns - Returns a SessionDataSet object if the query is successful,
-   *                                             otherwise returns an empty object.
-   * @throws - Throws an error if the session is not open.
-   */
-  private async executeQueryStatement(
-    sql: string
-  ): Promise<SessionDataSet | {}> {
-    try {
-      if (!this.sessionId) {
-        throw new Error("Session is not open. Please authenticate first.");
-      }
-      if (!this.statementId) {
-        throw new Error("Missing statement ID");
-      }
-
-      const request = new TSExecuteStatementReq({
-        sessionId: this.sessionId,
-        statement: sql,
-        statementId: this.statementId,
-        fetchSize: this.fetchSize,
-        timeout: 0,
-      });
-
-      const resp = await this.client.executeQueryStatement(request);
-      if (!resp || !resp.queryDataSet || !resp.queryDataSet.valueList) {
-        return {};
-      }
-      return new SessionDataSet(
-        resp.columns,
-        resp.dataTypeList,
-        resp.columnNameIndexMap,
-        resp.queryId,
-        this.client,
-        this.statementId,
-        this.sessionId,
-        resp.queryDataSet,
-        resp.ignoreTimeStamp
-      );
-    } catch (error: unknown) {
-      logError("Failed executing query statement", error);
-      throw error;
-    }
-  }
-
-  /**
    * Inserts a record into the time series database.
    * @param deviceId - The ID of the device.
    * @param measurements - Array of measurement names.
@@ -370,7 +244,7 @@ export class IoTDBHandler extends HandlerBase {
     values: any[],
     isAligned = false
   ): Promise<any> {
-    if (!this.sessionId) {
+    if (!this.session.getSessionId()) {
       throw new Error("Session is not open. Please authenticate first.");
     }
     if (
@@ -397,7 +271,7 @@ export class IoTDBHandler extends HandlerBase {
     );
 
     const request = new TSInsertRecordReq({
-      sessionId: this.sessionId!,
+      sessionId: this.session.getSessionId()!,
       prefixPath: deviceId,
       measurements: measurements,
       values: valuesInBytes,
@@ -436,7 +310,7 @@ export class IoTDBHandler extends HandlerBase {
     const sql = `SELECT ${fieldsToSearch} FROM ${databaseName} WHERE ${dataPointId} = '${objectId}' ORDER BY Time ASC`;
 
     try {
-      const sessionDataSet = await this.executeQueryStatement(sql);
+      const sessionDataSet = await this.session.executeQueryStatement(sql);
 
       // Check if sessionDataSet is not an instance of SessionDataSet, and handle the error
       if (!(sessionDataSet instanceof SessionDataSet)) {
@@ -444,38 +318,8 @@ export class IoTDBHandler extends HandlerBase {
           "Failed to retrieve session data. Invalid session dataset."
         );
       }
-
-      const mediaElements: any[] = [];
-      while (sessionDataSet.hasNext()) {
-        mediaElements.push(sessionDataSet.next());
-      }
-
-      const latestValues: Record<string, any> = {};
-      mediaElements.forEach((mediaElement) => {
-        const transformedMediaElement = Object.fromEntries(
-          Object.entries(mediaElement).map(([key, value]) => {
-            const newKey = this.transformDataPointsWithDots(key);
-            return [newKey, value];
-          })
-        );
-
-        const transformedObject =
-          IoTDBDataInterpreter.extractNodesFromTimeseries(
-            transformedMediaElement,
-            databaseName
-          );
-
-        Object.entries(transformedObject).forEach(([key, value]) => {
-          if (value !== null && !isNaN(value)) {
-            latestValues[key] = value;
-          }
-        });
-      });
-
-      return Object.entries(latestValues).map(([name, value]) => ({
-        name,
-        value,
-      }));
+      return transformSessionDataSet(sessionDataSet, databaseName);
+      
     } catch (error: unknown) {
       const errMsg = error instanceof Error ? error.message : "Unknown error";
       this.sendMessageToClient(
