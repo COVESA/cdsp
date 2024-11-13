@@ -3,6 +3,7 @@ FROM node:22.5.1
 WORKDIR /app
 
 COPY package.json .
+COPY tsconfig.json .
 COPY handlers ./handlers
 COPY utils ./utils
 COPY router ./router

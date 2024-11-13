@@ -75,8 +75,10 @@ export function logMessage(
   }
 
   const logEntry = `\n${COLORS.PALE_WHITE}${dateTimeNow}${COLORS.RESET} ${color}${labelText}${COLORS.RESET}`;
-  console.log(logEntry);
-  console.log(featureStr);
+  if (process.env.NODE_ENV !== 'test') {
+    console.log(logEntry);
+    console.log(featureStr);
+  }
 }
 
 /**

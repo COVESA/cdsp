@@ -42,9 +42,8 @@ const clients = new Map<string, WebSocket>();
 // Handle new client connections
 server.on("connection", (ws: WebSocket) => {
   // add a uuid to the websocket connection
-  const connectionId = uuidv4();
-  const wsWithId = ws as unknown as WebSocketWithId;
-  wsWithId.id = connectionId;
+  const wsWithId = addIdToWebsocket(ws);
+  const connectionId = wsWithId.id;
   clients.set(connectionId, ws); // Add client to the Map
   logWithColor(`Client connected with id ${connectionId}`, COLORS.YELLOW);
 
@@ -87,6 +86,11 @@ handler.authenticateAndConnect(sendMessageToClients);
 
 // Log server start
 logWithColor(`Web-Socket server started on ws://localhost:8080\n`, COLORS.BOLD);
+
+function addIdToWebsocket(ws: WebSocket): WebSocketWithId {
+  return Object.assign(ws, { id: uuidv4() });
+}
+
 
 function rawDataToString(message: RawData): string {
   if (typeof message === "string") {

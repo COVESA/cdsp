@@ -22,6 +22,25 @@ flowchart LR
 
 # Hello World Setup
 
+### Build the typescript application natively
+
+Make sure all libraries are installed
+```bash
+npm install
+```
+Build the application
+```bash
+npm run build
+```
+Run the unit tests
+```bash
+npx jest
+```
+or
+```bash
+npx jest --verbose
+```
+
 ## Backend Option 1: IoTDB
 
 ### Start the database

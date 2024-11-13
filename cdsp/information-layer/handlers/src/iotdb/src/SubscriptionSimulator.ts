@@ -90,7 +90,7 @@ export class SubscriptionSimulator {
     if (!websockets) {
       this.sendMessageToClient(wsOfSubscriptionToBeDeleted,
         createErrorMessage(
-          "subscribe",
+          "unsubscribe",
           STATUS_ERRORS.BAD_REQUEST,
           `Cannot unsubscribe. No subscription for id ${message.id}, tree ${message.tree} for connection ${wsOfSubscriptionToBeDeleted.id}.`));
           return;
@@ -216,7 +216,9 @@ export class SubscriptionSimulator {
           responseNodes
         );
       }
-      logMessage(`Processed ${responseNodes.length} changes for id ${id}`);
+      if (responseNodes.length > 0) {
+        logMessage(`Processed ${responseNodes.length} changes for id ${id}`);
+      }
 
     } catch (error: unknown) {
       logError("Unknown error", error);
