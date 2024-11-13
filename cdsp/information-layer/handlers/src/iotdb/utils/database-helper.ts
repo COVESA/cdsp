@@ -1,5 +1,6 @@
 import { SessionDataSet } from "./SessionDataSet";
 import { IoTDBDataInterpreter } from "./IoTDBDataInterpreter";
+import { transformDataPointsWithDots } from "../../../utils/transformations";
 
 /**
  * Transforms a session data set to a set with the latest values of a vehicle.
@@ -42,13 +43,4 @@ export function transformSessionDataSet(
         name,
         value,
       }));
-  }
-
-  /**
-   * Transforms a database field name by replacing underscores with dots.
-   * @param field - The database filed to transform.
-   * @returns - The transformed to message node replacing underscores by dots.
-   */
-  function transformDataPointsWithDots(field: string): string {
-    return field.replace(/\_/g, ".");
   }

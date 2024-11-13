@@ -10,6 +10,8 @@ import {
 } from "../utils/data-types";
 import { getDataPointsPath } from "../config/config";
 import { logMessage, MessageType } from "../../utils/logger";
+import { transformDataPointsWithUnderscores } from "../utils/transformations";
+
 
 export abstract class HandlerBase {
   // Default implementations of required functions
@@ -121,15 +123,6 @@ export abstract class HandlerBase {
   }
 
   /**
-   * Transforms a message node by replacing dots with underscores.
-   * @param node - The message node to transform.
-   * @returns - The transformed message node with dots replaced by underscores.
-   */
-  protected transformDataPointsWithUnderscores(node: string): string {
-    return node.replace(/\./g, "_");
-  }
-
-  /**
    * Reads and parses a data points file in either JSON, YML, or YAML format.
    */
   private readDataPointsFile(filePath: string): object {
@@ -188,7 +181,7 @@ export abstract class HandlerBase {
     const supportedDataPoints = this.extractDataTypes(dataPointObj);
     const result: { [key: string]: any } = {};
     Object.entries(supportedDataPoints).forEach(([node, value]) => {
-      const underscored_node = this.transformDataPointsWithUnderscores(node);
+      const underscored_node = transformDataPointsWithUnderscores(node);
       if (value !== null) {
         result[underscored_node] = value;
       }
@@ -210,7 +203,7 @@ export abstract class HandlerBase {
     const nodes = message.node ? [message.node] : message.nodes || [];
 
     const unknownFields = nodes.filter(({ name }) => {
-      const transformedName = this.transformDataPointsWithUnderscores(name);
+      const transformedName = transformDataPointsWithUnderscores(name);
       return !dataPointsSchema.hasOwnProperty(transformedName);
     });
 

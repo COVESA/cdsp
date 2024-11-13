@@ -13,6 +13,7 @@ import {
 } from "../../../../utils/logger";
 import { createErrorMessage } from "../../../../utils/error-message-helper";
 import { WebSocket, Message, STATUS_ERRORS } from "../../../utils/data-types";
+import { transformDataPointsWithDots, transformDataPointsWithUnderscores } from "../../../utils/transformations";
 
 // Define a type for changes
 interface Changes {
@@ -32,7 +33,7 @@ function parseOnMediaElementChangeResponse(
   mediaElement: any
 ) {
   return changes.changedProperties.map((prop) => ({
-    name: prop,
+    name: transformDataPointsWithDots(prop),
     value: mediaElement[prop],
   }));
 }
@@ -109,7 +110,7 @@ export class RealmDBHandler extends HandlerBase {
 
         const transformAndAssign = (element: any, nodes: any[]) => {
           nodes.forEach(({ name, value }) => {
-            const prop = this.transformDataPointsWithUnderscores(name);
+            const prop = transformDataPointsWithUnderscores(name);
             element[prop] = value;
           });
         };
@@ -391,7 +392,7 @@ export class RealmDBHandler extends HandlerBase {
     const data: { name: string; value: any }[] = [];
     const nodes = message.node ? [message.node] : message.nodes;
     nodes?.forEach((node: any) => {
-      const prop = this.transformDataPointsWithUnderscores(node.name);
+      const prop = transformDataPointsWithUnderscores(node.name);
       data.push({
         name: node.name,
         value: queryResponseObj[prop],

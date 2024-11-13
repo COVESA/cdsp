@@ -25,6 +25,7 @@ import {
 import { createErrorMessage } from "../../../../utils/error-message-helper";
 import { WebSocket, Message, STATUS_ERRORS, WebSocketWithId } from "../../../utils/data-types";
 import { transformSessionDataSet } from "../utils/database-helper";
+import { transformDataPointsWithUnderscores } from "../../../utils/transformations";
 
 export class IoTDBHandler extends HandlerBase {
   private client: any = null;
@@ -344,11 +345,11 @@ export class IoTDBHandler extends HandlerBase {
 
     if (message.node) {
       dataPoints.push(
-        this.transformDataPointsWithUnderscores(message.node.name)
+        transformDataPointsWithUnderscores(message.node.name)
       );
     } else if (message.nodes) {
       dataPoints = message.nodes.map((node) =>
-        this.transformDataPointsWithUnderscores(node.name)
+        transformDataPointsWithUnderscores(node.name)
       );
     }
     return dataPoints;
@@ -372,11 +373,11 @@ export class IoTDBHandler extends HandlerBase {
     const data: Record<string, any> = { [dataPointId]: id };
 
     if (message.node) {
-      data[this.transformDataPointsWithUnderscores(message.node.name)] =
+      data[transformDataPointsWithUnderscores(message.node.name)] =
         message.node.value;
     } else if (message.nodes) {
       message.nodes.forEach((node) => {
-        data[this.transformDataPointsWithUnderscores(node.name)] = node.value;
+        data[transformDataPointsWithUnderscores(node.name)] = node.value;
       });
     }
     return data;
