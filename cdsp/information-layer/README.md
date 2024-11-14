@@ -128,9 +128,9 @@ Schema:
   "id": "123", // The VIN
   "uuid": "testClient", // The unique client ID
   // For reading one
-  "node": { "name": "Vehicle_Speed" },
+  "node": { "name": "Vehicle.Speed" },
   // For reading N
-  "nodes": [{ "name": "Vehicle_Speed" },{ "name": "Vehicle_TraveledDistance" }]
+  "nodes": [{ "name": "Vehicle.Speed" },{ "name": "Vehicle.TraveledDistance" }]
 }
 ```
 
@@ -162,9 +162,9 @@ Schema:
   "id": "123", // The VIN
   "uuid": "testClient", // The unique client ID
   // For writing one
-  "node": { "name": "Vehicle_Speed", "value": 300 },
+  "node": { "name": "Vehicle.Speed", "value": 300 },
   // For writing N
-  "nodes": [{ "name": "Vehicle_Speed", "value": 300 },{ "name": "Vehicle_TraveledDistance", "value": 100000 }]
+  "nodes": [{ "name": "Vehicle.Speed", "value": 300 },{ "name": "Vehicle.TraveledDistance", "value": 100000 }]
 }
 ```
 Example:
