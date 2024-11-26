@@ -65,6 +65,42 @@ void createReadMessage(const std::string& uuid, const std::string& tree, const s
 }
 
 /**
+ * @brief Parses a JSON object into a `CategoryMessage` structure.
+ *
+ * This function extracts the `category`, `message`, and `statusCode` fields
+ * from a JSON object and assigns them to a `CategoryMessage` structure (e.g. in case of message
+ * validation error). It verifies the existence and type of each field, throwing an exception if any
+ * field is missing or has an unexpected type.
+ *
+ * @param json_message The JSON object to parse.
+ * @return A `CategoryMessage` structure populated with the parsed data.
+ * @throws std::runtime_error if any required field is missing or has an incorrect type.
+ */
+CategoryMessage parseCategoryMessage(const json& json_message) {
+    CategoryMessage category_message;
+
+    if (json_message.contains("category") && json_message["category"].is_string()) {
+        category_message.category = json_message["category"].get<std::string>();
+    } else {
+        throw std::runtime_error("Invalid or missing 'category' field in JSON message");
+    }
+
+    if (json_message.contains("message") && json_message["message"].is_string()) {
+        category_message.message = json_message["message"].get<std::string>();
+    } else {
+        throw std::runtime_error("Invalid or missing 'message' field in JSON message");
+    }
+
+    if (json_message.contains("statusCode") && json_message["statusCode"].is_number_integer()) {
+        category_message.statusCode = json_message["statusCode"].get<int>();
+    } else {
+        throw std::runtime_error("Invalid or missing 'statusCode' field in JSON message");
+    }
+
+    return category_message;
+}
+
+/**
  * @brief Parses a JSON message to extract error information and constructs an ErrorMessage object.
  *
  * This function handles the extraction of error details from a JSON message. The "error" field in
@@ -173,21 +209,32 @@ DataMessage parseSuccessMessage(const json& json_message) {
 }
 
 /**
- * @brief Parses and displays a JSON message, returning either a DataMessage or an ErrorMessage.
+ * @brief Parses a JSON message string and returns a corresponding message object.
  *
- * This function takes a JSON string, parses it, and prints the parsed JSON to the standard output.
- * Depending on the content of the JSON, it will return either a DataMessage or an ErrorMessage.
+ * This function parses the given JSON string and determines whether the message
+ * represents an error, category (e.g. validation error), or data message. Based on the content, it
+ * will return either an `ErrorMessage`, `CategoryMessage`, or `DataMessage`.
  *
- * @param message The JSON string to be parsed and displayed.
- * @return std::variant<DataMessage, ErrorMessage> The parsed message, which can be either a
- * DataMessage or an ErrorMessage.
+ * @param message The JSON string containing the message data.
+ * @return A `std::variant` containing one of `DataMessage`, `ErrorMessage`, or `CategoryMessage`
+ *         depending on the type of message parsed.
+ *         - If the JSON contains an "error" field, an `ErrorMessage` is returned.
+ *         - If the JSON contains a "category" field, a `CategoryMessage` is returned.
+ *         - Otherwise, a `DataMessage` is returned by parsing the success message.
+ *
+ * @throws std::exception if the JSON parsing fails or if required fields are missing.
  */
-std::variant<DataMessage, ErrorMessage> displayAndParseMessage(const std::string& message) {
+std::variant<DataMessage, ErrorMessage, CategoryMessage> displayAndParseMessage(
+    const std::string& message) {
     json json_message = json::parse(message);
     std::cout << "Received message: " << json_message.dump() << std::endl << std::endl;
 
     if (json_message.contains("error")) {
         return parseErrorMessage(json_message);
+    }
+
+    if (json_message.contains("category")) {
+        return parseCategoryMessage(json_message);
     }
 
     return parseSuccessMessage(json_message);

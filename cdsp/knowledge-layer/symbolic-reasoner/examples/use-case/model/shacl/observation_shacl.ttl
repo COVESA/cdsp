@@ -1,7 +1,7 @@
 @prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix sosa: <http://www.w3.org/ns/sosa/> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-@prefix val: <http://groupontology.bmwgroup.net/validation#> .
+@prefix val: <http://example.ontology.com/validation#> .
 
 # Shape to validate an Observation
 val:ObservationShape a sh:NodeShape ;

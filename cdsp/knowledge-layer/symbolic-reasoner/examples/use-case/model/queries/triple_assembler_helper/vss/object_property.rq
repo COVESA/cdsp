@@ -1,10 +1,8 @@
-prefix pdmo: <http://usecase-specific-ontology-extensions-because-not-contained-in-EKG#>
-prefix bmw: <http://groupontology.bmwgroup.net/bmw-ont#>
+prefix car: <http://example.ontology.com/car#>
 prefix middleware: <http://target-nameospace-for-data-middleware#>
 prefix sh: <http://www.w3.org/ns/shacl#>
-prefix val: <http://groupontology.bmwgroup.net/validation#>
+prefix val: <http://example.ontology.com/validation#>
 prefix xsd: <http://www.w3.org/2001/XMLSchema#>
-prefix ut: <http://www.bmw-carit.de/Foresight/UserTrip/Ontologies/High#>
 
 
 SELECT ?class1 ?object_property ?class2

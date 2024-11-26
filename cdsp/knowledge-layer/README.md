@@ -6,7 +6,7 @@ This project contains a WebSocket client built in C++17, which communicates with
 
 Before setting up the project, make sure you have the following installed:
 
-- **CMake** (version 3.10 or higher)
+- **CMake** (version 3.25 or higher)
 - **Boost** (version 1.86.0 or higher)
 - **g++/clang++** with C++17 support
 - **Homebrew** (for macOS users)
@@ -75,7 +75,6 @@ Before setting up the project, make sure you have the following installed:
    
    Make sure you have Windows SDK 10 installed. To check start the Visual Studio Installer (https://developer.microsoft.com/en-us/windows/downloads/windows-sdk/) and look for Visual Studio Build Tools. Here look for the component 'Desktop development with C++' and install it if required.
 
-   
 ## Project Setup
 
 **Build the WebSocket Client**:
@@ -99,16 +98,21 @@ Before setting up the project, make sure you have the following installed:
 
    If the build is successful, the WebSocket client executable will be generated in the `build/bin/` directory.
 
-## Running the WebSocket Client
+## Running the Reasoner WebSocket Client
 
-### Environment Variables
+The [Reasoner client](./connector/websocket-client/README.md) integrates with both the WebSocket server and the RDFox triple store. The client processes incoming messages and generates RDF triples, which are then stored in RDFox.
 
-The project requires certain environment variables to work with the WebSocket server’s host and port. By default, the WebSocket client connects to the `information-layer`. See how to configure these variables [here](../information-layer/README.md).
+### Websocket Server and RDFox Configuration
 
+The project requires certain environment variables to work with the WebSocket server and RDFox server. By default, the WebSocket client connects to the Web Socket server located in the [`information-layer`](../information-layer/README.md), and the RDFox server started as a [Docker container](/docker/README.md#rdfox-restful-api).
 
-- **HOST_WEBSOCKET_SERVER:** Specifies the hostname of the WebSocket server. The default is `localhost`.
+- **HOST_WEBSOCKET_SERVER:** Specifies the hostname of the WebSocket server. The default is `127.0.0.1`.
 - **PORT_WEBSOCKET_SERVER:** Specifies the port for connecting to the WebSocket server. The default is `8080`.
 - **OBJECT_ID:** The object id is required to subscribe and retrieve information for a specific object (e.g. VIN (Vehicle Identification Number) for VSS (Vehicle Signal Specification) data). Use the object id (in this case VIN) configured in the [`information-layer`](../information-layer/README.md).
+- **HOST_RDFOX_SERVER:** Hostname of the RDFox server. The default is `127.0.0.1`.
+- **PORT_RDFOX_SERVER:** Port for RDFox server. The default is `12110`.
+- **AUTH_RDFOX_SERVER_BASE64:** Base64-encoded credentials for RDFox authentication. The default is `cm9vdDphZG1pbg==` (For `root:admin` encoded in base64).
+- **RDFOX_DATASTORE:** Data store used in RDFox server to store the generated data. The default is `ds-test`.
 
 You can customize the WebSocket server configuration by adding the following environment variables in the `/docker/.env` file. Below is an example of what the file could look like:
 
@@ -120,17 +124,32 @@ You can customize the WebSocket server configuration by adding the following env
 HOST_WEBSOCKET_SERVER="your_custom_host"
 PORT_WEBSOCKET_SERVER="your_custom_port"
 OBJECT_ID="OBJECT_ID_TO_SUBSCRIBE"
+
+##################################
+# RDFox CONFIGURATION            #
+##################################
+
+HOST_RDFOX_SERVER="your_custom_rdfox_server_host"
+PORT_RDFOX_SERVER="your_custom_rdfox_server_port"
+AUTH_RDFOX_SERVER_BASE64="your_custom_rdfox_server_authentication"
+RDFOX_DATASTORE="your_custom_rdfox_server_data_store"
 ```
 
-### Start the Websocket Client
+### Start the Reasoner Websocket Client
 After successfully building the client, you can run it with the following command (VIN is required, if any docker for the knowledge layer is running):
 
 ```bash
-VIN=<VIN_TO_SUBSCRIBE> ./build/bin/websocket_client
+OBJECT_ID=<VIN_TO_SUBSCRIBE> ./build/bin/reasoner_client
 ```
 
 To display a list of available environment variables and their default values, run the application with the `--help` flag:
 
 ```bash
-./websocket_client --help
+./reasoner_client --help
 ```
+
+### Using RDFox API in the Client
+
+The WebSocket client integrates with the [TripleAssembler](./connector/json-rdf-convertor/rdf-writer/README.md) component, which utilizes the[RDFox API](/docker/README.md#rdfox-restful-api) to process incoming data into RDF triples. The triples are then stored in RDFox for reasoning and querying.
+
+This integration allows the Reasoner client to interpret data, create RDF triples, and store them in a semantic knowledge graph, enabling rich queries and reasoning capabilities.

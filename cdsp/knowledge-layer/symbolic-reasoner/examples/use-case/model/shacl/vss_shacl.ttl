@@ -2,24 +2,24 @@
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-@prefix bmw: <http://groupontology.bmwgroup.net/bmw-ont#> .
+@prefix car: <http://example.ontology.com/car#> .
 @prefix val: <http://www.w3.org/2001/XMLSchema#> .
 
 
 val:VehicleShape a sh:NodeShape ;
     sh:name "Vehicle" ;
-    sh:targetClass bmw:Vehicle ;
+    sh:targetClass car:Vehicle ;
     sh:property [
         sh:name "VIN" ;
-        sh:path bmw:vin ;
+        sh:path car:vin ;
         sh:datatype xsd:string ;
         sh:minCount 1 ;
         sh:maxCount 1 ;
     ] ;
     sh:property [
         sh:name "CurrentLocation" ;
-        sh:path bmw:hasSignal ;
-        sh:class bmw:CurrentLocation ;
+        sh:path car:hasSignal ;
+        sh:class car:CurrentLocation ;
         sh:node val:CurrentLocationShape ;
         sh:nodeKind sh:IRI ;
         sh:minCount 0 ;
@@ -27,22 +27,22 @@ val:VehicleShape a sh:NodeShape ;
     ] ;
     sh:property [
         sh:name "Speed" ;
-        sh:path bmw:speed ;
+        sh:path car:speed ;
         sh:datatype xsd:float ;
         sh:minCount 0 ;
         sh:maxCount 1 ;
     ] ;
     sh:property [
         sh:name "PWFStatus" ;
-        sh:path bmw:PWFStatus ;
+        sh:path car:PWFStatus ;
         sh:datatype xsd:string ;
         sh:minCount 0 ;
         sh:maxCount 1 ;
     ] ;
     sh:property [
         sh:name "Cabin" ;
-        sh:path bmw:hasPart ;
-        sh:class bmw:Cabin ;
+        sh:path car:hasPart ;
+        sh:class car:Cabin ;
         sh:node val:CabinShape ;
         sh:nodeKind sh:IRI ;
         sh:minCount 0 ;
@@ -50,8 +50,8 @@ val:VehicleShape a sh:NodeShape ;
     ] ;    
     sh:property [
         sh:name "Powertrain" ;
-        sh:path bmw:hasPart ;
-        sh:class bmw:Powertrain ;
+        sh:path car:hasPart ;
+        sh:class car:Powertrain ;
         sh:node val:PowertrainShape ;
         sh:nodeKind sh:IRI ;
         sh:minCount 0 ;
@@ -59,8 +59,8 @@ val:VehicleShape a sh:NodeShape ;
     ] ;
         sh:property [
         sh:name "Chassis" ;
-        sh:path bmw:hasPart ;
-        sh:class bmw:Chassis ;
+        sh:path car:hasPart ;
+        sh:class car:Chassis ;
         sh:node val:ChassisShape ;
         sh:nodeKind sh:IRI ;
         sh:minCount 0 ;
@@ -69,11 +69,11 @@ val:VehicleShape a sh:NodeShape ;
 
 val:ChassisShape a sh:NodeShape;
     sh:name "Chassis";
-    sh:targetClass bmw:Chassis;
+    sh:targetClass car:Chassis;
     sh:property [
         sh:name "SteeringWheel" ;
-        sh:path bmw:hasPart ;
-        sh:class bmw:SteeringWheel ;
+        sh:path car:hasPart ;
+        sh:class car:SteeringWheel ;
         sh:node val:SteeringWheelShape ;
         sh:nodeKind sh:IRI ;
         sh:minCount 1 ;
@@ -81,10 +81,10 @@ val:ChassisShape a sh:NodeShape;
 
 val:SteeringWheelShape a sh:NodeShape;
     sh:name "SteeringWheel";
-    sh:targetClass bmw:SteeringWheel;
+    sh:targetClass car:SteeringWheel;
     sh:property [
         sh:name "Angle" ;
-        sh:path bmw:angle ;
+        sh:path car:angle ;
         sh:datatype xsd:int;
         sh:minCount 1 ;
     ] .
@@ -92,10 +92,10 @@ val:SteeringWheelShape a sh:NodeShape;
 
 val:CurrentLocationShape a sh:NodeShape ;
     sh:name "CurrentLocation" ;
-    sh:targetClass bmw:CurrentLocation ;
+    sh:targetClass car:CurrentLocation ;
     sh:property [
         sh:name "Latitude" ;
-        sh:path bmw:latitude ;
+        sh:path car:latitude ;
         sh:datatype xsd:double ;
         sh:minInclusive -90 ;
         sh:maxInclusive 90 ;
@@ -106,7 +106,7 @@ val:CurrentLocationShape a sh:NodeShape ;
     ] ;
     sh:property [
         sh:name "Longitude" ;
-        sh:path bmw:longitude ;
+        sh:path car:longitude ;
         sh:datatype xsd:double ;
         sh:minInclusive -180 ;
         sh:maxInclusive 180 ;
@@ -117,7 +117,7 @@ val:CurrentLocationShape a sh:NodeShape ;
     ] ;
     sh:property [
         sh:name "Timestamp" ;
-        sh:path bmw:timestamp ;
+        sh:path car:timestamp ;
         sh:datatype xsd:long ;
         val:unit "iso8601" ;
         sh:description "Timestamp from GNSS system for current location, formatted according to ISO 8601 with UTC time zone." ;
@@ -126,7 +126,7 @@ val:CurrentLocationShape a sh:NodeShape ;
     ] ;
     sh:property [
         sh:name "Heading" ;
-        sh:path bmw:heading ;
+        sh:path car:heading ;
         sh:datatype xsd:double ;
         sh:minInclusive 0 ;
         sh:maxInclusive 360 ;
@@ -138,11 +138,11 @@ val:CurrentLocationShape a sh:NodeShape ;
 
 val:PowertrainShape a sh:NodeShape;
     sh:name "Powertrain";
-    sh:targetClass bmw:Powertrain;
+    sh:targetClass car:Powertrain;
     sh:property [
         sh:name "TractionBattery" ;
-        sh:path bmw:hasPart ;
-        sh:class bmw:TractionBattery ;
+        sh:path car:hasPart ;
+        sh:class car:TractionBattery ;
         sh:node val:TractionBatteryShape ;
         sh:nodeKind sh:IRI ;
         sh:minCount 0 ;
@@ -150,8 +150,8 @@ val:PowertrainShape a sh:NodeShape;
     ] ;
         sh:property [
         sh:name "Transmission" ;
-        sh:path bmw:hasPart ;
-        sh:class bmw:Transmission ;
+        sh:path car:hasPart ;
+        sh:class car:Transmission ;
         sh:node val:TransmissionShape ;
         sh:nodeKind sh:IRI ;
         sh:minCount 0 ;
@@ -160,10 +160,10 @@ val:PowertrainShape a sh:NodeShape;
 
 val:TractionBatteryShape a sh:NodeShape;
     sh:name "TractionBattery";
-    sh:targetClass bmw:TractionBattery ;
+    sh:targetClass car:TractionBattery ;
     sh:property [
         sh:name "NominalVoltage" ;
-        sh:path bmw:nominalVoltage ;
+        sh:path car:nominalVoltage ;
         sh:datatype xsd:int ;
         sh:description "Nominal voltage typically refers to voltage of fully charged battery when delivering rated capacity." ;
         sh:minCount 0 ;
@@ -171,8 +171,8 @@ val:TractionBatteryShape a sh:NodeShape;
     ] ;
         sh:property [
         sh:name "StateOfCharge" ;
-        sh:path bmw:hasSignal ;
-        sh:class bmw:StateOfCharge;
+        sh:path car:hasSignal ;
+        sh:class car:StateOfCharge;
         sh:node val:StateOfChargeNodeShape;
         sh:nodeKind sh:IRI ;
         sh:description "Information on the state of charge of the vehicle's high voltage battery." ;
@@ -182,10 +182,10 @@ val:TractionBatteryShape a sh:NodeShape;
 
 val:StateOfChargeNodeShape a sh:NodeShape ;
     sh:name "StateOfCharge" ;
-    sh:targetClass bmw:StateOfCharge ;
+    sh:targetClass car:StateOfCharge ;
     sh:property [
         sh:name "CurrentEnergy" ;
-        sh:path bmw:currentEnergy ;
+        sh:path car:currentEnergy ;
         sh:datatype xsd:float ;
         sh:description "Physical state of charge of high voltage battery expressed in kWh." ;
         sh:minCount 0 ;
@@ -195,10 +195,10 @@ val:StateOfChargeNodeShape a sh:NodeShape ;
 
 val:TransmissionShape a sh:NodeShape ;
     sh:name "Transmission" ;
-    sh:targetClass bmw:Transmission ;
+    sh:targetClass car:Transmission ;
     sh:property [
         sh:name "CurrentGear" ;
-        sh:path bmw:currentGear ;
+        sh:path car:currentGear ;
         sh:datatype xsd:int ;
         sh:description "Is item open or closed? True = Fully or partially open. False = Fully closed." ;
         sh:minCount 0 ;
@@ -208,11 +208,11 @@ val:TransmissionShape a sh:NodeShape ;
 
 val:CabinShape a sh:NodeShape ;
     sh:name "Cabin" ;
-    sh:targetClass bmw:Cabin ;
+    sh:targetClass car:Cabin ;
     sh:property [
         sh:name "Light" ;
-        sh:path bmw:hasPart ;
-        sh:class bmw:CabinLight ;
+        sh:path car:hasPart ;
+        sh:class car:CabinLight ;
         sh:node val:CabinLightShape ;
         sh:nodeKind sh:IRI ;
         sh:minCount 0 ;
@@ -220,8 +220,8 @@ val:CabinShape a sh:NodeShape ;
     ] ;
     sh:property [
         sh:name "Door" ;
-        sh:path bmw:hasPart ;
-        sh:class bmw:CabinDoor ;
+        sh:path car:hasPart ;
+        sh:class car:CabinDoor ;
         sh:node val:CabinDoorShape ;
         sh:minCount 0 ;
         sh:maxCount 1 ;
@@ -229,9 +229,9 @@ val:CabinShape a sh:NodeShape ;
 
 val:CabinDoorShape a sh:NodeShape ;
     sh:name "Door" ;
-    sh:targetClass bmw:CabinDoor ;
+    sh:targetClass car:CabinDoor ;
     sh:property [
-        sh:path bmw:position ;
+        sh:path car:position ;
         sh:name "Row" ;
         sh:in ("Row1" "Row2") ;
         sh:datatype xsd:string ;
@@ -239,7 +239,7 @@ val:CabinDoorShape a sh:NodeShape ;
         sh:maxCount 1 ;
     ] ;
     sh:property [
-        sh:path bmw:position ;
+        sh:path car:position ;
         sh:name "Driver" ;
         sh:in ("Driver") ;
         sh:datatype xsd:string ;
@@ -248,7 +248,7 @@ val:CabinDoorShape a sh:NodeShape ;
     ] ;
     sh:property [
         sh:name "Passenger" ;
-        sh:path bmw:position ;
+        sh:path car:position ;
         sh:in ("Passenger") ;
         sh:datatype xsd:string ;
         sh:minCount 0 ;
@@ -256,8 +256,8 @@ val:CabinDoorShape a sh:NodeShape ;
     ] ;
     sh:property [
         sh:name "Window" ;
-        sh:path bmw:hasPart ;
-        sh:class bmw:Window ;
+        sh:path car:hasPart ;
+        sh:class car:Window ;
         sh:node val:WindowShape ;
         sh:nodeKind sh:IRI ;
         sh:minCount 0 ;
@@ -266,10 +266,10 @@ val:CabinDoorShape a sh:NodeShape ;
 
 val:WindowShape a sh:NodeShape ;
     sh:name "Window" ;
-    sh:targetClass bmw:Window ;
+    sh:targetClass car:Window ;
     sh:property [
         sh:name "IsOpen" ;
-        sh:path bmw:isOpen ;
+        sh:path car:isOpen ;
         sh:datatype xsd:boolean ;
         sh:description "Is item open or closed? True = Fully or partially open. False = Fully closed." ;
         sh:minCount 0 ;
@@ -277,7 +277,7 @@ val:WindowShape a sh:NodeShape ;
     ] ;
     sh:property [
         sh:name "Position" ;
-        sh:path bmw:windowPosition ;
+        sh:path car:windowPosition ;
         sh:datatype xsd:int ;
         sh:minInclusive 0 ;
         sh:maxInclusive 100 ;
@@ -288,7 +288,7 @@ val:WindowShape a sh:NodeShape ;
     ] ;
     sh:property [
         sh:name "Switch" ;
-        sh:path bmw:switch ;
+        sh:path car:switch ;
         sh:datatype xsd:string ;
         sh:in ("INACTIVE"  "CLOSE"  "OPEN"  "ONE_SHOT_CLOSE"  "ONE_SHOT_OPEN") ;
         sh:description "Switch controlling sliding action such as window, sunroof, or blind." ;
@@ -298,11 +298,11 @@ val:WindowShape a sh:NodeShape ;
 
 val:CabinLightShape a sh:NodeShape ;
     sh:name "Light" ;
-    sh:targetClass bmw:CabinLight ;
+    sh:targetClass car:CabinLight ;
     sh:property [
         sh:name "AmbientLight" ;
-        sh:path bmw:hasPart ;
-        sh:class bmw:AmbientLight ;
+        sh:path car:hasPart ;
+        sh:class car:AmbientLight ;
         sh:node val:AmbientLightShape ;
         sh:nodeKind sh:IRI ;
         sh:minCount 0 ;
@@ -310,8 +310,8 @@ val:CabinLightShape a sh:NodeShape ;
     ] ;
     sh:property [
         sh:name "SpotLight" ;
-        sh:path bmw:hasPart ;
-        sh:class bmw:SpotLight ;
+        sh:path car:hasPart ;
+        sh:class car:SpotLight ;
         sh:node val:SpotLightShape ;
         sh:nodeKind sh:IRI ;
         sh:minCount 0 ;
@@ -320,9 +320,9 @@ val:CabinLightShape a sh:NodeShape ;
 
 val:AmbientLightShape a sh:NodeShape ;
     sh:name "AmbientLight" ;
-    sh:targetClass bmw:AmbientLight ;
+    sh:targetClass car:AmbientLight ;
     sh:property [
-        sh:path bmw:position ;
+        sh:path car:position ;
         sh:name "Row" ;
         sh:in ("Row1" "Row2") ;
         sh:datatype xsd:string ;
@@ -330,7 +330,7 @@ val:AmbientLightShape a sh:NodeShape ;
         sh:maxCount 1 ;
     ] ;
     sh:property [
-        sh:path bmw:position ;
+        sh:path car:position ;
         sh:name "Driver" ;
         sh:in ("Driver") ;
         sh:datatype xsd:string ;
@@ -338,7 +338,7 @@ val:AmbientLightShape a sh:NodeShape ;
         sh:maxCount 1 ;
     ] ;
     sh:property [
-        sh:path bmw:position ;
+        sh:path car:position ;
         sh:name "Passenger" ;
         sh:in ("Passenger") ;
         sh:datatype xsd:string ;
@@ -347,7 +347,7 @@ val:AmbientLightShape a sh:NodeShape ;
     ] ;
     sh:property [
         sh:name "Colour" ;
-        sh:path bmw:lightColor ;
+        sh:path car:lightColor ;
         sh:datatype xsd:string ;
         sh:description "Hexadecimal color code represented as a 3-byte RGB (i.e. Red, Green, and Blue) value preceded by a hash symbol '#'.";
         sh:minCount 0 ;
@@ -355,7 +355,7 @@ val:AmbientLightShape a sh:NodeShape ;
     ] ;
     sh:property [
         sh:name "Intensity" ;
-        sh:path bmw:lightIntensity ;
+        sh:path car:lightIntensity ;
         sh:datatype xsd:integer ;
         sh:minInclusive 1 ;
         sh:maxInclusive 100 ;
@@ -366,7 +366,7 @@ val:AmbientLightShape a sh:NodeShape ;
     ] ;
     sh:property [
     sh:name "IsLightOn" ;
-    sh:path bmw:lightIsLightOn ;
+    sh:path car:lightIsLightOn ;
     sh:datatype xsd:boolean ;
     sh:description "Indicates whether the light is turned on. True = On, False = Off." ;
     sh:minCount 0 ;

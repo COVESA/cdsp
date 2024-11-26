@@ -17,10 +17,11 @@ class RDFoxAdapter {
                  const std::string& data_store);
 
     void initialize();
-    bool loadData(const std::string& ttl_data);
-    std::string queryData(const std::string& sparql_query);
-    bool checkDataStore();
+    virtual bool loadData(const std::string& ttl_data);
+    virtual std::string queryData(const std::string& sparql_query);
+    virtual bool checkDataStore();
     bool deleteDataStore();
+    virtual ~RDFoxAdapter() = default;
 
    protected:
     virtual bool sendRequest(http::verb method, const std::string& target, const std::string& body,

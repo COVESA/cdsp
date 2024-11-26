@@ -1,7 +1,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "../src/rdfox-adapter.h"
+#include "rdfox_adapter.h"
 
 class MockRDFoxAdapter : public RDFoxAdapter {
    public:
@@ -11,7 +11,9 @@ class MockRDFoxAdapter : public RDFoxAdapter {
                                    const std::string&, const std::string&, std::string&));
 };
 
-// Test checking nonexistent RDFox datastore.
+/**
+ * @brief Unit test for RDFoxAdapter to check the behavior when a datastore does not exist.
+ */
 TEST(RDFoxAdapterTest, CheckNonexistentDatastore) {
     MockRDFoxAdapter mock_adapter;
 
@@ -23,7 +25,9 @@ TEST(RDFoxAdapterTest, CheckNonexistentDatastore) {
     EXPECT_FALSE(mock_adapter.checkDataStore());
 }
 
-// Test checking existent RDFox datastore.
+/**
+ * @brief Unit test for RDFoxAdapter to verify the behavior when a datastore exists.
+ */
 TEST(RDFoxAdapterTest, CheckExistentDatastore) {
     MockRDFoxAdapter mock_adapter;
 
@@ -35,7 +39,9 @@ TEST(RDFoxAdapterTest, CheckExistentDatastore) {
     EXPECT_TRUE(mock_adapter.checkDataStore());
 }
 
-// Test the initialization of the RDFoxAdapter and creation of the datastore.
+/**
+ * @brief Unit test for RDFoxAdapter to verify the initialization process creates a datastore.
+ */
 TEST(RDFoxAdapterTest, InitializationCreatesDatastore) {
     MockRDFoxAdapter mock_adapter;
 
@@ -51,8 +57,10 @@ TEST(RDFoxAdapterTest, InitializationCreatesDatastore) {
 
     EXPECT_NO_THROW(mock_adapter.initialize());
 }
-
-// Test the initialization of the RDFoxAdapter when datastore already exists.
+/**
+ * @brief Unit test for RDFoxAdapter to verify the behavior during initialization
+ * when a datastore already exists.
+ */
 TEST(RDFoxAdapterTest, InitializationWithExistingDatastore) {
     MockRDFoxAdapter mock_adapter;
 
@@ -69,7 +77,9 @@ TEST(RDFoxAdapterTest, InitializationWithExistingDatastore) {
     EXPECT_NO_THROW(mock_adapter.initialize());
 }
 
-// Test loading data into the RDFox datastore.
+/**
+ * @brief Unit test for RDFoxAdapter to verify the behavior when loading data into a datastore.
+ */
 TEST(RDFoxAdapterTest, LoadDataSuccess) {
     MockRDFoxAdapter mock_adapter;
     std::string ttl_data = "@prefix : <http://example.org/> . :test a :Entity .";
@@ -82,7 +92,9 @@ TEST(RDFoxAdapterTest, LoadDataSuccess) {
     EXPECT_TRUE(mock_adapter.loadData(ttl_data));
 }
 
-// Test querying data from the RDFox datastore.
+/**
+ * @brief Unit test for RDFoxAdapter to verify successful data querying.
+ */
 TEST(RDFoxAdapterTest, QueryDataSuccess) {
     MockRDFoxAdapter mock_adapter;
     std::string sparql_query = "SELECT ?s WHERE { ?s ?p ?o . }";
@@ -96,7 +108,9 @@ TEST(RDFoxAdapterTest, QueryDataSuccess) {
     EXPECT_EQ(mock_adapter.queryData(sparql_query), mock_response);
 }
 
-// Test deleting the RDFox datastore.
+/**
+ * @brief Unit test for RDFoxAdapter to verify successful deletion of a datastore.
+ */
 TEST(RDFoxAdapterTest, DeleteDataStoreSuccess) {
     MockRDFoxAdapter mock_adapter;
 
@@ -113,7 +127,10 @@ TEST(RDFoxAdapterTest, DeleteDataStoreSuccess) {
     EXPECT_TRUE(mock_adapter.deleteDataStore());
 }
 
-// Test any error deleting the RDFox datastore that does not exists.
+/**
+ * @brief Unit test for RDFoxAdapter to verify the behavior when attempting to delete a nonexistent
+ * datastore.
+ */
 TEST(RDFoxAdapterTest, DeleteNonexistentDataStoreSuccess) {
     MockRDFoxAdapter mock_adapter;
 
@@ -130,7 +147,9 @@ TEST(RDFoxAdapterTest, DeleteNonexistentDataStoreSuccess) {
     EXPECT_TRUE(mock_adapter.deleteDataStore());
 }
 
-// Test handling a failed request during datastore creation.
+/**
+ * @brief Unit test for RDFoxAdapter to verify behavior when datastore creation fails.
+ */
 TEST(RDFoxAdapterTest, FailedToCreateDataStore) {
     MockRDFoxAdapter mock_adapter;
 
@@ -148,7 +167,9 @@ TEST(RDFoxAdapterTest, FailedToCreateDataStore) {
     EXPECT_THROW(mock_adapter.initialize(), std::runtime_error);
 }
 
-// Test loading data when the request fails.
+/**
+ * @brief Unit test for RDFoxAdapter to verify behavior when loading data fails.
+ */
 TEST(RDFoxAdapterTest, LoadDataFailure) {
     MockRDFoxAdapter mock_adapter;
     std::string ttl_data = "@prefix : <http://example.org/> . :test a :Entity .";
@@ -161,7 +182,9 @@ TEST(RDFoxAdapterTest, LoadDataFailure) {
     EXPECT_FALSE(mock_adapter.loadData(ttl_data));
 }
 
-// Test querying data when the request fails.
+/**
+ * @brief Unit test for RDFoxAdapter to verify behavior when a SPARQL query fails.
+ */
 TEST(RDFoxAdapterTest, QueryDataFailure) {
     MockRDFoxAdapter mock_adapter;
     std::string sparql_query = "SELECT ?s WHERE { ?s ?p ?o . }";
@@ -175,7 +198,10 @@ TEST(RDFoxAdapterTest, QueryDataFailure) {
     EXPECT_EQ(mock_adapter.queryData(sparql_query), "");
 }
 
-// Test deleting the RDFox datastore when delete request fails.
+/**
+ * @brief Unit test for RDFoxAdapter to verify the behavior when attempting to delete a datastore
+ * fails.
+ */
 TEST(RDFoxAdapterTest, DeleteDataStoreFailure) {
     MockRDFoxAdapter mock_adapter;
 

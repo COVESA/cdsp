@@ -1,22 +1,28 @@
-# Define the WebSocket client target
-add_executable(
-    websocket_client main.cpp
+# Define the websocket_client library
+add_library(websocket_client
     websocket_client.cpp
+    real_websocket_connection.cpp
     ../utils/message_utils.cpp
-    ../utils/helper.cpp
     ../utils/model_config.cpp
 )
 
-# Link libraries
-target_link_libraries(websocket_client Boost::system Boost::filesystem Boost::thread)
-target_link_libraries(websocket_client nlohmann_json::nlohmann_json)
-target_include_directories(websocket_client PRIVATE ${CMAKE_SOURCE_DIR}/connector/utils)
+# Include directories
+target_include_directories(websocket_client 
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
+)
 
+# Link dependencies
+target_link_libraries(websocket_client
+    PUBLIC  
+        rdf_writer
+        Boost::system
+        Boost::filesystem
+        Boost::thread
+        nlohmann_json::nlohmann_json
+)
 
 # On Windows link winsock, too
 if(WIN32)
     target_link_libraries(websocket_client ws2_32)
 endif()
-
-# Use defined output directory for the executable
-set_target_properties(websocket_client PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)

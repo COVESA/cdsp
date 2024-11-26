@@ -1,25 +1,65 @@
-cmake_minimum_required(VERSION 3.10)
-
+cmake_minimum_required(VERSION 3.25)
 project(knowledge-layer)
 
 # C++ standard
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Set the policy related to changes in handling the FindBoost module
+cmake_policy(SET CMP0167 NEW)
 
 # Find Boost libraries
-find_package(Boost 1.86.0 REQUIRED COMPONENTS system filesystem thread)
+find_package(Boost 1.86 REQUIRED COMPONENTS system filesystem thread)
 
-if(WIN32)
-    include_directories(${Boost_INCLUDE_DIRS})
-endif()
-
-# FetchContent to include nlohmann/json
+# FetchContent to include dependencies
 include(FetchContent)
+
+# ########################
+# nlohmann/json dependency
+# ########################
+
 FetchContent_Declare(
-  json
-  GIT_REPOSITORY https://github.com/nlohmann/json.git
-  GIT_TAG v3.11.3
+    json
+    GIT_REPOSITORY https://github.com/nlohmann/json.git
+    GIT_TAG v3.11.3
 )
 FetchContent_MakeAvailable(json)
+
+# #####################
+# serd-cmake dependency
+# #####################
+
+FetchContent_Declare(
+    serd
+    GIT_REPOSITORY https://github.com/jtsylve/serd-cmake.git
+    GIT_TAG e4ace09 # Hash of the last stable commit
+)
+
+# Ensure SERD_BUILD_SERDI is OFF to prevent building serdi executable
+set(SERD_BUILD_SERDI OFF CACHE BOOL "" FORCE) 
+FetchContent_MakeAvailable(serd)
+
+# Exclude serdi target from all builds if it exists
+if (TARGET serdi)
+    set_target_properties(serdi PROPERTIES EXCLUDE_FROM_ALL TRUE EXCLUDE_FROM_DEFAULT_BUILD TRUE)
+endif()
+
+# Set SERD_LIBRARIES variable
+set(SERD_LIBRARIES serd)
+
+# #####################
+# GoogleTest dependency
+# #####################
+
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_Declare(
+    googletest
+    GIT_REPOSITORY https://github.com/google/googletest.git
+    GIT_TAG v1.15.2
+)
+FetchContent_MakeAvailable(googletest)
+
+# ####################
 
 # Output directory for the executable
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
@@ -30,9 +70,25 @@ set(PROJECT_ROOT_DIR "${CMAKE_SOURCE_DIR}")
 # Pass the root directory to your C++ code
 add_compile_definitions(PROJECT_ROOT="${PROJECT_ROOT_DIR}")
 
+# Enable testing
 enable_testing()
 
-# Add subdirectory for the websocket-client
+# Add subdirectories for project modules and tests
+add_subdirectory(connector/json-rdf-convertor/rdf-writer)
 add_subdirectory(connector/websocket-client)
-add_subdirectory(symbolic-reasoner/rdfox/rdfox-service-test)
+add_subdirectory(connector/websocket-client/tests)
+add_subdirectory(connector/json-rdf-convertor/rdf-writer/tests)
+add_subdirectory(connector/json-rdf-convertor/rdf-writer/tests/serd_library_tests)
+add_subdirectory(symbolic-reasoner/rdfox)
 add_subdirectory(symbolic-reasoner/rdfox/tests)
+add_subdirectory(symbolic-reasoner/rdfox/tests/rdfox-service-test)
+add_subdirectory(tests)
+
+# Define the main executable target
+add_executable(reasoner_client connector/websocket-client/main.cpp)
+
+# Link the websocket_client library to main
+target_link_libraries(reasoner_client
+    PRIVATE 
+        websocket_client
+)

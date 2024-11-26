@@ -1,6 +1,4 @@
-#include <data_types.h>
-#include <model_config.h>
-
+#include <boost/asio.hpp>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
@@ -8,6 +6,10 @@
 #include <iostream>
 #include <nlohmann/json.hpp>
 
+#include "file_handler_impl.h"
+#include "model_config.h"
+#include "triple_assembler.h"
+#include "triple_writer.h"
 #include "websocket_client.h"
 
 using json = nlohmann::json;
@@ -21,6 +23,7 @@ std::string ModelConfigurationFile{std::string(PROJECT_ROOT) +
 std::string DefaultRDFoxServer{"127.0.0.1"};
 std::string DefaultPortRDFoxServer{"12110"};
 std::string DefaultAuthRDFoxServerBase64{"cm9vdDphZG1pbg=="};  // For 'root:admin' encoded in base64
+std::string DefaultRDFoxDatastore{"ds-test"};
 
 std::string getEnvVariable(const std::string& envVar, const std::string& defaultValue = "") {
     const char* valueEnv = std::getenv(envVar.c_str());
@@ -59,6 +62,9 @@ void displayHelp() {
     std::cout << std::left << std::setw(35) << "AUTH_RDFOX_SERVER_BASE64" << std::setw(65)
               << "Authentication credentials for RDFox Server encoded in base64"
               << getEnvVariable("AUTH_RDFOX_SERVER_BASE64", DefaultAuthRDFoxServerBase64) << "\n";
+    std::cout << std::left << std::setw(35) << "RDFOX_DATASTORE" << std::setw(65)
+              << "Datastore name of the RDFox server"
+              << getEnvVariable("RDFOX_DATASTORE", DefaultRDFoxDatastore) << "\n";
 
     std::cout << "\n" << bold << "Description:\n" << reset;
     std::cout << "This client connects to a WebSocket server and processes incoming messages based "
@@ -88,9 +94,11 @@ InitConfig AddInitConfig() {
     init_config.uuid = boost::uuids::to_string(uuidGenerator());
     init_config.oid = getEnvVariable("OBJECT_ID");
     init_config.model_config = model_config;
-    init_config.rdfox_server.host = getEnvVariable("HOST_RDFOX_SERVER");
-    init_config.rdfox_server.port = getEnvVariable("PORT_RDFOX_SERVER");
-    init_config.rdfox_server.auth_base64 = getEnvVariable("AUTH_RDFOX_SERVER_BASE64");
+    init_config.rdfox_server.host = getEnvVariable("HOST_RDFOX_SERVER", DefaultRDFoxServer);
+    init_config.rdfox_server.port = getEnvVariable("PORT_RDFOX_SERVER", DefaultPortRDFoxServer);
+    init_config.rdfox_server.auth_base64 =
+        getEnvVariable("AUTH_RDFOX_SERVER_BASE64", DefaultAuthRDFoxServerBase64);
+    init_config.rdfox_server.data_store = getEnvVariable("RDFOX_DATASTORE", DefaultRDFoxDatastore);
     return init_config;
 }
 
@@ -101,14 +109,36 @@ int main(int argc, char* argv[]) {
         return EXIT_SUCCESS;
     }
     try {
+        // Initialize configuration
         InitConfig init_config = AddInitConfig();
-        std ::cout << "** Starting client! **" << std::endl;
-        auto client = std::make_shared<WebSocketClient>(init_config);
+
+        // Initialize TripleAssembler
+        RDFoxAdapter rdfox_adapter(init_config.rdfox_server.host, init_config.rdfox_server.port,
+                                   init_config.rdfox_server.auth_base64,
+                                   init_config.rdfox_server.data_store.value());
+        rdfox_adapter.initialize();
+
+        // Initialize TripleAssembler
+        FileHandlerImpl file_handler;
+        TripleWriter triple_writer;
+        TripleAssembler triple_assembler(init_config.model_config, rdfox_adapter, file_handler,
+                                         triple_writer);
+        triple_assembler.initialize();
+
+        std::cout << std::endl << "** Starting client! **" << std::endl;
+
+        // Create the WebSocketClient
+        auto client = std::make_shared<WebSocketClient>(init_config, triple_assembler);
+
+        // Initialize the RealWebSocketConnection with the WebSocketClient
+        client->initializeConnection();
+
+        // Run the WebSocket client
         client->run();
 
         return EXIT_SUCCESS;
     } catch (const std::exception& e) {
-        std::cout << "Error: " << e.what() << std::endl;
+        std::cerr << "Error: " << e.what() << std::endl;
         return EXIT_FAILURE;
     }
 }

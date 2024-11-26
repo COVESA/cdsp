@@ -1,9 +1,10 @@
-#include <model_config.h>
+#include "model_config.h"
 
 #include <fstream>
 #include <iostream>
 
 #include "helper.h"
+
 /**
  * @brief Reads a file and returns a list of required data points.
  *
@@ -17,8 +18,7 @@
  */
 std::vector<std::string> getClientRequiredDataPoints(std::string file_name) {
     std::vector<std::string> required_data;
-    std::string root =
-        std::string(PROJECT_ROOT) + "/symbolic-reasoner/examples/use-case/model/" + file_name;
+    std::string root = createConfigPath(file_name);
     std::ifstream file(root);
     if (!file) {
         throw std::runtime_error("Invalid required Data Points file: " + file_name);
@@ -123,11 +123,11 @@ void loadModelConfig(const std::string& config_file, ModelConfig& model_config) 
             "Error in the model_config.json file. Missing required field";
 
         for (const auto& tree_type : config_json["reasoner_settings"]["supported_tree_types"]) {
-            std::string lc_tree_type = toLowercase(tree_type.get<std::string>());
+            std::string lc_tree_type = Helper::toLowerCase(tree_type.get<std::string>());
 
             // Read supported tree types
             model_config.reasoner_settings.supported_tree_types.push_back(
-                toUppercase(tree_type.get<std::string>()));
+                Helper::toUppercase(tree_type.get<std::string>()));
 
             // Read system data points for a tree type
             if (!config_json["inputs"].contains(lc_tree_type + "_data")) {
@@ -142,7 +142,7 @@ void loadModelConfig(const std::string& config_file, ModelConfig& model_config) 
                 std::vector<std::string> query_list;
                 for (const auto& query :
                      config_json["queries"]["triple_assembler_helper"][lc_tree_type]) {
-                    query_list.push_back(query.get<std::string>());
+                    query_list.push_back(createConfigPath(query.get<std::string>()));
                 }
                 model_config.triple_assembler_queries_files[lc_tree_type] = query_list;
             } else {
@@ -158,36 +158,41 @@ void loadModelConfig(const std::string& config_file, ModelConfig& model_config) 
     }
 
     // Read output file path
-    model_config.output_file_path = config_json["output"].get<std::string>();
+    model_config.output_file_path = createConfigPath(config_json["output"].get<std::string>());
 
     // Read ontologies files
     for (const auto& ontology : config_json["ontologies"]) {
-        model_config.ontology_files.push_back(ontology.get<std::string>());
+        model_config.ontology_files.push_back(createConfigPath(ontology.get<std::string>()));
     }
 
     // Read SHACL shapes files
     for (const auto& shacl : config_json["shacl"]) {
-        model_config.shacl_shapes_files.push_back(shacl.get<std::string>());
+        model_config.shacl_shapes_files.push_back(createConfigPath(shacl.get<std::string>()));
     }
 
     // Read default triple assembler helpers
     std::vector<std::string> query_list;
     for (const auto& query : config_json["queries"]["triple_assembler_helper"]["default"]) {
-        query_list.push_back(query.get<std::string>());
+        query_list.push_back(createConfigPath(query.get<std::string>()));
     }
     model_config.triple_assembler_queries_files["default"] = query_list;
 
     // Read rules paths
     for (const auto& rule : config_json["rules"]) {
-        model_config.rules_files.push_back(rule.get<std::string>());
+        model_config.rules_files.push_back(createConfigPath(rule.get<std::string>()));
     }
 
     // Read output queries path
-    model_config.output_queries_path = config_json["queries"]["output"].get<std::string>();
+    model_config.output_queries_path =
+        createConfigPath(config_json["queries"]["output"].get<std::string>());
 
     // Read reasoner settings
     model_config.reasoner_settings.inference_engine =
         config_json["reasoner_settings"]["inference_engine"].get<std::string>();
-    model_config.reasoner_settings.output_format =
-        config_json["reasoner_settings"]["output_format"].get<std::string>();
+    model_config.reasoner_settings.output_format = reasonerOutputFormatToRDFSyntaxType(
+        config_json["reasoner_settings"]["output_format"].get<std::string>());
+}
+
+std::string createConfigPath(const std::string& config_file) {
+    return std::string(PROJECT_ROOT) + "/symbolic-reasoner/examples/use-case/model/" + config_file;
 }

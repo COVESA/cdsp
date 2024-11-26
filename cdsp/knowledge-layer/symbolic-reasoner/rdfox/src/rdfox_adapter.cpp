@@ -1,4 +1,4 @@
-#include "rdfox-adapter.h"
+#include "rdfox_adapter.h"
 
 #include <iostream>
 
@@ -8,9 +8,7 @@ RDFoxAdapter::RDFoxAdapter(const std::string& host, const std::string& port,
     : host_(host),
       port_(port),
       auth_header_base64_("Basic " + auth_base64),
-      data_store_(data_store) {
-    std::cout << "Initializing RDFox adapter..." << std::endl;
-}
+      data_store_(data_store) {}
 
 /**
  * @brief Initializes the RDFoxAdapter by ensuring the data store is created.
@@ -24,16 +22,18 @@ RDFoxAdapter::RDFoxAdapter(const std::string& host, const std::string& port,
  * @throws std::runtime_error if the data store creation fails.
  */
 void RDFoxAdapter::initialize() {
+    std::cout << "Initializing RDFox adapter ... " << std::endl;
+    std::cout << " - Starting data store: " << data_store_ << std::endl;
     // checks if the data store exists, create it if not
     if (checkDataStore()) {
-        std::cout << "Data store '" + data_store_ + "' is already created." << std::endl;
+        std::cout << " - Data store '" + data_store_ + "' is already created." << std::endl;
     } else {
-        std::cout << "Data store '" << data_store_ << "' does not exist. Creating it..."
+        std::cout << " - Data store '" << data_store_ << "' does not exist. Creating it..."
                   << std::endl;
         // Creates a data store
         std::string target = "/datastores/" + data_store_;
         if (sendPostRequest(target, "", "application/json")) {
-            std::cout << "Data store '" << data_store_ << "' created successfully." << std::endl;
+            std::cout << " - Data store '" << data_store_ << "' created successfully." << std::endl;
         } else {
             throw std::runtime_error("Failed to create datastore '" + data_store_ + "'");
         }

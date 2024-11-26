@@ -38,6 +38,8 @@ The `model_config.json` is structured to provide:
 "output": "output/generated_triples.ttl"
 ```
 - **output**: Defines the path to the file where the reasoner will store the results of the inference process. The output will be generated in the format defined in the [reasoner settings](#reasoner-settings) (in this case a turtle `.ttl`).
+  > [!IMPORTANT] Do not add the generated files to the repository
+  > - The generated files are into `.gitignore` file, they must be use locally only.
 
 #### Queries
 ```json

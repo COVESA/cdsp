@@ -21,12 +21,14 @@ void createReadMessage(const std::string& uuid, const std::string& tree, const s
                        const std::vector<std::string>& data_points,
                        std::vector<json>& reply_messages_queue);
 
+CategoryMessage parseCategoryMessage(const json& json_message);
 ErrorMessage parseErrorMessage(const json& json_message);
 
 std::string nodeValueToString(const json& json_value);
 
 DataMessage parseSuccessMessage(const json& json_message);
 
-std::variant<DataMessage, ErrorMessage> displayAndParseMessage(const std::string& message);
+std::variant<DataMessage, ErrorMessage, CategoryMessage> displayAndParseMessage(
+    const std::string& message);
 
 #endif  // MESSAGE_UTILS_H

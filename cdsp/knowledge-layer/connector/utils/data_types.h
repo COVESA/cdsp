@@ -3,13 +3,23 @@
 
 #include <chrono>
 #include <map>
+#include <optional>
 #include <string>
 #include <variant>
 #include <vector>
 
+#include "helper.h"
+
+enum class RDFSyntaxType {
+    TURTLE,    ///< Terse triples http://www.w3.org/TR/turtle
+    NTRIPLES,  ///< Line-based triples http://www.w3.org/TR/n-triples/
+    NQUADS,    ///< Line-based quads http://www.w3.org/TR/n-quads/
+    TRIG,      ///< Terse quads http://www.w3.org/TR/trig/
+};
+
 struct ReasonerSettings {
     std::string inference_engine;
-    std::string output_format;
+    RDFSyntaxType output_format;
     std::vector<std::string> supported_tree_types;
 };
 
@@ -28,6 +38,7 @@ struct ServerData {
     std::string host;
     std::string port;
     std::string auth_base64;
+    std::optional<std::string> data_store;
 };
 
 struct InitConfig {
@@ -67,6 +78,12 @@ struct ErrorMessage {
     int errorCode;
 };
 
+struct CategoryMessage {
+    std::string category;
+    std::string message;
+    int statusCode;
+};
+
 enum class MessageType {
     READ,
     WRITE,
@@ -74,7 +91,7 @@ enum class MessageType {
     UNSUBSCRIBE,
 };
 
-inline std::string messageTypeToString(MessageType type) {
+inline std::string messageTypeToString(const MessageType& type) {
     switch (type) {
         case MessageType::READ:
             return "read";
@@ -86,6 +103,21 @@ inline std::string messageTypeToString(MessageType type) {
             return "unsubscribe";
         default:
             throw std::runtime_error("Unsupported message type");
+    }
+};
+
+inline RDFSyntaxType reasonerOutputFormatToRDFSyntaxType(const std::string& type) {
+    std::string lowerCaseType = Helper::toLowerCase(type);
+    if (lowerCaseType == "turtle") {
+        return RDFSyntaxType::TURTLE;
+    } else if (lowerCaseType == "ntriples") {
+        return RDFSyntaxType::NTRIPLES;
+    } else if (lowerCaseType == "nquads") {
+        return RDFSyntaxType::NQUADS;
+    } else if (lowerCaseType == "trig") {
+        return RDFSyntaxType::TRIG;
+    } else {
+        throw std::runtime_error("Unsupported RDF output format");
     }
 }
 
