@@ -11,6 +11,22 @@ type SubscriptionMap = Map<string, WebSocketWithId[]>;
 const RANDOM_STRING = "<random-string>";
 const TREE_VSS = "VSS";
 
+// Define the singleton instance at the module level
+let subscriptionSimulatorInstance: SubscriptionSimulator | null = null;
+
+// Function to get or initialize the singleton instance
+export function getSubscriptionSimulator(
+  sendMessageToClient: (ws: WebSocketWithId, message: Message | MessageBase | ErrorMessage) => void,
+  createUpdateMessage: (id: string, tree: string, uuid: string, nodes: Array<{ name: string; value: any }>) => Message,
+  createSubscribeStatusMessage: (type: "subscribe" | "unsubscribe", message: Pick<Message, "id" | "tree" | "uuid">, status: string) => MessageBase
+): SubscriptionSimulator {
+  if (!subscriptionSimulatorInstance) {
+    subscriptionSimulatorInstance = new SubscriptionSimulator(sendMessageToClient, createUpdateMessage, createSubscribeStatusMessage);
+    logMessage("SubscriptionSimulator instance created.");
+  }
+  return subscriptionSimulatorInstance;
+}
+
 export class SubscriptionSimulator {
   private intervalId: NodeJS.Timeout | null = null;
   private session: Session;
@@ -20,16 +36,29 @@ export class SubscriptionSimulator {
   private createUpdateMessage: (id: string, tree: string, uuid: string, nodes: Array<{ name: string; value: any }>) => Message;
   private createSubscribeStatusMessage: (type: "subscribe" | "unsubscribe", message: Pick<Message, "id" | "tree" | "uuid">, status: string) => MessageBase;
   
-  constructor(session: Session, 
+  constructor(
     sendMessageToClient: (ws: WebSocketWithId, message: Message | MessageBase | ErrorMessage) => void,
     createUpdateMessage: (id: string, tree: string, uuid: string, nodes: Array<{ name: string; value: any }>) => Message,
     createSubscribeStatusMessage: (type: "subscribe" | "unsubscribe", message: Pick<Message, "id" | "tree" | "uuid">, status: string) => MessageBase)
   {
-    this.session = session;
+    this.session = new Session();
     this.notifyDatabaseChanges = this.notifyDatabaseChanges.bind(this);    
     this.sendMessageToClient = sendMessageToClient;
     this.createUpdateMessage = createUpdateMessage;
     this.createSubscribeStatusMessage = createSubscribeStatusMessage;
+    this.session.authenticateAndConnect();
+
+    // Register the cleanup function
+    process.on("exit", this.cleanup.bind(this)); // Called when the process exits normally
+    process.on("SIGINT", () => {
+      this.cleanup();
+      process.exit(0); // Ensure the process exits
+    });
+  }
+
+  private async cleanup(): Promise<void> {
+    logMessage("Cleaning up SubscriptionSimulator...");
+    await this.session.closeSession(); // Replace with actual session close logic
   }
 
   /**
@@ -45,7 +74,7 @@ export class SubscriptionSimulator {
    * @param wsOfNewSubscription websocket representing a client to be associated with the new subscription
    * @returns void
    */
-  subscribe(message: Message, wsOfNewSubscription: WebSocketWithId): void {
+  async subscribe(message: Message, wsOfNewSubscription: WebSocketWithId): Promise<void> {
     const key = `${message.id}-${message.tree}`;
     const websockets = this.subscriptions.get(key);
 
@@ -67,6 +96,7 @@ export class SubscriptionSimulator {
       this.intervalId = setInterval(this.notifyDatabaseChanges, databaseConfig!.pollIntervalLenInSec * 1000);
       this.intervalId.unref(); // Ensure timer doesn't keep the process alive
       this.timeIntervalLowerLimit = Date.now();
+
       logMessage("started timer");
     }
 
@@ -141,7 +171,7 @@ export class SubscriptionSimulator {
   /**
    * Removes the timer if there is no subscription left.
    */
-  private removeTimerIfNoSubscription() {
+  private async removeTimerIfNoSubscription() {
     if (this.intervalId !== null &&
       this.subscriptions.size === 0) {
       clearInterval(this.intervalId);
@@ -181,7 +211,6 @@ export class SubscriptionSimulator {
     }
     
     const timeIntervalUpperLimit = Date.now();
-    await this.session.openSession();
     for (const [key, websockets] of this.subscriptions.entries()) {
       const [id, tree] = key.split('-');
 
@@ -192,7 +221,6 @@ export class SubscriptionSimulator {
         );
       }
     }
-    await this.session.closeSession();
     this.timeIntervalLowerLimit = timeIntervalUpperLimit;
   }
 

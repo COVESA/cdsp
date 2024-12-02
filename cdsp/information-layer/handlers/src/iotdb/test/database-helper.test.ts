@@ -1,5 +1,5 @@
-import { transformSessionDataSet } from './database-helper';
-import { SessionDataSet } from './SessionDataSet';
+import { transformSessionDataSet } from '../utils/database-helper';
+import { SessionDataSet } from '../utils/SessionDataSet';
 
 describe('database-helper', () => {
   let mockSessionDataSet: jest.Mocked<SessionDataSet>;

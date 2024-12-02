@@ -1,41 +1,71 @@
+import thrift from "thrift";
 import {
-    TSOpenSessionReq,
-    TSCloseSessionReq,
-    TSProtocolVersion,
-    TSExecuteStatementReq,
-  } from "../gen-nodejs/client_types";
-  import { logMessage, logError, logWithColor, COLORS } from "../../../../utils/logger";
-  import { databaseConfig } from "../config/database-params";
-  import { SessionDataSet } from "../utils/SessionDataSet";
+  TSOpenSessionReq,
+  TSCloseSessionReq,
+  TSProtocolVersion,
+  TSExecuteStatementReq,
+} from "../gen-nodejs/client_types";
+import { logMessage, logError, logWithColor, COLORS } from "../../../../utils/logger";
+import { databaseConfig } from "../config/database-params";
+import { SessionDataSet } from "../utils/SessionDataSet";
 
-  const PROTOCOL_VERSION: number = TSProtocolVersion.IOTDB_SERVICE_PROTOCOL_V3;
+const Client = require("../gen-nodejs/IClientRPCService");
 
-  export class Session {
-    private client: any;
-    private sessionId: number | null = null;      
-    private statementId: number | null = null;
-    private fetchSize: number;
- 
-    constructor() {
-      this.fetchSize = databaseConfig?.fetchSize ?? 1000;
+const PROTOCOL_VERSION: number = TSProtocolVersion.IOTDB_SERVICE_PROTOCOL_V3;
+
+export class Session {
+  private client: any;
+  private sessionId: number | null = null;      
+  private statementId: number | null = null;
+  private fetchSize: number;
+
+  constructor() {
+    this.fetchSize = databaseConfig?.fetchSize ?? 1000;
+  }
+
+  public getSessionId(): number | null {
+      return this.sessionId;
+  }
+  public getClient() {
+      return this.client;
+  }
+
+  async authenticateAndConnect(): Promise<void> {
+    try {
+      const connection = thrift.createConnection(
+        databaseConfig!.iotdbHost,
+        databaseConfig!.iotdbPort!,
+        {
+          transport: thrift.TFramedTransport,
+          protocol: thrift.TBinaryProtocol,
+        }
+      );
+
+      this.client = thrift.createClient(Client, connection);
+      await this.openSession();
+
+      connection.on("error", (error: Error) => {
+        logError("thrift connection error", error);
+      });
+
+      process.on('exit', () => {
+        if (connection) {
+          connection.destroy();
+        }
+      });
+
+      logMessage(`Successfully connected to IoTDB using thrift, host: ${databaseConfig!.iotdbHost} port: ${databaseConfig!.iotdbPort}`);
+    } catch (error: unknown) {
+      logError("Failed to authenticate with IoTDB", error);
     }
+  }
   
-    public getSessionId(): number | null {
-        return this.sessionId;
-    }
-    public getStatementId(): number | null {
-        return this.statementId;
-    }
-    public setClient(client: any) {
-        this.client = client;
-    }
-
-  /**
+    /**
    * Opens a session with the IoTDB server using the provided credentials and configuration.
    */
   async openSession(): Promise<void> {
       if (this.sessionId) {
-        logMessage("The session is already opened.");
+        logMessage("The session is already opened, session id: " + this.sessionId);
         return;
       }
   
@@ -60,7 +90,8 @@ import {
         }
   
         this.sessionId = resp.sessionId;
-  
+        logMessage(`session #${this.sessionId} opened`);
+ 
         if (!this.sessionId) {
           throw new Error("Session ID is undefined, cannot request statement ID.");
         }
@@ -79,7 +110,6 @@ import {
         logMessage("Session is already closed.");
         return;
       }
-  
       const req = new TSCloseSessionReq({ sessionId: this.sessionId! });
   
       try {
@@ -90,6 +120,7 @@ import {
           error
         );
       } finally {
+        logMessage(`session #${this.sessionId} closed`);
         this.sessionId = null;
       }
     }

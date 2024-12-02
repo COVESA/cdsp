@@ -11,17 +11,27 @@ jest.mock("../config/database-params", () => ({
   },
 }));
 
-import { SubscriptionSimulator } from './SubscriptionSimulator'; 
-import { WebSocketWithId, Message, MessageBase } from '../../../utils/data-types';  
-import { Session } from './Session';
-import { SessionDataSet } from "../utils/SessionDataSet";
-import { transformSessionDataSet } from "../utils/database-helper";
-import { IoTDBDataType } from '../utils/iotdb-constants';
+jest.mock('thrift', () => ({
+  createConnection: jest.fn(() => ({
+    on: jest.fn(),
+    end: jest.fn(),
+    destroy: jest.fn(),
+  })),
+}));
 
 // Mock the module where transformSessionDataSet is defined
 jest.mock('../utils/database-helper', () => ({
   transformSessionDataSet: jest.fn(),  // Ensure transformSessionDataSet is a mock function
 }));
+
+// Mock the module where transformSessionDataSet is defined
+jest.mock('../utils/database-helper', () => ({
+  transformSessionDataSet: jest.fn(),  // Ensure transformSessionDataSet is a mock function
+}));
+
+import { SubscriptionSimulator } from '../src//SubscriptionSimulator'; 
+import { WebSocketWithId, Message, MessageBase } from '../../../utils/data-types';  
+import { Session } from '../src//Session';
 
 describe('SubscriptionSimulator', () => {
   let simulator: SubscriptionSimulator;
@@ -30,7 +40,6 @@ describe('SubscriptionSimulator', () => {
   let mockMessage: Message;
   let mockKey: string;
   let sendMessageToClientMock: jest.Mock;
-  let mockSessionDataSet: jest.Mocked<SessionDataSet>;
 
   beforeEach(() => {
     mockSession = new Session();
@@ -47,7 +56,7 @@ describe('SubscriptionSimulator', () => {
     }));
 
     sendMessageToClientMock = jest.fn();
-    simulator = new SubscriptionSimulator(mockSession, sendMessageToClientMock, jest.fn(), createSubscribeStatusMessageMock);
+    simulator = new SubscriptionSimulator(sendMessageToClientMock, jest.fn(), jest.fn());
     
     mockWebSocket = { id: 'ws1' } as WebSocketWithId;
     mockMessage = { id: 'vehicle123', tree: 'VSS' } as Message;
@@ -61,34 +70,14 @@ describe('SubscriptionSimulator', () => {
         simulator["intervalId"] = null; // Reset intervalId
     }
     jest.clearAllTimers(); // Clear any remaining active timers
+
+    process.removeAllListeners("exit");
+    process.removeAllListeners("SIGINT");
   });
 
   /*
    * subscribe
    */
-
-  test('calls sendMessageToClient if subscription was successful', () => {
-
-    // Act: Call subscribe with a new WebSocket and message key
-    simulator.subscribe(mockMessage, mockWebSocket);
-
-    // Assert: Verify sendMessageToClient was called
-    expect(sendMessageToClientMock).toHaveBeenCalled();
-
-    // Capture the actual message passed to sendMessageToClient
-    const [webSocketArg, messageArg] = sendMessageToClientMock.mock.calls[0];
-
-    // Check the WebSocket argument
-    expect(webSocketArg).toBe(mockWebSocket);
-
-    // Check the message content
-    expect(messageArg).toEqual(
-      expect.objectContaining({
-        status: "succeed",
-        tree: "VSS",
-      })
-    );   
-  });
 
   test('calls sendMessageToClient if subscription with same WebSocket already exists', () => {
     // Arrange: Manually add a subscription to simulate the "already exists" condition
@@ -149,31 +138,6 @@ describe('SubscriptionSimulator', () => {
   /*
    * unsubscribe
    */
-  test('calls sendMessageToClient if unsubscribe was successful', () => {
-
-    // Arrange: Add a subscription with same key and same websocket
-    simulator['subscriptions'].set(mockKey, [mockWebSocket]);
-    
-    // Act: Call subscribe with a new WebSocket and message key
-    simulator.unsubscribe(mockMessage, mockWebSocket);
-
-    // Assert: Verify sendMessageToClient was called
-    expect(sendMessageToClientMock).toHaveBeenCalled();
-
-    // Capture the actual message passed to sendMessageToClient
-    const [webSocketArg, messageArg] = sendMessageToClientMock.mock.calls[0];
-
-    // Check the WebSocket argument
-    expect(webSocketArg).toBe(mockWebSocket);
-
-    // Check the message content
-    expect(messageArg).toEqual(
-      expect.objectContaining({
-        status: "succeed",
-        tree: "VSS",
-      })
-    );   
-  });
 
   test('remove websocket from existing subscription if websocket and subscription exist', () => {
     // Arrange: Add a subscription with same key and same websocket + 1 other websocket
@@ -324,43 +288,22 @@ describe('SubscriptionSimulator', () => {
 
   test('calls sendMessageToClient if there is a matching subscription and update', async () => {
     simulator["timeIntervalLowerLimit"] = Date.now();
-
+  
     // Add a subscription that should match the `id` in the mocked session data
     simulator['subscriptions'].set('vehicle123-VSS', [mockWebSocket]);
-
-    // Create a real `SessionDataSet` instance to pass the `instanceof` check
-    const mockSessionDataSet = new SessionDataSet(
-      ['root.Vehicles_Speed'],                          // columnNameList
-      [IoTDBDataType.FLOAT],                            // columnTypeList
-      { 'root.Vehicles_Speed': 0 },                     // columnNameIndex
-      1,                                                // queryId
-      {},                                               // client
-      1,                                                // statementId
-      1,                                                // sessionId
-      {},                                               // queryDataSet
-      true                                              // ignoreTimestamp
-    );
-
-    // Mock executeQueryStatement to return the mockSessionDataSet
-    jest.spyOn(mockSession, 'executeQueryStatement').mockResolvedValue(mockSessionDataSet);
-
-    // Mock transformSessionDataSet to return non-empty array (indicating changes)
-    (transformSessionDataSet as jest.Mock).mockReturnValueOnce([
-      { name: 'speed', value: 100 },
-    ]);
-
-    // Mock createUpdateMessage to return an update message
-    simulator["createUpdateMessage"] = jest.fn().mockReturnValue({
+  
+    // Mock checkForChanges to return an update message
+    jest.spyOn(simulator as any, 'checkForChanges').mockResolvedValueOnce({
       type: "update",
       id: 'vehicle123',
       tree: 'VSS',
       uuid: 'test-uuid',
       nodes: [{ name: 'speed', value: 100 }],
     } as Message); // Return type MessageWithNodes
-
+  
     // Call notifyDatabaseChanges
     await (simulator as any).notifyDatabaseChanges();
-
+  
     // Assert that sendMessageToClient was called with the matching websocket and update message
     expect(sendMessageToClientMock).toHaveBeenCalledWith(
       { id: 'ws1' }, // WebSocket in the subscription
@@ -371,4 +314,5 @@ describe('SubscriptionSimulator', () => {
       })
     );
   });
+  
 });

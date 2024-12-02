@@ -36,7 +36,8 @@ const MessageTypeColors: Record<MessageType, COLORS> = {
  * @param color - The color to apply to the message. Should be a value from the COLORS enum.
  */
 export function logWithColor(message: string, color: COLORS): void {
-  console.log("\n", color, message, COLORS.RESET);
+  const dateTimeNow = new Date().toISOString();
+  console.log(`\n${color}${dateTimeNow} ${message}${COLORS.RESET}`);
 }
 
 /**
@@ -52,15 +53,15 @@ export function logMessage(
   label: string = ""
 ): void {
   let color: COLORS = MessageTypeColors[type];
-  const dateTimeNow = new Date().toLocaleString();
+  const dateTimeNow = new Date().toISOString();
   let labelText: string;
 
   switch (type) {
     case MessageType.RECEIVED:
-      labelText = "\u2193 ".concat(label || "Client Received");
+      labelText = "\u2193 ".concat("Client Received ws: ").concat(label);
       break;
     case MessageType.SENT:
-      labelText = "\u2191 ".concat(label || "Client Sent");
+      labelText = "\u2191 ".concat("Client Sent ws: ").concat(label);
       break;
     case MessageType.ERROR:
       labelText = "\u2716 ".concat(label || "Internal Error");

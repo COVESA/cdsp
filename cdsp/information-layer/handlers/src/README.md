@@ -13,7 +13,7 @@ This project uses a handler interface to dynamically integrate new database back
 
 2. **Implement the handler methods**: 
     You must implement the following methods in your new handler:
-   - `authenticateAndConnect(sendMessageToClients)`: Establish a connection with the database and authenticate.
+   - `authenticateAndConnect()`: Establish a connection with the database and authenticate.
    - `read(message, ws)`: Retrieve data from the database based on the incoming WebSocket message.
    - `write(message, ws)`: Write data to the database.
    - `subscribe(message, ws)`: Subscribe to changes in the database, and automatically send updates over WebSocket.
@@ -25,7 +25,7 @@ This project uses a handler interface to dynamically integrate new database back
 const Handler = require('../../handler');
 
 class MyDBHandler extends Handler {
-async authenticateAndConnect(sendMessageToClients) {
+async authenticateAndConnect() {
     // Connect to your database here
 }
 
@@ -78,7 +78,7 @@ OPTIONAL_CUSTOM_VARIABLES="value"
 > [!WARNING] 
 > Do not commit this file to GitHub!
 
-In order to work with your custom database handler, it is required to initialize it in the [websocket-server.ts](../../router/src/websocket-server.ts). 
+In order to work with your custom database handler, it is required to create it in the [HandlerCreator.ts](./HandlerCreator.ts). 
 
 ```ts
 switch (handlerType) {
@@ -102,7 +102,7 @@ Run the WebSocket server, and connect with your handler by sending WebSocket mes
 ### Existing Handlers
 
 You can check the following examples to understand how to structure your new handler:
-- **RealmDB Handler**: [RealmHandler](./realmdb/src/realmdb-handler.ts) provides an example of how to interact with RealmDB.
-- **IoTDB Handler**: A similar implementation can be followed for [IoTDBHandler](./iotdb/src/iotdb-handler.ts).
+- **RealmDB Handler**: [RealmHandler](./realmdb/src/RealmDBHandler.ts) provides an example of how to interact with RealmDB.
+- **IoTDB Handler**: A similar implementation can be followed for [IoTDBHandler](./iotdb/src/IoTDBHandler.ts).
 
 For additional logging, you can utilize the `logMessage` function from [logger.ts](../../utils/logger.ts).

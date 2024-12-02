@@ -12,7 +12,7 @@ import {
   logErrorStr,
 } from "../../../../utils/logger";
 import { createErrorMessage } from "../../../../utils/error-message-helper";
-import { WebSocket, Message, STATUS_ERRORS } from "../../../utils/data-types";
+import { WebSocketWithId, Message, STATUS_ERRORS } from "../../../utils/data-types";
 import { transformDataPointsWithDots, transformDataPointsWithUnderscores } from "../../../utils/transformations";
 
 // Define a type for changes
@@ -40,10 +40,7 @@ function parseOnMediaElementChangeResponse(
 
 export class RealmDBHandler extends HandlerBase {
   private realm: Realm | null;
-  private sendMessageToClients:
-    | ((ws: WebSocket, message: Message) => void)
-    | null;
-  private listeners: Map<WebSocket, Map<string, any>>;
+  private listeners: Map<WebSocketWithId, Map<string, any>>;
 
   constructor() {
     super();
@@ -51,16 +48,11 @@ export class RealmDBHandler extends HandlerBase {
       throw new Error("Invalid database configuration.");
     }
     this.realm = null;
-    this.sendMessageToClients = null;
     this.listeners = new Map();
   }
 
-  async authenticateAndConnect(
-    sendMessageToClients: (ws: WebSocket, message: Message) => void
-  ): Promise<void> {
+  async authenticateAndConnect(): Promise<void> {
     try {
-      this.sendMessageToClients = sendMessageToClients;
-
       const app = new Realm.App({ id: databaseConfig!.realmAppId });
       const credentials = Realm.Credentials.apiKey(databaseConfig!.realmApiKey);
       const user = await app.logIn(credentials);
@@ -86,7 +78,7 @@ export class RealmDBHandler extends HandlerBase {
     }
   }
 
-  protected async read(message: Message, ws: WebSocket): Promise<void> {
+  protected async read(message: Message, ws: WebSocketWithId): Promise<void> {
     if (this.areNodesValid(message, ws)) {
       try {
         const updateMessage = await this.getMessageData(message);
@@ -102,7 +94,7 @@ export class RealmDBHandler extends HandlerBase {
     }
   }
 
-  protected async write(message: Message, ws: WebSocket): Promise<void> {
+  protected async write(message: Message, ws: WebSocketWithId): Promise<void> {
     if (this.areNodesValid(message, ws)) {
       try {
         const mediaElement = await this.getMediaElement(message);
@@ -155,7 +147,7 @@ export class RealmDBHandler extends HandlerBase {
     }
   }
 
-  protected async subscribe(message: Message, ws: WebSocket): Promise<void> {
+  protected async subscribe(message: Message, ws: WebSocketWithId): Promise<void> {
     try {
       const mediaElement = await this.getMediaElement(message);
 
@@ -243,7 +235,7 @@ export class RealmDBHandler extends HandlerBase {
     }
   }
 
-  protected async unsubscribe(message: Message, ws: WebSocket): Promise<void> {
+  protected async unsubscribe(message: Message, ws: WebSocketWithId): Promise<void> {
     const { id, tree, uuid } = message;
     if (!id || !tree || !mediaElementsParams[tree]) {
       const errorMessage =
@@ -303,7 +295,7 @@ export class RealmDBHandler extends HandlerBase {
     );
   }
 
-  async unsubscribe_client(ws: WebSocket): Promise<void> {
+  async unsubscribe_client(ws: WebSocketWithId): Promise<void> {
     this.listeners.delete(ws);
     logWithColor(
       `All client subscriptions removed! Amount Clients: ${this.listeners.size}`,
@@ -318,7 +310,7 @@ export class RealmDBHandler extends HandlerBase {
    * @param ws - The WebSocket object for communication.
    * @returns - Returns true if all nodes are valid against the schema, otherwise false.
    */
-  private areNodesValid(message: Message, ws: WebSocket): boolean {
+  private areNodesValid(message: Message, ws: WebSocketWithId): boolean {
     const { type, tree } = message;
     if (!tree || !mediaElementsParams[tree]) {
       logErrorStr("Tree is undefined or does not exist in mediaElementsParams");
@@ -438,7 +430,7 @@ export class RealmDBHandler extends HandlerBase {
     mediaElement: any,
     changes: Changes,
     messageHeader: Pick<Message, "id" | "tree" | "uuid">,
-    ws: WebSocket
+    ws: WebSocketWithId
   ): void {
     logMessage(
       "Media element changed",

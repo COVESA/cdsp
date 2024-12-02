@@ -1,8 +1,6 @@
-import thrift from "thrift";
 import { Session } from "./Session";
-import { SubscriptionSimulator } from "./SubscriptionSimulator";
+import { getSubscriptionSimulator, SubscriptionSimulator } from "./SubscriptionSimulator";
 import { SupportedMessageDataTypes } from "./../utils/iotdb-constants";
-const Client = require("../gen-nodejs/IClientRPCService");
 const {
   TSInsertRecordReq,
 }: any = require("../gen-nodejs/client_types");
@@ -16,22 +14,16 @@ import {
 } from "../config/iotdb-config";
 import { databaseParams, databaseConfig } from "../config/database-params";
 import {
-  logMessage,
-  logError,
   logErrorStr,
   logWithColor,
   COLORS,
 } from "../../../../utils/logger";
 import { createErrorMessage } from "../../../../utils/error-message-helper";
-import { WebSocket, Message, STATUS_ERRORS, WebSocketWithId } from "../../../utils/data-types";
+import { Message, STATUS_ERRORS, WebSocketWithId } from "../../../utils/data-types";
 import { transformSessionDataSet } from "../utils/database-helper";
 import { transformDataPointsWithUnderscores } from "../../../utils/transformations";
 
 export class IoTDBHandler extends HandlerBase {
-  private client: any = null;
-  private sendMessageToClients:
-    | ((ws: WebSocket, message: Message) => void)
-    | null = null;
   private session: Session;
   private subscriptionSimulator: SubscriptionSimulator;
   private dataPointsSchema: SupportedDataPoints = {};
@@ -42,43 +34,14 @@ export class IoTDBHandler extends HandlerBase {
       throw new Error("Invalid database configuration.");
     }
     this.session = new Session();
-    this.subscriptionSimulator = new SubscriptionSimulator(this.session, this.sendMessageToClient, this.createUpdateMessage, this.createSubscribeStatusMessage);
+    this.subscriptionSimulator = getSubscriptionSimulator(this.sendMessageToClient, this.createUpdateMessage, this.createSubscribeStatusMessage);
   }
 
-  async authenticateAndConnect(
-    sendMessageToClients: (ws: WebSocket, message: Message) => void
-  ): Promise<void> {
-    try {
-      this.sendMessageToClients = sendMessageToClients;
-
-      const connection = thrift.createConnection(
-        databaseConfig!.iotdbHost,
-        databaseConfig!.iotdbPort!,
-        {
-          transport: thrift.TFramedTransport,
-          protocol: thrift.TBinaryProtocol,
-        }
-      );
-
-      logMessage(
-        `Connect to IoTDB, host: ${databaseConfig!.iotdbHost} port: ${databaseConfig!.iotdbPort}`
-      );
-
-      this.client = thrift.createClient(Client, connection);
-      this.session.setClient(this.client);
-
-      connection.on("error", (error: Error) => {
-        logError("thrift connection error", error);
-      });
-
-      const supportedDataPoint: SupportedDataPoints =
-        this.getSupportedDataPoints() as SupportedDataPoints;
-      this.dataPointsSchema = createDataPointsSchema(supportedDataPoint);
-
-      logMessage("Successfully connected to IoTDB using thrift");
-    } catch (error: unknown) {
-      logError("Failed to authenticate with IoTDB", error);
-    }
+  async authenticateAndConnect(): Promise<void> {
+    this.session.authenticateAndConnect();
+    const supportedDataPoint: SupportedDataPoints =
+      this.getSupportedDataPoints() as SupportedDataPoints;
+    this.dataPointsSchema = createDataPointsSchema(supportedDataPoint);  
   }
 
   protected subscribe(message: Message, ws: WebSocketWithId): void {
@@ -89,14 +52,14 @@ export class IoTDBHandler extends HandlerBase {
     this.subscriptionSimulator.unsubscribe(message, ws);
   }
 
-  unsubscribe_client(ws: WebSocketWithId): void {
+  async unsubscribe_client(ws: WebSocketWithId): Promise<void> {
      this.subscriptionSimulator.unsubscribeClient(ws);
+     await this.session.closeSession();
   }
   
-  protected async read(message: Message, ws: WebSocket): Promise<void> {
+  protected async read(message: Message, ws: WebSocketWithId): Promise<void> {
     if (this.areNodesValid(message, ws)) {
       try {
-        await this.session.openSession();
         const responseNodes = await this.queryLastFields(message, ws);
         if (responseNodes.length > 0) {
           const responseMessage = this.createUpdateMessage(
@@ -120,16 +83,13 @@ export class IoTDBHandler extends HandlerBase {
           ws,
           createErrorMessage("read", STATUS_ERRORS.NOT_FOUND, errMsg)
         );
-      } finally {
-        await this.session.closeSession();
       }
     }
   }
 
-  protected async write(message: Message, ws: WebSocket): Promise<void> {
+  protected async write(message: Message, ws: WebSocketWithId): Promise<void> {
     if (this.areNodesValid(message, ws)) {
       try {
-        await this.session.openSession();
         const data = this.createObjectToInsert(message);
         let measurements: string[] = [];
         let dataTypes: string[] = [];
@@ -189,8 +149,6 @@ export class IoTDBHandler extends HandlerBase {
             `Failed writing data. ${errMsg}`
           )
         );
-      } finally {
-        await this.session.closeSession();
       }
     }
   }
@@ -202,7 +160,7 @@ export class IoTDBHandler extends HandlerBase {
    * @param ws - The WebSocket object for communication.
    * @returns - Returns true if all nodes are valid against the schema, otherwise false.
    */
-  private areNodesValid(message: Message, ws: WebSocket): boolean {
+  private areNodesValid(message: Message, ws: WebSocketWithId): boolean {
     const { type } = message;
 
     const errorData = this.validateNodesAgainstSchema(
@@ -280,7 +238,7 @@ export class IoTDBHandler extends HandlerBase {
       isAligned: isAligned,
     });
 
-    return await this.client.insertRecord(request);
+    return await this.session.getClient().insertRecord(request);
   }
 
   /**
@@ -291,7 +249,7 @@ export class IoTDBHandler extends HandlerBase {
    */
   private async queryLastFields(
     message: Message,
-    ws: WebSocket
+    ws: WebSocketWithId
   ): Promise<Array<{ name: string; value: any }>> {
     const { id: objectId, tree } = message;
 

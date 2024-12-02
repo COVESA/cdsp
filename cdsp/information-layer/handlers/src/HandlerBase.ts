@@ -2,7 +2,6 @@ import fs from "fs";
 import yaml from "js-yaml";
 import {
   Message,
-  WebSocket,
   WebSocketWithId,
   DataPointSchema,
   MessageBase,
@@ -12,37 +11,36 @@ import { getDataPointsPath } from "../config/config";
 import { logMessage, MessageType } from "../../utils/logger";
 import { transformDataPointsWithUnderscores } from "../utils/transformations";
 
-
 export abstract class HandlerBase {
   // Default implementations of required functions
-  authenticateAndConnect(sendMessageToClients: (message: any) => void): void {
+  authenticateAndConnect(): void {
     logMessage(
       "authenticateAndConnect() is not implemented",
       MessageType.WARNING
     );
   }
 
-  protected read(message: Message, ws: WebSocket): void {
+  protected read(message: Message, ws: WebSocketWithId): void {
     logMessage("read() is not implemented", MessageType.WARNING);
   }
 
-  protected write(message: Message, ws: WebSocket): void {
+  protected write(message: Message, ws: WebSocketWithId): void {
     logMessage("write() is not implemented", MessageType.WARNING);
   }
 
-  protected subscribe(message: Message, ws: WebSocket): void {
+  protected subscribe(message: Message, ws: WebSocketWithId): void {
     logMessage("subscribe() is not implemented", MessageType.WARNING);
   }
 
-  protected unsubscribe(message: Message, ws: WebSocket): void {
+  protected unsubscribe(message: Message, ws: WebSocketWithId): void {
     logMessage("unsubscribe() is not implemented", MessageType.WARNING);
   }
 
-  unsubscribe_client(ws: WebSocket): void {
+  unsubscribe_client(ws: WebSocketWithId): void {
     logMessage("unsubscribe_client() is not implemented", MessageType.WARNING);
   }
 
-  handleMessage(message: Message, connectionId: string, ws: WebSocketWithId): void {
+  handleMessage(message: Message, ws: WebSocketWithId): void {
     try {
       switch (message.type) {
         case "read":
@@ -70,10 +68,10 @@ export abstract class HandlerBase {
    * Sends a message to the client.
    */
   protected sendMessageToClient(
-    ws: WebSocket,
+    ws: WebSocketWithId,
     message: Message | MessageBase | ErrorMessage
   ): void {
-    logMessage(JSON.stringify(message), MessageType.SENT);
+    logMessage(JSON.stringify(message), MessageType.SENT, ws.id);
     ws.send(JSON.stringify(message));
   }
 
