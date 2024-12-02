@@ -1,0 +1,24 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix sosa: <http://www.w3.org/ns/sosa/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix val: <http://example.ontology.com/validation#> .
+
+# Shape to validate an Observation
+val:ObservationShape a sh:NodeShape ;
+    sh:targetClass sosa:Observation ;
+    sh:property [
+        sh:path sosa:hasFeatureOfInterest ;
+        sh:nodeKind sh:IRI ;
+    ] ;
+    sh:property [
+        sh:path sosa:observedProperty ;
+        sh:nodeKind sh:IRI ;
+    ] ;
+    sh:property [
+        sh:path sosa:hasSimpleResult ;
+        sh:datatype xsd:string ;
+    ] ;
+    sh:property [
+        sh:path sosa:phenomenonTime ;
+        sh:datatype xsd:dateTime ;
+    ] .

@@ -1,0 +1,18 @@
+prefix car: <http://example.ontology.com/car#>
+prefix middleware: <http://target-nameospace-for-data-middleware#>
+prefix sh: <http://www.w3.org/ns/shacl#>
+prefix val: <http://example.ontology.com/validation#>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+
+
+SELECT ?class1 ?object_property 
+WHERE {
+   val:ObservationShape  sh:targetClass ?class1;
+      sh:property [ 
+                    sh:path ?object_property;
+                    sh:nodeKind sh:IRI
+                    ].
+
+ }
+
+

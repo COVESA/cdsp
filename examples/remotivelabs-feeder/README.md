@@ -1,10 +1,12 @@
 # RemotiveLabs Bridge/Feeder
 This a simple example of using the [RemotiveLabs virtual signal platform](https://remotivelabs.com/) as a feeder of vehicle data into the playground [Apache IoTDB](https://covesa.github.io/cdsp/manuals/apache-iotdb/) data store.
 
-It is implemented as a bridge between an RemotiveLabs Broker as the data source and the IoTDB server. You specify the signals you wish to subscribe too. The bridge waits for the subscribed signals to be sent from the
-RemotiveLabs broker, formats them and then writes them to IoTDB using the specified IoTDB path.
+It is implemented as a bridge between an RemotiveLabs Broker as the data source and the IoTDB server or the websocket server on the information-layer. You specify the signals you wish to subscribe too. The bridge waits for the subscribed signals to be sent from the
+RemotiveLabs broker, formats them and then writes them 
+* to IoTDB using the specified IoTDB path or
+* the websocket server on the information-layer. Depending on the websocket server configuration the data is written to IoTDB or RealmDB.
 
-The code assumes the timeseries into which the data will be written already exists in IoTDB. See the setup section for an example.
+For IoTDB the code assumes the timeseries into which the data will be written already exists in IoTDB. See the setup section for an example.
 
 
 ## Setup
@@ -21,6 +23,9 @@ CREATE DATABASE root.test2
 ```
 CREATE ALIGNED TIMESERIES root.test2.dev1(`Vehicle.Speed` FLOAT, `Vehicle.Chassis.Accelerator.PedalPosition` INT32, `Vehicle.Powertrain.Transmission.CurrentGear` INT32, `Vehicle.Powertrain.TractionBattery.NominalVoltage` INT32, `Vehicle.Powertrain.TractionBattery.StateOfCharge.CurrentEnergy` FLOAT, `Vehicle.Chassis.SteeringWheel.Angle` INT32, `Vehicle.CurrentLocation.Longitude` DOUBLE, `Vehicle.CurrentLocation.Latitude` DOUBLE, `Vehicle.CurrentLocation.HorizontalAccuracy` DOUBLE)
 ```
+### RealmDB schema
+Is to be clarified
+
 ### Bridge install
 The bridge requires Python3. A list of required packages is provided that can be installed with the pip package manager.
 
@@ -40,8 +45,8 @@ RemotiveLabs have both a Cloud Demo and a Free Tier with pre-recorded datasets t
 ### Configuration
 Passing the `-h` parameter to the bridge will display the command line options:
 ```
-python3 rl-iotdb-bridge.py -h
-usage: rl-iotdb-bridge.py [-h] [-u URL] [-x X_API_KEY] [-t ACCESS_TOKEN] -s [SIGNALS [SIGNALS ...]]
+python3 rl-bridge.py -h
+usage: rl-bridge.py [-h] [-u URL] [-x X_API_KEY] [-t ACCESS_TOKEN] -s [SIGNALS [SIGNALS ...]] -o {iotdb,websocket} [-i ID]
 
 Provide address to RemotiveBroker
 
@@ -54,6 +59,9 @@ optional arguments:
                         Personal or service-account access token
   -s [SIGNALS [SIGNALS ...]], --signals [SIGNALS [SIGNALS ...]]
                         Signal to subscribe to
+  -o {iotdb,websocket}, --output_mode {iotdb,websocket}
+                        Output mode: 'iotdb' to write to IoTDB, 'websocket' to send data to WebSocket.
+  -i ID, --id ID        Element ID to include in WebSocket data. Required when output_mode is 'websocket'.                        
 ```
 Tip: To avoid displaying RemotiveLabs Broker secrets on the command line you can pass them using export variables, e.g:
 ```
@@ -88,22 +96,28 @@ For a standard build of the playground with an unchanged IoTDB server configurat
 
 More typically you would change `device_id_` if needed to reflect how you are organizing data in IoTDB.
 
+For sending data to the information-layer the websocket server has to listen on `ws://localhost:8080`.
+
 ### Signal subscription examples
-#### Single signal
+#### Single signal IoTDB
 Execute the bridge and subscribe to the signal `Vehicle.Speed` in the namespace `vss`:
 ```
-python3 rl-iotdb-bridge.py --url $RL_BROKER_URL --x_api_key $RL_API_KEY --signals vss:Vehicle.Speed
+python3 rl-bridge.py --url $RL_BROKER_URL --x_api_key $RL_API_KEY -o iotdb --signals vss:Vehicle.Speed
 ```
 
-#### Multiple signals
+#### Multiple signals IoTDB
 Execute the bridge and subscribe to all supported VSS signals in the RemotiveLabs dataset example `Night drive to Luftkastellet`:
 ```
-python3 rl-iotdb-bridge.py --url $RL_BROKER_URL --x_api_key $RL_API_KEY --signals vss:Vehicle.Speed vss:Vehicle.Chassis.Accelerator.PedalPosition vss:Vehicle.Powertrain.Transmission.CurrentGear vss:Vehicle.Powertrain.TractionBattery.NominalVoltage vss:Vehicle.Powertrain.TractionBattery.StateOfCharge.CurrentEnergy vss:Vehicle.Chassis.SteeringWheel.Angle vss:Vehicle.CurrentLocation.Longitude vss:Vehicle.CurrentLocation.Latitude
+python3 rl-bridge.py --url $RL_BROKER_URL --x_api_key $RL_API_KEY -o iotdb --signals vss:Vehicle.Speed vss:Vehicle.Chassis.Accelerator.PedalPosition vss:Vehicle.Powertrain.Transmission.CurrentGear vss:Vehicle.Powertrain.TractionBattery.NominalVoltage vss:Vehicle.Powertrain.TractionBattery.StateOfCharge.CurrentEnergy vss:Vehicle.Chassis.SteeringWheel.Angle vss:Vehicle.CurrentLocation.Longitude vss:Vehicle.CurrentLocation.Latitude
 ```
+
+#### Single signal websocket
+python3 rl-bridge.py --url $RL_BROKER_URL --x_api_key $RL_API_KEY -o websocket --signals vss:Vehicle.Speed -i TEST_VEHICLE
+
 #### Errors
 If the requested signal or namespace name is not available in the broker an error will be reported:
 ```
-python3 rl-iotdb-bridge.py --url $RL_BROKER_URL --x_api_key $RL_API_KEY --signals bad-namespace-name:bad-signal-name
+python3 rl-bridge.py --url $RL_BROKER_URL --x_api_key $RL_API_KEY --signals bad-namespace-name:bad-signal-name
 signal not declared (namespace, signal): ('bad-namespace-name', 'bad-signal-name')
 ```
 
@@ -121,7 +135,7 @@ The following example takes you through the steps of playing the RemotiveLabs da
 
 4. Execute the bridge for the signals you wish to subscribe too:
 ```
-python3 rl-iotdb-bridge.py --url $RL_BROKER_URL --x_api_key $RL_API_KEY --signals vss:Vehicle.Speed vss:Vehicle.Chassis.Accelerator.PedalPosition vss:Vehicle.Powertrain.Transmission.CurrentGear vss:Vehicle.Powertrain.TractionBattery.NominalVoltage vss:Vehicle.Powertrain.TractionBattery.StateOfCharge.CurrentEnergy vss:Vehicle.Chassis.SteeringWheel.Angle vss:Vehicle.CurrentLocation.Longitude vss:Vehicle.CurrentLocation.Latitude
+python3 rl-bridge.py --url $RL_BROKER_URL --x_api_key $RL_API_KEY -iotdb --signals vss:Vehicle.Speed vss:Vehicle.Chassis.Accelerator.PedalPosition vss:Vehicle.Powertrain.Transmission.CurrentGear vss:Vehicle.Powertrain.TractionBattery.NominalVoltage vss:Vehicle.Powertrain.TractionBattery.StateOfCharge.CurrentEnergy vss:Vehicle.Chassis.SteeringWheel.Angle vss:Vehicle.CurrentLocation.Longitude vss:Vehicle.CurrentLocation.Latitude
 ```
 5. The bridge will report that it is waiting to receive signals:
 ```
