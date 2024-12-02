@@ -18,15 +18,18 @@ export class SubscriptionSimulator {
   private subscriptions: SubscriptionMap = new Map();
   private sendMessageToClient: ( ws: WebSocketWithId, message: Message | MessageBase | ErrorMessage) => void;  
   private createUpdateMessage: (id: string, tree: string, uuid: string, nodes: Array<{ name: string; value: any }>) => Message;
+  private createSubscribeStatusMessage: (type: "subscribe" | "unsubscribe", message: Pick<Message, "id" | "tree" | "uuid">, status: string) => MessageBase;
   
   constructor(session: Session, 
     sendMessageToClient: (ws: WebSocketWithId, message: Message | MessageBase | ErrorMessage) => void,
-    createUpdateMessage: (id: string, tree: string, uuid: string, nodes: Array<{ name: string; value: any }>) => Message) 
+    createUpdateMessage: (id: string, tree: string, uuid: string, nodes: Array<{ name: string; value: any }>) => Message,
+    createSubscribeStatusMessage: (type: "subscribe" | "unsubscribe", message: Pick<Message, "id" | "tree" | "uuid">, status: string) => MessageBase)
   {
     this.session = session;
     this.notifyDatabaseChanges = this.notifyDatabaseChanges.bind(this);    
     this.sendMessageToClient = sendMessageToClient;
     this.createUpdateMessage = createUpdateMessage;
+    this.createSubscribeStatusMessage = createSubscribeStatusMessage;
   }
 
   /**
@@ -66,6 +69,12 @@ export class SubscriptionSimulator {
       this.timeIntervalLowerLimit = Date.now();
       logMessage("started timer");
     }
+
+    this.sendMessageToClient(
+      wsOfNewSubscription,
+      this.createSubscribeStatusMessage("subscribe", message, "succeed")
+    );
+
     logMessage("subscribed");
     this.logSubscriptions();
   }
@@ -104,6 +113,12 @@ export class SubscriptionSimulator {
     } 
 
     this.removeTimerIfNoSubscription();
+
+    this.sendMessageToClient(
+      wsOfSubscriptionToBeDeleted,
+      this.createSubscribeStatusMessage("unsubscribe", message, "succeed")
+    );
+
     logMessage("unsubscribed");
     this.logSubscriptions();
   }

@@ -100,13 +100,13 @@ export abstract class HandlerBase {
   }
 
   /**
-   * Generic function to create or remove a subscription message.
+   * Generic function to create a subscription status message.
    * @param type - Type of subscription message.
    * @param message - The original message from client.
    * @param status - The status of the subscription.
    * @returns - The transformed message.
    */
-  protected createSubscribeMessage(
+  protected createSubscribeStatusMessage(
     type: "subscribe" | "unsubscribe",
     message: Pick<Message, "id" | "tree" | "uuid">,
     status: string

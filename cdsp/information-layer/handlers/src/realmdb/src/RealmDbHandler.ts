@@ -203,7 +203,7 @@ export class RealmDBHandler extends HandlerBase {
 
           this.sendMessageToClient(
             ws,
-            this.createSubscribeMessage("subscribe", message, "succeed")
+            this.createSubscribeStatusMessage("subscribe", message, "succeed")
           );
 
           logWithColor(
@@ -275,7 +275,7 @@ export class RealmDBHandler extends HandlerBase {
 
         this.sendMessageToClient(
           ws,
-          this.createSubscribeMessage("unsubscribe", message, "succeed")
+          this.createSubscribeStatusMessage("unsubscribe", message, "succeed")
         );
       } else {
         this.sendMessageToClient(

@@ -42,7 +42,7 @@ export class IoTDBHandler extends HandlerBase {
       throw new Error("Invalid database configuration.");
     }
     this.session = new Session();
-    this.subscriptionSimulator = new SubscriptionSimulator(this.session, this.sendMessageToClient, this.createUpdateMessage);
+    this.subscriptionSimulator = new SubscriptionSimulator(this.session, this.sendMessageToClient, this.createUpdateMessage, this.createSubscribeStatusMessage);
   }
 
   async authenticateAndConnect(

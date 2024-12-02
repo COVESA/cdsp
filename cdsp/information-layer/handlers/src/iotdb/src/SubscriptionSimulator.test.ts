@@ -12,7 +12,7 @@ jest.mock("../config/database-params", () => ({
 }));
 
 import { SubscriptionSimulator } from './SubscriptionSimulator'; 
-import { WebSocketWithId, Message } from '../../../utils/data-types';  
+import { WebSocketWithId, Message, MessageBase } from '../../../utils/data-types';  
 import { Session } from './Session';
 import { SessionDataSet } from "../utils/SessionDataSet";
 import { transformSessionDataSet } from "../utils/database-helper";
@@ -35,8 +35,19 @@ describe('SubscriptionSimulator', () => {
   beforeEach(() => {
     mockSession = new Session();
 
+    const createSubscribeStatusMessageMock = jest.fn<
+      MessageBase,
+      ["subscribe" | "unsubscribe", Pick<Message, "id" | "tree" | "uuid">, string]
+    >((type, message, status) => ({
+      type, // Properly narrowed type
+      id: message.id,
+      tree: message.tree,
+      uuid: message.uuid,
+      status,
+    }));
+
     sendMessageToClientMock = jest.fn();
-    simulator = new SubscriptionSimulator(mockSession, sendMessageToClientMock, jest.fn());
+    simulator = new SubscriptionSimulator(mockSession, sendMessageToClientMock, jest.fn(), createSubscribeStatusMessageMock);
     
     mockWebSocket = { id: 'ws1' } as WebSocketWithId;
     mockMessage = { id: 'vehicle123', tree: 'VSS' } as Message;
@@ -56,6 +67,28 @@ describe('SubscriptionSimulator', () => {
    * subscribe
    */
 
+  test('calls sendMessageToClient if subscription was successful', () => {
+
+    // Act: Call subscribe with a new WebSocket and message key
+    simulator.subscribe(mockMessage, mockWebSocket);
+
+    // Assert: Verify sendMessageToClient was called
+    expect(sendMessageToClientMock).toHaveBeenCalled();
+
+    // Capture the actual message passed to sendMessageToClient
+    const [webSocketArg, messageArg] = sendMessageToClientMock.mock.calls[0];
+
+    // Check the WebSocket argument
+    expect(webSocketArg).toBe(mockWebSocket);
+
+    // Check the message content
+    expect(messageArg).toEqual(
+      expect.objectContaining({
+        status: "succeed",
+        tree: "VSS",
+      })
+    );   
+  });
 
   test('calls sendMessageToClient if subscription with same WebSocket already exists', () => {
     // Arrange: Manually add a subscription to simulate the "already exists" condition
@@ -116,6 +149,31 @@ describe('SubscriptionSimulator', () => {
   /*
    * unsubscribe
    */
+  test('calls sendMessageToClient if unsubscribe was successful', () => {
+
+    // Arrange: Add a subscription with same key and same websocket
+    simulator['subscriptions'].set(mockKey, [mockWebSocket]);
+    
+    // Act: Call subscribe with a new WebSocket and message key
+    simulator.unsubscribe(mockMessage, mockWebSocket);
+
+    // Assert: Verify sendMessageToClient was called
+    expect(sendMessageToClientMock).toHaveBeenCalled();
+
+    // Capture the actual message passed to sendMessageToClient
+    const [webSocketArg, messageArg] = sendMessageToClientMock.mock.calls[0];
+
+    // Check the WebSocket argument
+    expect(webSocketArg).toBe(mockWebSocket);
+
+    // Check the message content
+    expect(messageArg).toEqual(
+      expect.objectContaining({
+        status: "succeed",
+        tree: "VSS",
+      })
+    );   
+  });
 
   test('remove websocket from existing subscription if websocket and subscription exist', () => {
     // Arrange: Add a subscription with same key and same websocket + 1 other websocket
