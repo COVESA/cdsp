@@ -97,6 +97,7 @@ export class SubscriptionSimulator {
       this.intervalId.unref(); // Ensure timer doesn't keep the process alive
       this.timeIntervalLowerLimit = Date.now();
 
+
       logMessage("started timer");
     }
 

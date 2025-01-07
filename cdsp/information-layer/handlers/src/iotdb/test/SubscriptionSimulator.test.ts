@@ -30,7 +30,7 @@ jest.mock('../utils/database-helper', () => ({
 }));
 
 import { SubscriptionSimulator } from '../src//SubscriptionSimulator'; 
-import { WebSocketWithId, Message, MessageBase } from '../../../utils/data-types';  
+import { WebSocketWithId, Message } from '../../../utils/data-types';  
 import { Session } from '../src//Session';
 
 describe('SubscriptionSimulator', () => {
@@ -43,17 +43,6 @@ describe('SubscriptionSimulator', () => {
 
   beforeEach(() => {
     mockSession = new Session();
-
-    const createSubscribeStatusMessageMock = jest.fn<
-      MessageBase,
-      ["subscribe" | "unsubscribe", Pick<Message, "id" | "tree" | "uuid">, string]
-    >((type, message, status) => ({
-      type, // Properly narrowed type
-      id: message.id,
-      tree: message.tree,
-      uuid: message.uuid,
-      status,
-    }));
 
     sendMessageToClientMock = jest.fn();
     simulator = new SubscriptionSimulator(sendMessageToClientMock, jest.fn(), jest.fn());
@@ -78,6 +67,7 @@ describe('SubscriptionSimulator', () => {
   /*
    * subscribe
    */
+
 
   test('calls sendMessageToClient if subscription with same WebSocket already exists', () => {
     // Arrange: Manually add a subscription to simulate the "already exists" condition
