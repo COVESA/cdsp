@@ -2,19 +2,22 @@
 
 #include <string>
 
+#include "data_types.h"
+#include "random_utils.h"
 #include "rdfox_adapter.h"
+#include "server_data_fixture.h"
 
 class RDFoxAdapterIntegrationTest : public ::testing::Test {
    protected:
     RDFoxAdapter* adapter;
 
-    std::string host = "localhost";
-    std::string port = "12110";
-    std::string auth_base64 = "cm9vdDphZG1pbg==";  // Base64 encoded authorization string
-    std::string data_store = "test_ds";
+    const ServerData rdfox_server_ = ServerDataFixture::getValidRDFoxServerData();
+    const std::string triple_subject_ = RandomUtils::generateRandomString(8);
+    const std::string triple_object_ = RandomUtils::generateRandomString(6);
 
     void SetUp() override {
-        adapter = new RDFoxAdapter(host, port, auth_base64, data_store);
+        adapter = new RDFoxAdapter(rdfox_server_.host, rdfox_server_.port,
+                                   rdfox_server_.auth_base64, rdfox_server_.data_store.value());
         adapter->initialize();
 
         // Initial load to ensure datastore is accessible
@@ -53,7 +56,8 @@ TEST_F(RDFoxAdapterIntegrationTest, LoadDataTest) {
     // Define a Turtle data string with a namespace prefix and a single triple
     std::string ttlData = R"(
         @prefix car: <http://example.com/car#> .
-        car:Vehicle1 a car:Vehicle .
+        car:)" + triple_subject_ +
+                          R"( a car:)" + triple_object_ + R"( .
     )";
 
     // Attempt to load the Turtle data into the data store and assert success
@@ -73,7 +77,8 @@ TEST_F(RDFoxAdapterIntegrationTest, QueryDataTest) {
     // Define a Turtle data string with a namespace prefix and a single triple
     std::string ttlData = R"(
         @prefix car: <http://example.com/car#> .
-        car:Vehicle1 a car:Vehicle .
+        car:)" + triple_subject_ +
+                          R"( a car:)" + triple_object_ + R"( .
     )";
 
     // Attempt to load the Turtle data into the data store and assert success
@@ -87,12 +92,13 @@ TEST_F(RDFoxAdapterIntegrationTest, QueryDataTest) {
 
     // Asserts
     ASSERT_FALSE(result.empty()) << "SPARQL query returned no results";
-    EXPECT_TRUE(result.find("<http://example.com/car#Vehicle1>") != std::string::npos)
+    EXPECT_TRUE(result.find("<http://example.com/car#" + triple_subject_ + ">") !=
+                std::string::npos)
         << "Result does not contain the expected subject.";
     EXPECT_TRUE(result.find("<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>") !=
                 std::string::npos)
         << "Result does not contain the expected predicate.";
-    EXPECT_TRUE(result.find("<http://example.com/car#Vehicle>") != std::string::npos)
+    EXPECT_TRUE(result.find("<http://example.com/car#" + triple_object_ + ">") != std::string::npos)
         << "Result does not contain the expected object.";
 }
 

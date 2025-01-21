@@ -1,5 +1,9 @@
 # Add the integration test executable for WebsocketClient
-add_executable(websocket_client_integration_tests websocket_client_integration_test.cpp)
+add_executable(websocket_client_integration_tests 
+    websocket_client_base_integration_test.cpp
+    websocket_client_integration_test.cpp
+    websocket_client_coordinates_integration_test.cpp
+)
 target_link_libraries(websocket_client_integration_tests 
     PRIVATE 
         GTest::gtest_main 

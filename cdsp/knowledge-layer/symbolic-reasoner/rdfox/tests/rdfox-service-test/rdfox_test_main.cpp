@@ -17,7 +17,7 @@ const std::string AUTH_HEADER =
     "Basic cm9vdDphZG1pbg==";  // Example for 'root:admin' encoded in base64
 
 // Helper function to handle response status codes
-void assert_response_ok(const http::response<http::string_body>& res, const std::string& message) {
+void assertResponseOk(const http::response<http::string_body>& res, const std::string& message) {
     if (res.result() != http::status::ok && res.result() != http::status::created &&
         res.result() != http::status::no_content) {
         std::cerr << message << "\nStatus: " << res.result_int() << "\n" << res.body() << std::endl;
@@ -26,9 +26,9 @@ void assert_response_ok(const http::response<http::string_body>& res, const std:
 }
 
 // Function to perform a POST request
-http::response<http::string_body> post_request(tcp::socket& socket, beast::flat_buffer& buffer,
-                                               const std::string& target, const std::string& body,
-                                               const std::string& content_type) {
+http::response<http::string_body> postRequest(tcp::socket& socket, beast::flat_buffer& buffer,
+                                              const std::string& target, const std::string& body,
+                                              const std::string& content_type) {
     try {
         http::request<http::string_body> req{http::verb::post, target, 11};
         req.set(http::field::host, RDFOX_SERVER);
@@ -50,9 +50,9 @@ http::response<http::string_body> post_request(tcp::socket& socket, beast::flat_
 }
 
 // Function to perform a GET request
-http::response<http::string_body> get_request(tcp::socket& socket, beast::flat_buffer& buffer,
-                                              const std::string& target,
-                                              const std::string& accept_type) {
+http::response<http::string_body> getRequest(tcp::socket& socket, beast::flat_buffer& buffer,
+                                             const std::string& target,
+                                             const std::string& accept_type) {
     try {
         http::request<http::empty_body> req{http::verb::get, target, 11};
         req.set(http::field::host, RDFOX_SERVER);
@@ -72,8 +72,8 @@ http::response<http::string_body> get_request(tcp::socket& socket, beast::flat_b
 }
 
 // Function to perform a DELETE request
-http::response<http::string_body> delete_request(tcp::socket& socket, beast::flat_buffer& buffer,
-                                                 const std::string& target) {
+http::response<http::string_body> deleteRequest(tcp::socket& socket, beast::flat_buffer& buffer,
+                                                const std::string& target) {
     try {
         http::request<http::empty_body> req{http::verb::delete_, target, 11};
         req.set(http::field::host, RDFOX_SERVER);
@@ -104,14 +104,14 @@ int main() {
         std::string store_name = "family";
 
         // Step 1: Check if the 'family' data store exists and delete it if necessary
-        auto res = get_request(socket, buffer, "/datastores", "application/json");
-        assert_response_ok(res, "Failed to obtain list of datastores.");
+        auto res = getRequest(socket, buffer, "/datastores", "application/json");
+        assertResponseOk(res, "Failed to obtain list of datastores.");
         std::cout << "Data store list:\n" << res.body() << std::endl;
 
         if (res.body().find(store_name) != std::string::npos) {
             std::cout << "Data store '" << store_name << "' exists. Deleting..." << std::endl;
-            res = delete_request(socket, buffer, "/datastores/" + store_name);
-            assert_response_ok(res, "Failed to delete data store.");
+            res = deleteRequest(socket, buffer, "/datastores/" + store_name);
+            assertResponseOk(res, "Failed to delete data store.");
             std::cout << "Data store '" << store_name << "' deleted successfully." << std::endl;
         } else {
             std::cout << "Data store '" << store_name << "' does not exist." << std::endl;
@@ -119,9 +119,9 @@ int main() {
 
         // Step 2: Create a new data store
         std::cout << "Creating a new data store '" << store_name << "'." << std::endl;
-        res = post_request(socket, buffer, "/datastores/family?type=parallel-ww", "",
-                           "application/json");
-        assert_response_ok(res, "Failed to create datastore.");
+        res = postRequest(socket, buffer, "/datastores/family?type=parallel-ww", "",
+                          "application/json");
+        assertResponseOk(res, "Failed to create datastore.");
         std::cout << "Data store created." << std::endl;
 
         // Step 3: Add facts in Turtle format
@@ -148,9 +148,8 @@ int main() {
                 :gender "male" .
             :brian :forename "Brian" .
         )";
-        res =
-            post_request(socket, buffer, "/datastores/family/content", turtle_data, "text/turtle");
-        assert_response_ok(res, "Failed to add facts to data store.");
+        res = postRequest(socket, buffer, "/datastores/family/content", turtle_data, "text/turtle");
+        assertResponseOk(res, "Failed to add facts to data store.");
         std::cout << "Facts added." << std::endl;
 
         // Step 4: Run a SPARQL query
@@ -158,13 +157,13 @@ int main() {
             PREFIX : <https://oxfordsemantic.tech/RDFox/getting-started/> 
             SELECT ?p ?n WHERE { ?p a :Person . ?p :forename ?n }
         )";
-        res = post_request(socket, buffer, "/datastores/family/sparql", sparql_query,
-                           "application/sparql-query");
-        assert_response_ok(res, "Failed to run SPARQL query.");
+        res = postRequest(socket, buffer, "/datastores/family/sparql", sparql_query,
+                          "application/sparql-query");
+        assertResponseOk(res, "Failed to run SPARQL query.");
         std::cout << "SPARQL query result:\n" << res.body() << std::endl;
 
-        res = delete_request(socket, buffer, "/datastores/" + store_name);
-        assert_response_ok(res, "Failed to delete data store.");
+        res = deleteRequest(socket, buffer, "/datastores/" + store_name);
+        assertResponseOk(res, "Failed to delete data store.");
         std::cout << "Data store '" << store_name << "' deleted successfully." << std::endl;
 
     } catch (const std::exception& e) {

@@ -13,5 +13,5 @@ prefix xsd: <http://www.w3.org/2001/XMLSchema#>
                     sh:path ?data_property;
                     sh:datatype  ?datatype
                    ].
- FILTER (contains("%B%", ?data_point_name)) #The first value is from the data sigle point
+ FILTER (contains("%B%", ?data_point_name)) #The first value is from the data single point
  }

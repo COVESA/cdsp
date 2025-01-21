@@ -1,35 +1,11 @@
-#include "model_config.h"
+#include "model_config_utils.h"
 
 #include <fstream>
 #include <iostream>
 
 #include "helper.h"
 
-/**
- * @brief Reads a file and returns a list of required data points.
- *
- * This function constructs the full path to the file using the provided file name
- * and a predefined project root directory. It then reads the file line by line,
- * storing each line as an element in a vector of strings.
- *
- * @param file_name The name of the file to read.
- * @return A vector of strings, each representing a required data point from the file.
- * @throws std::runtime_error if the file cannot be opened.
- */
-std::vector<std::string> getClientRequiredDataPoints(std::string file_name) {
-    std::vector<std::string> required_data;
-    std::string root = createConfigPath(file_name);
-    std::ifstream file(root);
-    if (!file) {
-        throw std::runtime_error("Invalid required Data Points file: " + file_name);
-    }
-    std::string line;
-    while (std::getline(file, line)) {
-        required_data.push_back(line);
-    }
-    return required_data;
-}
-
+namespace {
 /**
  * @brief Validates the presence of required fields in a JSON configuration.
  *
@@ -91,6 +67,37 @@ void validateJsonFields(const json& config_json) {
         throw std::runtime_error(generic_error_message +
                                  " in 'reasoner_settings': 'supported_tree_types'");
     }
+}
+
+std::string createConfigPath(const std::string& config_file) {
+    return std::string(PROJECT_ROOT) + "/symbolic-reasoner/examples/use-case/model/" + config_file;
+}
+}  // namespace
+
+namespace ModelConfigUtils {
+/**
+ * @brief Reads a file and returns a list of required data points.
+ *
+ * This function constructs the full path to the file using the provided file name
+ * and a predefined project root directory. It then reads the file line by line,
+ * storing each line as an element in a vector of strings.
+ *
+ * @param file_name The name of the file to read.
+ * @return A vector of strings, each representing a required data point from the file.
+ * @throws std::runtime_error if the file cannot be opened.
+ */
+std::vector<std::string> getClientRequiredDataPoints(std::string file_name) {
+    std::vector<std::string> required_data;
+    std::string root = createConfigPath(file_name);
+    std::ifstream file(root);
+    if (!file) {
+        throw std::runtime_error("Invalid required Data Points file: " + file_name);
+    }
+    std::string line;
+    while (std::getline(file, line)) {
+        required_data.push_back(line);
+    }
+    return required_data;
 }
 
 /**
@@ -192,7 +199,4 @@ void loadModelConfig(const std::string& config_file, ModelConfig& model_config) 
     model_config.reasoner_settings.output_format = reasonerOutputFormatToRDFSyntaxType(
         config_json["reasoner_settings"]["output_format"].get<std::string>());
 }
-
-std::string createConfigPath(const std::string& config_file) {
-    return std::string(PROJECT_ROOT) + "/symbolic-reasoner/examples/use-case/model/" + config_file;
-}
+}  // namespace ModelConfigUtils

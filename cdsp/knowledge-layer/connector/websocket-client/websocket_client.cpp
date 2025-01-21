@@ -91,11 +91,13 @@ const InitConfig& WebSocketClient::getInitConfig() const { return init_config_; 
 
 // Callbacks for connection lifecycle and message handling
 void WebSocketClient::onConnect(boost::system::error_code ec,
-                                boost::asio::ip::tcp::resolver::iterator iterator) {
+                                const boost::asio::ip::tcp::endpoint& endpoint) {
     if (ec) {
         return Fail(ec, "Connection failed:");
     }
 
+    std::cout << "Connected to WebSocket server: " << endpoint.address() << ":" << endpoint.port()
+              << "\n";
     connection_->asyncHandshake();
 }
 
@@ -104,12 +106,11 @@ void WebSocketClient::handshake(boost::system::error_code ec) {
         return Fail(ec, "Handshake failed:");
     }
 
-    std::cout << "Connected to WebSocket server: " << init_config_.websocket_server.host << "\n\n";
-
     for (const std::string& tree_type :
          init_config_.model_config.reasoner_settings.supported_tree_types) {
-        createSubscription(init_config_.uuid, init_config_.oid, tree_type, reply_messages_queue_);
-        createReadMessage(
+        MessageUtils::createSubscription(init_config_.uuid, init_config_.oid, tree_type,
+                                         reply_messages_queue_);
+        MessageUtils::createReadMessage(
             init_config_.uuid, tree_type, init_config_.oid,
             init_config_.model_config.system_data_points[Helper::toLowerCase(tree_type)],
             reply_messages_queue_);
@@ -153,7 +154,7 @@ void WebSocketClient::processMessage(const std::shared_ptr<const std::string>& m
     auto prio_message = *response_messages_queue_.front();
     response_messages_queue_.erase(response_messages_queue_.begin());
 
-    const auto parsed_message = displayAndParseMessage(prio_message);
+    const auto parsed_message = MessageUtils::displayAndParseMessage(prio_message);
 
     if (std::holds_alternative<ErrorMessage>(parsed_message)) {
         auto error = std::get<ErrorMessage>(parsed_message);

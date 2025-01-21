@@ -4,6 +4,7 @@ target_link_libraries(triple_writer_integration_tests
     PRIVATE 
         GTest::gtest_main 
         rdf_writer
+        test_fixtures
 )
 
 # Add the unit test executable for TripleAssembler
@@ -13,6 +14,7 @@ target_link_libraries(triple_assembler_unit_tests
         GTest::gtest_main 
         GTest::gmock 
         rdf_writer
+        test_fixtures
 )
 
 # Add unit and integration tests to CTest

@@ -1,5 +1,5 @@
 #include "message_utils.h"
-
+namespace {
 /**
  * @brief Creates a JSON message header with the specified parameters.
  *
@@ -17,51 +17,6 @@ json createMessageHeader(const MessageType& type, const std::string& tree, const
     message_header["id"] = id;
     message_header["uuid"] = uuid;
     return message_header;
-}
-
-/**
- * @brief Creates a subscription message and adds it to the reply messages queue.
- *
- * This function generates a subscription message header using the provided
- * uuid and oid, and then appends this message to the reply messages queue.
- *
- * @param uuid Used as a client identifier.
- * @param oid The object identification number.
- * @param tree The tree identifier for the message.
- * @param reply_messages_queue A reference to the queue where the subscription message will be
- * added.
- */
-void createSubscription(const std::string& uuid, const std::string& oid, const std::string& tree,
-                        std::vector<json>& reply_messages_queue) {
-    reply_messages_queue.push_back(createMessageHeader(MessageType::SUBSCRIBE, tree, oid, uuid));
-}
-
-/**
- * @brief Creates a read message and appends it to the reply messages queue.
- *
- * This function constructs a JSON message with a header and a list of data points,
- * then appends the message to the provided reply messages queue.
- *
- * @param uuid The client identifier.
- * @param tree The tree identifier for the message.
- * @param oid The object identification number.
- * @param data_points A vector of data point names to be included in the message.
- * @param reply_messages_queue A reference to the queue where the constructed message will be
- * appended.
- */
-void createReadMessage(const std::string& uuid, const std::string& tree, const std::string& oid,
-                       const std::vector<std::string>& data_points,
-                       std::vector<json>& reply_messages_queue) {
-    auto message = createMessageHeader(MessageType::READ, tree, oid, uuid);
-
-    json nodes = json::array();
-    for (const auto& data_point : data_points) {
-        json node;
-        node["name"] = data_point;
-        nodes.push_back(node);
-    }
-    message["nodes"] = nodes;
-    reply_messages_queue.push_back(std::move(message));
 }
 
 /**
@@ -207,6 +162,53 @@ DataMessage parseSuccessMessage(const json& json_message) {
 
     return data_message;
 }
+}  // namespace
+
+namespace MessageUtils {
+/**
+ * @brief Creates a subscription message and adds it to the reply messages queue.
+ *
+ * This function generates a subscription message header using the provided
+ * uuid and oid, and then appends this message to the reply messages queue.
+ *
+ * @param uuid Used as a client identifier.
+ * @param oid The object identification number.
+ * @param tree The tree identifier for the message.
+ * @param reply_messages_queue A reference to the queue where the subscription message will be
+ * added.
+ */
+void createSubscription(const std::string& uuid, const std::string& oid, const std::string& tree,
+                        std::vector<json>& reply_messages_queue) {
+    reply_messages_queue.push_back(createMessageHeader(MessageType::SUBSCRIBE, tree, oid, uuid));
+}
+
+/**
+ * @brief Creates a read message and appends it to the reply messages queue.
+ *
+ * This function constructs a JSON message with a header and a list of data points,
+ * then appends the message to the provided reply messages queue.
+ *
+ * @param uuid The client identifier.
+ * @param tree The tree identifier for the message.
+ * @param oid The object identification number.
+ * @param data_points A vector of data point names to be included in the message.
+ * @param reply_messages_queue A reference to the queue where the constructed message will be
+ * appended.
+ */
+void createReadMessage(const std::string& uuid, const std::string& tree, const std::string& oid,
+                       const std::vector<std::string>& data_points,
+                       std::vector<json>& reply_messages_queue) {
+    auto message = createMessageHeader(MessageType::READ, tree, oid, uuid);
+
+    json nodes = json::array();
+    for (const auto& data_point : data_points) {
+        json node;
+        node["name"] = data_point;
+        nodes.push_back(node);
+    }
+    message["nodes"] = nodes;
+    reply_messages_queue.push_back(std::move(message));
+}
 
 /**
  * @brief Parses a JSON message string and returns a corresponding message object.
@@ -239,3 +241,4 @@ std::variant<DataMessage, ErrorMessage, CategoryMessage> displayAndParseMessage(
 
     return parseSuccessMessage(json_message);
 }
+}  // namespace MessageUtils

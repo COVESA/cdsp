@@ -57,13 +57,39 @@ void TripleAssembler::transformMessageToRDFTriple(const DataMessage& message) {
     // Add the identifier to the triples that will be generated
     triple_writer_.initiateTriple(message.header.id);
     std::string msg_tree = Helper::toLowerCase(message.header.tree);
+    if (message.nodes.empty()) {
+        std::cout << "No nodes found in the message\n\n";
+        return;
+    }
+
+    std::optional<CoordinateNodes> valid_coordinates = std::nullopt;
+
     for (const auto node : message.nodes) {
-        try {
-            generateTriplesFromNode(node, msg_tree, message.header.date_time);
-        } catch (const std::exception& e) {
-            std::cerr << "An error occurred creating the TTL triples: " << e.what() << std::endl;
+        if (node.name == "Vehicle.CurrentLocation.Latitude" ||
+            node.name == "Vehicle.CurrentLocation.Longitude") {
+            const auto epochMilliseconds =
+                Helper::getMillisecondsSinceEpoch(message.header.date_time);
+            const auto found_key = timestamp_coordinates_messages_map_.find(epochMilliseconds);
+            if (found_key != timestamp_coordinates_messages_map_.end()) {
+                found_key->second.insert({node.name, node});
+            } else {
+                timestamp_coordinates_messages_map_.emplace(
+                    epochMilliseconds, std::unordered_map<std::string, Node>{{node.name, node}});
+            }
+            valid_coordinates = getValidCoordinatesPair();
+
+        } else {
+            try {
+                generateTriplesFromNode(node, msg_tree, message.header.date_time);
+            } catch (const std::exception& e) {
+                std::cerr << "An error occurred creating the TTL triples: " << e.what()
+                          << std::endl;
+            }
         }
     }
+
+    if (valid_coordinates.has_value())
+        generateTriplesFromCoordinates(valid_coordinates, msg_tree, message);
 
     // Get the document of the generated triples
     std::string generated_triples =
@@ -72,24 +98,94 @@ void TripleAssembler::transformMessageToRDFTriple(const DataMessage& message) {
     if (!generated_triples.empty()) {
         storeTripleOutput(generated_triples);
     } else {
-        std::cout << "Any triples have been generated for the update message";
+        std::cout << "Any triples have been generated for the update message\n\n";
     }
 }
 
 /**
- * @brief Generates RDF triples from a given node and its associated metadata.
+ * Retrieves a valid pair of latitude and longitude coordinates from the timestamped coordinate
+ * messages.
+ *
+ * This function iterates over a map of timestamped coordinate messages to find the most recent
+ * valid pair of latitude and longitude nodes. A valid pair is defined as having both latitude and
+ * longitude nodes occurring within a 2-second window.
+ *
+ * @return An optional containing a CoordinateNodes object if a valid pair is found, or std::nullopt
+ * if no valid pair exists.
+ */
+std::optional<CoordinateNodes> TripleAssembler::getValidCoordinatesPair() {
+    chrono_time_mili last_timestamp_to_delete(0.0);
+    const Node* latitude = nullptr;
+    chrono_time_mili latitude_time;
+    const Node* longitude = nullptr;
+    chrono_time_mili longitude_time;
+
+    for (const auto& [time, nodes] : timestamp_coordinates_messages_map_) {
+        // Check if latitude exists
+        if (const auto found_lat = nodes.find("Vehicle.CurrentLocation.Latitude");
+            found_lat != nodes.end()) {
+            latitude_time = time;
+            latitude = &found_lat->second;
+        }
+
+        // Check if longitude exists
+        if (const auto found_long = nodes.find("Vehicle.CurrentLocation.Longitude");
+            found_long != nodes.end()) {
+            longitude_time = time;
+            longitude = &found_long->second;
+        }
+    }
+
+    if (latitude && longitude) {
+        // Ensure that the locations happen within a period of 2 seconds
+        const auto two_seconds_in_millisec = std::chrono::duration<double, std::milli>(2000.0);
+        auto difference = latitude_time - longitude_time;
+
+        if (std::abs(difference.count()) <= two_seconds_in_millisec.count()) {
+            // Update the last timestamp for valid coordinates
+            coordinates_last_time_stamp_ = std::max(latitude_time, longitude_time);
+            return CoordinateNodes{*latitude, *longitude};
+        }
+    }
+
+    return std::nullopt;
+}
+
+/**
+ * @brief Cleans up old timestamps from the timestamp_coordinates_messages_map_.
+ *
+ * This function iterates through the timestamp_coordinates_messages_map_ and removes
+ * entries where the timestamp (key) is less or equal than the coordinates_last_time_stamp_
+ * (coordinates already inserted). It ensures that only relevant and recent coordinates entries are
+ * retained in the map.
+ */
+void TripleAssembler::cleanupOldTimestamps() {
+    for (auto it = timestamp_coordinates_messages_map_.begin();
+         it != timestamp_coordinates_messages_map_.end();) {
+        if (it->first <= coordinates_last_time_stamp_) {
+            it = timestamp_coordinates_messages_map_.erase(it);
+        } else {
+            ++it;
+        }
+    }
+}
+
+/**
+ * @brief Generates RDF triples from a given node.
  *
  * This function processes a node by extracting its object and data elements,
  * querying necessary prefixes and values, and then adding these as RDF objects
- * and data to the triple writer.
+ * and data to the triple writer. It handles specific node names
+ * related to vehicle location by preparing additional RDF data if necessary.
  *
  * @param node The node containing the name and value to be transformed into RDF triples.
  * @param msg_tree The message tree structure used for querying RDF data.
- * @param msg_date_time The date and time associated with the message, used in the Triples
- * observations.
+ * @param msg_date_time The date and time associated with the message.
+ * @param ntm_coord_value An optional coordinate value for NTM data.
  */
 void TripleAssembler::generateTriplesFromNode(const Node& node, const std::string& msg_tree,
-                                              const std::string& msg_date_time) {
+                                              const std::string& msg_date_time,
+                                              const std::optional<double>& ntm_coord_value) {
     // Split node data point into object and data elements
     const auto [object_elements, data_element] = extractObjectsAndDataElements(node.name);
 
@@ -105,7 +201,43 @@ void TripleAssembler::generateTriplesFromNode(const Node& node, const std::strin
     const auto [prefixes, rdf_data_values] = getQueryPrefixesAndData(
         msg_tree, "data", object_elements[object_elements.size() - 1], data_element);
 
-    triple_writer_.addRDFDataToTriple(prefixes, rdf_data_values, node.value, msg_date_time);
+    triple_writer_.addRDFDataToTriple(prefixes, rdf_data_values, node.value, msg_date_time,
+                                      ntm_coord_value);
+}
+
+/**
+ * @brief Retrieves a valid pair of latitude and longitude coordinates.
+ *
+ * This function iterates through the `timestamp_coordinates_messages_map_` to find
+ * the most recent latitude and longitude nodes. It checks if both coordinates exist
+ * and ensures they are recorded within a 2-second interval. If valid, it updates
+ * the `coordinates_last_time_stamp_` and returns the coordinate nodes.
+ *
+ * @return An optional CoordinateNodes object containing the latitude and longitude nodes
+ * if both are found and valid; otherwise, std::nullopt.
+ */
+void TripleAssembler::generateTriplesFromCoordinates(
+    std::optional<CoordinateNodes>& valid_coordinates, std::string& msg_tree,
+    const DataMessage& message) {
+    {
+        try {
+            auto ntm_coord = Helper::getCoordInNtm(valid_coordinates.value().latitude.value,
+                                                   valid_coordinates.value().longitude.value);
+            if (ntm_coord == std::nullopt) {
+                throw std::runtime_error("Failed to convert coordinates to NTM");
+            }
+
+            generateTriplesFromNode(valid_coordinates.value().latitude, msg_tree,
+                                    message.header.date_time, ntm_coord.value().northing);
+            generateTriplesFromNode(valid_coordinates.value().longitude, msg_tree,
+                                    message.header.date_time, ntm_coord.value().easting);
+        } catch (const std::exception& e) {
+            std::cerr << "An error occurred creating the TTL triples: " << e.what() << std::endl;
+        }
+
+        // Manual cleanup of old timestamps
+        cleanupOldTimestamps();
+    }
 }
 
 /**

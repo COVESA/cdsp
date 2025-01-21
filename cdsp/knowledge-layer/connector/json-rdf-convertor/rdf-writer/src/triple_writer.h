@@ -29,11 +29,12 @@ class TripleWriter {
     virtual void addRDFDataToTriple(
         const std::string& prefixes,
         const std::tuple<std::string, std::string, std::string>& rdf_data_values,
-        const std::string& value, const std::string& dataTime);
+        const std::string& value, const std::string& dataTime,
+        const std::optional<double>& ntmValue = std::nullopt);
 
     virtual std::string generateTripleOutput(const RDFSyntaxType& format);
 
-    virtual void clear_log_definitions();
+    virtual void clearLogDefinitions();
 
     ~TripleWriter() = default;
 
@@ -49,10 +50,10 @@ class TripleWriter {
     void addSuportedPrefixes(const std::string& prefixes);
     void addTriplePrefix(std::string& prefix);
     std::string createInstanceUri(const std::string& prefix, const std::string& name);
-    std::tuple<std::string, std::string> extract_tuple_from_string(std::regex pattern,
-                                                                   std::string value);
+    std::tuple<std::string, std::string> extractTupleFromString(std::regex pattern,
+                                                                std::string value);
 
-    std::tuple<std::string, std::string> extract_prefix_and_identifier_from_rdf_element(
+    std::tuple<std::string, std::string> extractPrefixAndIdentifierFromRdfElement(
         const std::string& element);
 };
 

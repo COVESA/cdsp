@@ -27,7 +27,7 @@ class WebSocketClient : public std::enable_shared_from_this<WebSocketClient> {
     void run();
     void sendMessage(const json& message);
     const InitConfig& getInitConfig() const;
-    void onConnect(boost::system::error_code ec, tcp::resolver::iterator iterator);
+    void onConnect(boost::system::error_code ec, const boost::asio::ip::tcp::endpoint& endpoint);
     void handshake(boost::system::error_code ec);
     void onSendMessage(boost::system::error_code ec, std::size_t bytes_transferred);
     void onReceiveMessage(beast::error_code ec, std::size_t bytes_transferred);

@@ -25,8 +25,8 @@ class RDFoxAdapter {
 
    protected:
     virtual bool sendRequest(http::verb method, const std::string& target, const std::string& body,
-                             const std::string& contentType, const std::string& acceptType,
-                             std::string& responseBody);
+                             const std::string& content_Type, const std::string& accept_type,
+                             std::string& response_body);
 
    private:
     std::string sendGetRequest(const std::string& target, const std::string& accept_type);

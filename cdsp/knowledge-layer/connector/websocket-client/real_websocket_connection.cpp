@@ -22,10 +22,14 @@ void RealWebSocketConnection::onResolve(beast::error_code ec, tcp::resolver::res
 void RealWebSocketConnection::asyncConnect() {
     if (auto client = client_.lock()) {
         auto shared_client = client;  // Ensure shared_ptr is captured
-        net::async_connect(ws_.next_layer(), resolve_results_.begin(), resolve_results_.end(),
+        net::async_connect(ws_.next_layer(), resolve_results_,
                            [shared_client](boost::system::error_code ec,
-                                           boost::asio::ip::tcp::resolver::iterator iterator) {
-                               shared_client->onConnect(ec, iterator);
+                                           const boost::asio::ip::tcp::endpoint& endpoint) {
+                               if (shared_client) {
+                                   shared_client->onConnect(ec, endpoint);
+                               } else {
+                                   std::cerr << "WebSocketClient instance no longer exists.\n";
+                               }
                            });
     } else {
         std::cerr << "Failed to lock WebSocketClient. Client may have been destroyed.\n";

@@ -1,15 +1,26 @@
 #ifndef TRIPLE_ASSEMBLER_H
 #define TRIPLE_ASSEMBLER_H
 
+#include <chrono>
 #include <map>
+#include <optional>
 #include <string>
 #include <tuple>
+#include <unordered_map>
 #include <vector>
 
 #include "../../utils/i_file_handler.h"
+#include "coordinates_types.h"
 #include "data_types.h"
 #include "rdfox_adapter.h"
 #include "triple_writer.h"
+
+using chrono_time_mili = std::chrono::duration<double, std::milli>;
+
+struct CoordinateNodes {
+    Node latitude;
+    Node longitude;
+};
 
 class TripleAssembler {
    public:
@@ -18,20 +29,30 @@ class TripleAssembler {
 
     void initialize();
 
-    virtual void transformMessageToRDFTriple(const DataMessage& message);
+    void transformMessageToRDFTriple(const DataMessage& message);
 
     ~TripleAssembler() = default;
 
    protected:
-    virtual void generateTriplesFromNode(const Node& node, const std::string& msg_tree,
-                                         const std::string& msg_date_time);
+    void generateTriplesFromNode(const Node& node, const std::string& msg_tree,
+                                 const std::string& msg_date_time,
+                                 const std::optional<double>& ntm_coord_value = std::nullopt);
 
-    virtual void storeTripleOutput(const std::string& triple_output);
+    void generateTriplesFromCoordinates(std::optional<CoordinateNodes>& valid_coordinates,
+                                        std::string& msg_tree, const DataMessage& message);
+
+    void storeTripleOutput(const std::string& triple_output);
 
    private:
     RDFoxAdapter& rdfox_adapter_;
     IFileHandler& file_handler_;
     TripleWriter& triple_writer_;
+
+    chrono_time_mili coordinates_last_time_stamp_{chrono_time_mili(0.0)};
+
+    std::map<chrono_time_mili, std::unordered_map<std::string, Node>>
+        timestamp_coordinates_messages_map_{};
+
     const ModelConfig& model_config_;
 
     const std::vector<std::map<std::string, std::string>> json_data_;
@@ -39,8 +60,11 @@ class TripleAssembler {
     std::pair<std::vector<std::string>, std::string> extractObjectsAndDataElements(
         const std::string& node_name);
 
-    std::pair<std::string, std::tuple<std::string, std::string, std::string>>
+    std::optional<CoordinateNodes> getValidCoordinatesPair();
 
+    void cleanupOldTimestamps();
+
+    std::pair<std::string, std::tuple<std::string, std::string, std::string>>
     getQueryPrefixesAndData(const std::string& message_tree, const std::string& property_type,
                             const std::string& subject_class, const std::string& object_class);
 

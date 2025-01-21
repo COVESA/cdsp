@@ -65,11 +65,11 @@ void TripleWriter::addRDFObjectToTriple(
 
     // Split prefix and identifier for each RDF object value
     const auto [class_1_prefix, class_1_identifier] =
-        extract_prefix_and_identifier_from_rdf_element(std::get<0>(rdf_object_values));
+        extractPrefixAndIdentifierFromRdfElement(std::get<0>(rdf_object_values));
     const auto [object_property_prefix, object_property_identifier] =
-        extract_prefix_and_identifier_from_rdf_element(std::get<1>(rdf_object_values));
+        extractPrefixAndIdentifierFromRdfElement(std::get<1>(rdf_object_values));
     const auto [class_2_prefix, class_2_identifier] =
-        extract_prefix_and_identifier_from_rdf_element(std::get<2>(rdf_object_values));
+        extractPrefixAndIdentifierFromRdfElement(std::get<2>(rdf_object_values));
 
     // Create identifiers instances for each class
     const std::string class_1_instance_uri = createInstanceUri(class_1_prefix, class_1_identifier);
@@ -91,25 +91,28 @@ void TripleWriter::addRDFObjectToTriple(
 }
 
 /**
- * @brief Adds RDF data to a triple by processing its components and additional values.
+ * @brief Adds RDF data to a triple store with specified prefixes and RDF data values.
  *
- * This function takes RDF data values, prefixes, a literal value, and a dateTime,
- * processes them to extract necessary components, and constructs RDF triples.
- * The triples are then added to the internal list of triple definitions.
+ * This function constructs RDF triples using the provided RDF data values and prefixes,
+ * and adds them to the triple store. It also handles specific cases for certain RDF data
+ * values, such as "CurrentLocation" with "Latitude" or "Longitude", requiring an NTM value.
  *
  * @param prefixes A string containing the prefixes to be added to the system list.
  * @param rdf_data_values A tuple containing three strings representing RDF data values:
- *                        - The first element is the class 1 RDF element.
- *                        - The second element is the data property RDF element.
- *                        - The third element is the data type RDF element.
- * @param value A string representing the literal value to be added to the triple.
- * @param dataTime A string representing the dateTime value to be added to the triple.
- * @throws std::runtime_error If the value or dataTime is empty.
+ *                        - The first element is the class identifier.
+ *                        - The second element is the data property identifier.
+ *                        - The third element is the data type identifier.
+ * @param value A string representing the value to be used in the RDF triple.
+ * @param dataTime A string representing the date and time in ISO 8601 format.
+ * @param ntmValue An optional double representing the NTM value, required for specific cases.
+ *
+ * @throws std::runtime_error If the value or dataTime is empty, or if the NTM value is required
+ *                            but not provided.
  */
 void TripleWriter::addRDFDataToTriple(
     const std::string& prefixes,
     const std::tuple<std::string, std::string, std::string>& rdf_data_values,
-    const std::string& value, const std::string& dataTime) {
+    const std::string& value, const std::string& dataTime, const std::optional<double>& ntmValue) {
     if (value.empty() || dataTime.empty()) {
         throw std::runtime_error("Triple value or dataTime cannot be empty");
     }
@@ -122,11 +125,11 @@ void TripleWriter::addRDFDataToTriple(
 
     // Split prefix and identifier for each RDF data value
     const auto [class_1_prefix, class_1_identifier] =
-        extract_prefix_and_identifier_from_rdf_element(std::get<0>(rdf_data_values));
+        extractPrefixAndIdentifierFromRdfElement(std::get<0>(rdf_data_values));
     const auto [data_property_prefix, data_property_identifier] =
-        extract_prefix_and_identifier_from_rdf_element(std::get<1>(rdf_data_values));
+        extractPrefixAndIdentifierFromRdfElement(std::get<1>(rdf_data_values));
     const auto [data_type_prefix, data_type_identifier] =
-        extract_prefix_and_identifier_from_rdf_element(std::get<2>(rdf_data_values));
+        extractPrefixAndIdentifierFromRdfElement(std::get<2>(rdf_data_values));
 
     TripleNodes triple_nodes;
 
@@ -170,6 +173,20 @@ void TripleWriter::addRDFDataToTriple(
     triple_nodes.object = std::make_pair(SERD_LITERAL, dataTime);
     triple_nodes.datatype = std::make_pair(SERD_CURIE, "xsd:dateTime");
     rdf_triples_definitions_.push_back(triple_nodes);
+
+    if (class_1_identifier == "CurrentLocation" &&
+        (data_property_identifier == "latitude" || data_property_identifier == "longitude")) {
+        if (!ntmValue.has_value()) {
+            throw std::runtime_error("NTM value cannot be empty");
+        }
+
+        auto ntmValue_str = std::to_string(ntmValue.value());
+        triple_nodes.predicate = std::make_pair(SERD_CURIE, class_1_prefix + ":hasSimpleResultNTM");
+        triple_nodes.object = std::make_pair(SERD_LITERAL, ntmValue_str);
+        triple_nodes.datatype =
+            std::make_pair(SERD_CURIE, data_type_prefix + ":" + data_type_identifier);
+        rdf_triples_definitions_.push_back(triple_nodes);
+    }
 }
 
 /**
@@ -229,7 +246,8 @@ std::string TripleWriter::generateTripleOutput(const RDFSyntaxType& format) {
     return Helper::trimTrailingNewlines(serd_output);
 }
 
-void TripleWriter::clear_log_definitions() {
+// TODO: this function is not used in the current implementation
+void TripleWriter::clearLogDefinitions() {
     rdf_triples_definitions_.clear();
     unique_rdf_prefix_definitions_.clear();
 }
@@ -280,7 +298,7 @@ void TripleWriter::addSuportedPrefixes(const std::string& prefixes) {
         std::string line;
 
         while (std::getline(stream, line)) {
-            auto [prefix, uri] = extract_tuple_from_string(pattern, line);
+            auto [prefix, uri] = extractTupleFromString(pattern, line);
             unique_supported_prefixes_.emplace(prefix, uri);
         }
     } else {
@@ -295,13 +313,13 @@ void TripleWriter::addSuportedPrefixes(const std::string& prefixes) {
  * @return Tuple of namespace prefix and identifier value.
  * @throws std::runtime_error If format is unsupported.
  */
-std::tuple<std::string, std::string> TripleWriter::extract_prefix_and_identifier_from_rdf_element(
+std::tuple<std::string, std::string> TripleWriter::extractPrefixAndIdentifierFromRdfElement(
     const std::string& element) {
     if (!element.empty()) {
         // Regular expression to capture prefix and URI
         std::regex pattern(R"(http://([^#]+)#([^>]+)>)");
 
-        auto [rdf_namespace, identifier] = extract_tuple_from_string(pattern, element);
+        auto [rdf_namespace, identifier] = extractTupleFromString(pattern, element);
         addTriplePrefix(rdf_namespace);
         return std::make_tuple(rdf_namespace, identifier);
     } else {
@@ -356,8 +374,8 @@ std::string TripleWriter::createInstanceUri(const std::string& prefix, const std
  * @throws std::runtime_error If the input string does not match the pattern or does not capture
  * exactly two groups.
  */
-std::tuple<std::string, std::string> TripleWriter::extract_tuple_from_string(std::regex pattern,
-                                                                             std::string value) {
+std::tuple<std::string, std::string> TripleWriter::extractTupleFromString(std::regex pattern,
+                                                                          std::string value) {
     std::smatch matches;
     // Check if the pattern matches
     if (std::regex_search(value, matches, pattern) && matches.size() == 3) {

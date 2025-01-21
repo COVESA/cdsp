@@ -6,6 +6,10 @@ add_library(test_fixtures
     utils/utc_date_utils.cpp
     utils/vin_utils.cpp
     utils/random_utils.cpp
+    utils/observation_id_utils.cpp
+    ${PROJECT_ROOT_DIR}/connector/utils/helper.cpp
+    ${PROJECT_ROOT_DIR}/connector/utils/coordinate_transform.cpp
+    ${PROJECT_ROOT_DIR}/connector/utils/model_config_utils.cpp
 )
 
 # Include directories
@@ -19,8 +23,11 @@ target_include_directories(test_fixtures
 
 # Link dependencies
 target_link_libraries(test_fixtures
-    PUBLIC  
+    PRIVATE 
         Boost::system
         Boost::filesystem
-        Boost::thread
+        Boost::thread    
+        nlohmann_json::nlohmann_json
+        geographiclib
 )
+

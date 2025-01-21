@@ -67,8 +67,8 @@ std::string RDFoxAdapter::queryData(const std::string& sparql_query) {
 bool RDFoxAdapter::deleteDataStore() {
     if (checkDataStore()) {
         std::string target = "/datastores/" + data_store_;
-        std::string responseBody;
-        if (sendRequest(http::verb::delete_, target, "", "", "", responseBody)) {
+        std::string response_body;
+        if (sendRequest(http::verb::delete_, target, "", "", "", response_body)) {
             std::cout << "Data store '" + data_store_ + "' have been removed successfully."
                       << std::endl;
         } else {
@@ -98,18 +98,18 @@ bool RDFoxAdapter::checkDataStore() {
 
 std::optional<std::string> RDFoxAdapter::sendPostRequest(const std::string& target,
                                                          const std::string& body,
-                                                         const std::string& contentType) {
-    std::string responseBody;
-    if (sendRequest(http::verb::post, target, body, contentType, "", responseBody)) {
-        return responseBody;
+                                                         const std::string& content_type) {
+    std::string response_body;
+    if (sendRequest(http::verb::post, target, body, content_type, "", response_body)) {
+        return response_body;
     }
     return std::nullopt;
 }
 
-std::string RDFoxAdapter::sendGetRequest(const std::string& target, const std::string& acceptType) {
-    std::string responseBody;
-    if (sendRequest(http::verb::get, target, "", "", acceptType, responseBody)) {
-        return responseBody;
+std::string RDFoxAdapter::sendGetRequest(const std::string& target, const std::string& accept_type) {
+    std::string response_body;
+    if (sendRequest(http::verb::get, target, "", "", accept_type, response_body)) {
+        return response_body;
     }
     return "";
 }
@@ -120,15 +120,15 @@ std::string RDFoxAdapter::sendGetRequest(const std::string& target, const std::s
  * @param method The HTTP method to use for the request (e.g., GET, POST).
  * @param target The target URI for the request.
  * @param body The body content to send with the request.
- * @param contentType The MIME type of the body content.
- * @param acceptType The MIME type that the client is willing to accept in the response.
- * @param responseBody A reference to a string where the response body will be stored.
+ * @param content_type The MIME type of the body content.
+ * @param accept_type The MIME type that the client is willing to accept in the response.
+ * @param response_body A reference to a string where the response body will be stored.
  * @return True if the request was successful and the response status is OK, Created, or No Content;
  * false otherwise.
  */
 bool RDFoxAdapter::sendRequest(http::verb method, const std::string& target,
-                               const std::string& body, const std::string& contentType,
-                               const std::string& acceptType, std::string& responseBody) {
+                               const std::string& body, const std::string& content_type,
+                               const std::string& accept_type, std::string& response_body) {
     net::io_context ioc;
     tcp::resolver resolver(ioc);
     tcp::socket socket(ioc);
@@ -142,11 +142,11 @@ bool RDFoxAdapter::sendRequest(http::verb method, const std::string& target,
         http::request<http::string_body> req{method, target, 11};
         req.set(http::field::host, host_);
         req.set(http::field::authorization, auth_header_base64_);
-        if (!contentType.empty()) {
-            req.set(http::field::content_type, contentType);
+        if (!content_type.empty()) {
+            req.set(http::field::content_type, content_type);
         }
-        if (!acceptType.empty()) {
-            req.set(http::field::accept, acceptType);
+        if (!accept_type.empty()) {
+            req.set(http::field::accept, accept_type);
         }
         req.body() = body;
         req.prepare_payload();
@@ -157,7 +157,7 @@ bool RDFoxAdapter::sendRequest(http::verb method, const std::string& target,
         http::response<http::string_body> res;
         http::read(socket, buffer, res);
 
-        responseBody = res.body();
+        response_body = res.body();
 
         if (res.result() != http::status::ok && res.result() != http::status::created &&
             res.result() != http::status::no_content) {

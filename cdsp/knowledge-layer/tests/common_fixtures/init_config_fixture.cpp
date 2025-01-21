@@ -8,7 +8,6 @@
 #include "server_data_fixture.h"
 
 InitConfig InitConfigFixture::getValidInitConfig(const std::string& oid) {
-    // Set default values for the fixture
     InitConfig config;
     config.uuid = generateUUID();
     config.websocket_server = ServerDataFixture::getValidWebsocketServerData();

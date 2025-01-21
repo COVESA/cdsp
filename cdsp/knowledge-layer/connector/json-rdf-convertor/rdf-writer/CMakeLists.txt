@@ -4,6 +4,7 @@ add_library(rdf_writer
     src/triple_writer.cpp
     ../utils/file_handler_impl.cpp
     ../../utils/helper.cpp
+    ../../utils/coordinate_transform.cpp
 )
 
 # Include directories
@@ -13,6 +14,7 @@ target_include_directories(rdf_writer
         ${serd_SOURCE_DIR}/include
         ${PROJECT_ROOT_DIR}/connector/json-rdf-convertor/utils
         ${PROJECT_ROOT_DIR}/connector/utils
+        ${PROJECT_ROOT_DIR}/third_party/GeographicLib/include
 )
 
 # Link libraries
@@ -22,4 +24,5 @@ target_link_libraries(rdf_writer
         ${SERD_LIBRARIES} 
     PRIVATE 
         nlohmann_json::nlohmann_json
+        geographiclib
 )

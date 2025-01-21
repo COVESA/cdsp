@@ -3,7 +3,7 @@ add_library(websocket_client
     websocket_client.cpp
     real_websocket_connection.cpp
     ../utils/message_utils.cpp
-    ../utils/model_config.cpp
+    ../utils/model_config_utils.cpp
 )
 
 # Include directories

@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 cmake_policy(SET CMP0167 NEW)
 
 # Find Boost libraries
-find_package(Boost 1.86 REQUIRED COMPONENTS system filesystem thread)
+find_package(Boost 1.87 REQUIRED COMPONENTS system filesystem thread)
 
 # FetchContent to include dependencies
 include(FetchContent)
@@ -24,6 +24,21 @@ FetchContent_Declare(
     GIT_TAG v3.11.3
 )
 FetchContent_MakeAvailable(json)
+
+# ########################
+# geographiclib dependency
+# ########################
+
+# Include directories for third-party libraries
+include_directories(${CMAKE_SOURCE_DIR}/third_party/GeographicLib/include)
+
+# Add the GeographicLib source files to the project
+add_library(geographiclib STATIC
+    ${CMAKE_SOURCE_DIR}/third_party/GeographicLib/src/EllipticFunction.cpp
+    ${CMAKE_SOURCE_DIR}/third_party/GeographicLib/src/Math.cpp
+    ${CMAKE_SOURCE_DIR}/third_party/GeographicLib/src/TransverseMercator.cpp
+    ${CMAKE_SOURCE_DIR}/third_party/GeographicLib/src/TransverseMercatorExact.cpp
+)
 
 # #####################
 # serd-cmake dependency

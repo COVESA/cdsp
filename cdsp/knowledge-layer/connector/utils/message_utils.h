@@ -11,9 +11,7 @@
 
 using json = nlohmann::json;
 
-json createMessageHeader(const std::string& type, const std::string& tree, const std::string& id,
-                         const std::string& uuid);
-
+namespace MessageUtils {
 void createSubscription(const std::string& uuid, const std::string& oid, const std::string& tree,
                         std::vector<json>& reply_messages_queue);
 
@@ -21,14 +19,7 @@ void createReadMessage(const std::string& uuid, const std::string& tree, const s
                        const std::vector<std::string>& data_points,
                        std::vector<json>& reply_messages_queue);
 
-CategoryMessage parseCategoryMessage(const json& json_message);
-ErrorMessage parseErrorMessage(const json& json_message);
-
-std::string nodeValueToString(const json& json_value);
-
-DataMessage parseSuccessMessage(const json& json_message);
-
 std::variant<DataMessage, ErrorMessage, CategoryMessage> displayAndParseMessage(
     const std::string& message);
-
+}  // namespace MessageUtils
 #endif  // MESSAGE_UTILS_H

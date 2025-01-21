@@ -7,7 +7,7 @@
 #include <nlohmann/json.hpp>
 
 #include "file_handler_impl.h"
-#include "model_config.h"
+#include "model_config_utils.h"
 #include "triple_assembler.h"
 #include "triple_writer.h"
 #include "websocket_client.h"
@@ -16,23 +16,23 @@ using json = nlohmann::json;
 
 boost::uuids::random_generator uuidGenerator;
 
-std::string DefaultHostWebsocketServer{"127.0.0.1"};
-std::string DefaultPortWebSocketServer{"8080"};
-std::string ModelConfigurationFile{std::string(PROJECT_ROOT) +
-                                   "/symbolic-reasoner/examples/use-case/model/model_config.json"};
-std::string DefaultRDFoxServer{"127.0.0.1"};
-std::string DefaultPortRDFoxServer{"12110"};
-std::string DefaultAuthRDFoxServerBase64{"cm9vdDphZG1pbg=="};  // For 'root:admin' encoded in base64
-std::string DefaultRDFoxDatastore{"ds-test"};
+constexpr char DEFAULT_HOST_WEB_SOCKET_SERVER[] = "127.0.0.1";
+constexpr char DEFAULT_PORT_WEB_SOCKET_SERVER[] = "8080";
+const std::string MODEL_CONFIGURATION_FILE =
+    std::string(PROJECT_ROOT) + "/symbolic-reasoner/examples/use-case/model/model_config.json";
+constexpr char DEFAULT_RDFOX_SERVER[] = "127.0.0.1";
+constexpr char DEFAULT_PORT_RDFOX_SERVER[] = "12110";
+constexpr char DEFAULT_AUTH_RDFOX_SERVER_BASE64[] = "cm9vdDphZG1pbg==";  // 'root:admin' in base64
+constexpr char DEFAULT_RDFOX_DATASTORE[] = "ds-test";
 
-std::string getEnvVariable(const std::string& envVar, const std::string& defaultValue = "") {
-    const char* valueEnv = std::getenv(envVar.c_str());
-    return valueEnv ? std::string(valueEnv) : defaultValue;
+std::string getEnvVariable(const std::string& env_var, const std::string& default_value = "") {
+    const char* value_env = std::getenv(env_var.c_str());
+    return value_env ? std::string(value_env) : default_value;
 }
 
 void displayHelp() {
     std::string bold = "\033[1m";
-    std::string lightRed = "\033[91m";
+    std::string light_red = "\033[91m";
     std::string reset = "\033[0m";
 
     std::cout << bold << "Usage: websocket_client [--help]\n\n" << reset;
@@ -46,25 +46,26 @@ void displayHelp() {
 
     std::cout << std::left << std::setw(35) << "HOST_WEBSOCKET_SERVER" << std::setw(65)
               << "IP address of the WebSocket server"
-              << getEnvVariable("HOST_WEBSOCKET_SERVER", DefaultHostWebsocketServer) << "\n";
+              << getEnvVariable("HOST_WEBSOCKET_SERVER", DEFAULT_HOST_WEB_SOCKET_SERVER) << "\n";
     std::cout << std::left << std::setw(35) << "PORT_WEBSOCKET_SERVER" << std::setw(65)
               << "Port number of the WebSocket server"
-              << getEnvVariable("PORT_WEBSOCKET_SERVER", DefaultPortWebSocketServer) << "\n";
+              << getEnvVariable("PORT_WEBSOCKET_SERVER", DEFAULT_PORT_WEB_SOCKET_SERVER) << "\n";
     std::cout << std::left << std::setw(35) << "OBJECT_ID" << std::setw(65)
               << "Object ID to be used in communication"
-              << getEnvVariable("OBJECT_ID", lightRed + "`Not Set (Required)`" + reset) << "\n";
+              << getEnvVariable("OBJECT_ID", light_red + "`Not Set (Required)`" + reset) << "\n";
     std::cout << std::left << std::setw(35) << "HOST_RDFOX_SERVER" << std::setw(65)
               << "IP address of the RDFox server"
-              << getEnvVariable("HOST_RDFOX_SERVER", DefaultRDFoxServer) << "\n";
+              << getEnvVariable("HOST_RDFOX_SERVER", DEFAULT_RDFOX_SERVER) << "\n";
     std::cout << std::left << std::setw(35) << "PORT_RDFOX_SERVER" << std::setw(65)
               << "Port number of the RDFox server"
-              << getEnvVariable("PORT_RDFOX_SERVER", DefaultPortRDFoxServer) << "\n";
+              << getEnvVariable("PORT_RDFOX_SERVER", DEFAULT_PORT_RDFOX_SERVER) << "\n";
     std::cout << std::left << std::setw(35) << "AUTH_RDFOX_SERVER_BASE64" << std::setw(65)
               << "Authentication credentials for RDFox Server encoded in base64"
-              << getEnvVariable("AUTH_RDFOX_SERVER_BASE64", DefaultAuthRDFoxServerBase64) << "\n";
+              << getEnvVariable("AUTH_RDFOX_SERVER_BASE64", DEFAULT_AUTH_RDFOX_SERVER_BASE64)
+              << "\n";
     std::cout << std::left << std::setw(35) << "RDFOX_DATASTORE" << std::setw(65)
               << "Datastore name of the RDFox server"
-              << getEnvVariable("RDFOX_DATASTORE", DefaultRDFoxDatastore) << "\n";
+              << getEnvVariable("RDFOX_DATASTORE", DEFAULT_RDFOX_DATASTORE) << "\n";
 
     std::cout << "\n" << bold << "Description:\n" << reset;
     std::cout << "This client connects to a WebSocket server and processes incoming messages based "
@@ -84,21 +85,22 @@ void displayHelp() {
  */
 InitConfig AddInitConfig() {
     ModelConfig model_config;
-    loadModelConfig(ModelConfigurationFile, model_config);
+    ModelConfigUtils::loadModelConfig(MODEL_CONFIGURATION_FILE, model_config);
 
     InitConfig init_config;
     init_config.websocket_server.host =
-        getEnvVariable("HOST_WEBSOCKET_SERVER", DefaultHostWebsocketServer);
+        getEnvVariable("HOST_WEBSOCKET_SERVER", DEFAULT_HOST_WEB_SOCKET_SERVER);
     init_config.websocket_server.port =
-        getEnvVariable("PORT_WEBSOCKET_SERVER", DefaultPortWebSocketServer);
+        getEnvVariable("PORT_WEBSOCKET_SERVER", DEFAULT_PORT_WEB_SOCKET_SERVER);
     init_config.uuid = boost::uuids::to_string(uuidGenerator());
     init_config.oid = getEnvVariable("OBJECT_ID");
     init_config.model_config = model_config;
-    init_config.rdfox_server.host = getEnvVariable("HOST_RDFOX_SERVER", DefaultRDFoxServer);
-    init_config.rdfox_server.port = getEnvVariable("PORT_RDFOX_SERVER", DefaultPortRDFoxServer);
+    init_config.rdfox_server.host = getEnvVariable("HOST_RDFOX_SERVER", DEFAULT_RDFOX_SERVER);
+    init_config.rdfox_server.port = getEnvVariable("PORT_RDFOX_SERVER", DEFAULT_PORT_RDFOX_SERVER);
     init_config.rdfox_server.auth_base64 =
-        getEnvVariable("AUTH_RDFOX_SERVER_BASE64", DefaultAuthRDFoxServerBase64);
-    init_config.rdfox_server.data_store = getEnvVariable("RDFOX_DATASTORE", DefaultRDFoxDatastore);
+        getEnvVariable("AUTH_RDFOX_SERVER_BASE64", DEFAULT_AUTH_RDFOX_SERVER_BASE64);
+    init_config.rdfox_server.data_store =
+        getEnvVariable("RDFOX_DATASTORE", DEFAULT_RDFOX_DATASTORE);
     return init_config;
 }
 

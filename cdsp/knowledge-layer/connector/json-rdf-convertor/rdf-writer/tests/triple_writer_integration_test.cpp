@@ -4,17 +4,26 @@
 #include <tuple>
 #include <vector>
 
+#include "observation_id_utils.h"
+#include "random_utils.h"
 #include "triple_writer.h"
+#include "utc_date_utils.h"
+#include "vin_utils.h"
 
 class TripleWriterIntegrationTest : public ::testing::Test {
    protected:
     TripleWriter* triple_writer;
-    std::string prefixes_fixture;
-    const std::string vin = "WBY11CF080CH470711";
+    std::string prefixes_fixture_;
+    const std::string VIN = VinUtils::getRandomVinString();
+    const std::string OBSERVATION_VALUE = std::to_string(RandomUtils::generateRandomFloat(0, 300));
+    const std::string DATE_TIME = UtcDateUtils::generateRandomUtcDate();
+    const std::string OBSERVATION_IDENTIFIER =
+        "Observation" + ObservationIdentifier::createObservationIdentifier(DATE_TIME, 0);
+    const double NTM_VALUE = RandomUtils::generateRandomDouble(-100, 100);
 
     void SetUp() override {
         triple_writer = new TripleWriter();
-        prefixes_fixture =
+        prefixes_fixture_ =
             R"(prefix car: <http://example.ontology.com/car#>
             prefix middleware: <http://target-nameospace-for-data-middleware#>
             prefix sh: <http://www.w3.org/ns/shacl#>
@@ -51,7 +60,7 @@ class TripleWriterIntegrationTest : public ::testing::Test {
             std::make_tuple("<http://example.ontology.com/car#StateOfCharge>",
                             "<http://example.ontology.com/car#CurrentEnergy>",
                             "<http://www.w3.org/2001/XMLSchema#float>"),
-            "98.6", "2018-11-16T15:50:27");
+            OBSERVATION_VALUE, DATE_TIME);
     }
 };
 
@@ -59,35 +68,41 @@ class TripleWriterIntegrationTest : public ::testing::Test {
  * @brief Test case for writing RDF triples in Turtle format.
  */
 TEST_F(TripleWriterIntegrationTest, WriteRDFTripleInTurtleFormat) {
-    triple_writer->initiateTriple(vin);
-    SetUpRDFObjects(prefixes_fixture);
-    SetUpRDFData(prefixes_fixture);
+    triple_writer->initiateTriple(VIN);
+    SetUpRDFObjects(prefixes_fixture_);
+    SetUpRDFData(prefixes_fixture_);
 
     std::string expected_RDF_triple = R"(@prefix car: <http://example.ontology.com/car#> .
 @prefix sosa: <http://www.w3.org/ns/sosa/> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-car:VehicleWBY11CF080CH470711
+car:Vehicle)" + VIN + R"(
 	a car:Vehicle ;
-	car:hasPart car:PowertrainWBY11CF080CH470711 .
+	car:hasPart car:Powertrain)" + VIN +
+                                      R"( .
 
-car:PowertrainWBY11CF080CH470711
+car:Powertrain)" + VIN + R"(
 	a car:Powertrain ;
-	car:hasPart car:TractionBatteryWBY11CF080CH470711 .
+	car:hasPart car:TractionBattery)" +
+                                      VIN + R"( .
 
-car:TractionBatteryWBY11CF080CH470711
+car:TractionBattery)" + VIN + R"(
 	a car:TractionBattery ;
-	car:hasSignal car:StateOfChargeWBY11CF080CH470711 .
+	car:hasSignal car:StateOfCharge)" +
+                                      VIN + R"( .
 
-car:StateOfChargeWBY11CF080CH470711
+car:StateOfCharge)" + VIN + R"(
 	a car:StateOfCharge .
 
-car:Observation20181116155027O0
+car:)" + OBSERVATION_IDENTIFIER + R"(
 	a sosa:Observation ;
-	sosa:hasFeatureOfInterest car:StateOfChargeWBY11CF080CH470711 ;
-	sosa:hasSimpleResult "98.6"^^xsd:float ;
+	sosa:hasFeatureOfInterest car:StateOfCharge)" +
+                                      VIN + R"( ;
+	sosa:hasSimpleResult ")" + OBSERVATION_VALUE +
+                                      R"("^^xsd:float ;
 	sosa:observedProperty car:CurrentEnergy ;
-	sosa:phenomenonTime "2018-11-16T15:50:27"^^xsd:dateTime .)";
+	sosa:phenomenonTime ")" + DATE_TIME +
+                                      R"("^^xsd:dateTime .)";
 
     // Run and Assert
     std::string result_triple_writer = triple_writer->generateTripleOutput(RDFSyntaxType::TURTLE);
@@ -98,23 +113,50 @@ car:Observation20181116155027O0
  * @brief Test case for writing RDF triples in N-Triples format.
  */
 TEST_F(TripleWriterIntegrationTest, WriteRDFTripleInNTriplesFormat) {
-    triple_writer->initiateTriple(vin);
-    SetUpRDFObjects(prefixes_fixture);
-    SetUpRDFData(prefixes_fixture);
+    triple_writer->initiateTriple(VIN);
+    SetUpRDFObjects(prefixes_fixture_);
+    SetUpRDFData(prefixes_fixture_);
 
     std::string expected_RDF_triple =
-        R"(<http://example.ontology.com/car#VehicleWBY11CF080CH470711> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.ontology.com/car#Vehicle> .
-<http://example.ontology.com/car#VehicleWBY11CF080CH470711> <http://example.ontology.com/car#hasPart> <http://example.ontology.com/car#PowertrainWBY11CF080CH470711> .
-<http://example.ontology.com/car#PowertrainWBY11CF080CH470711> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.ontology.com/car#Powertrain> .
-<http://example.ontology.com/car#PowertrainWBY11CF080CH470711> <http://example.ontology.com/car#hasPart> <http://example.ontology.com/car#TractionBatteryWBY11CF080CH470711> .
-<http://example.ontology.com/car#TractionBatteryWBY11CF080CH470711> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.ontology.com/car#TractionBattery> .
-<http://example.ontology.com/car#TractionBatteryWBY11CF080CH470711> <http://example.ontology.com/car#hasSignal> <http://example.ontology.com/car#StateOfChargeWBY11CF080CH470711> .
-<http://example.ontology.com/car#StateOfChargeWBY11CF080CH470711> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.ontology.com/car#StateOfCharge> .
-<http://example.ontology.com/car#Observation20181116155027O0> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/sosa/Observation> .
-<http://example.ontology.com/car#Observation20181116155027O0> <http://www.w3.org/ns/sosa/hasFeatureOfInterest> <http://example.ontology.com/car#StateOfChargeWBY11CF080CH470711> .
-<http://example.ontology.com/car#Observation20181116155027O0> <http://www.w3.org/ns/sosa/hasSimpleResult> "98.6"^^<http://www.w3.org/2001/XMLSchema#float> .
-<http://example.ontology.com/car#Observation20181116155027O0> <http://www.w3.org/ns/sosa/observedProperty> <http://example.ontology.com/car#CurrentEnergy> .
-<http://example.ontology.com/car#Observation20181116155027O0> <http://www.w3.org/ns/sosa/phenomenonTime> "2018-11-16T15:50:27"^^<http://www.w3.org/2001/XMLSchema#dateTime> .)";
+        R"(<http://example.ontology.com/car#Vehicle)" + VIN +
+        R"(> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.ontology.com/car#Vehicle> .
+<http://example.ontology.com/car#Vehicle)" +
+        VIN +
+        R"(> <http://example.ontology.com/car#hasPart> <http://example.ontology.com/car#Powertrain)" +
+        VIN + R"(> .
+<http://example.ontology.com/car#Powertrain)" +
+        VIN +
+        R"(> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.ontology.com/car#Powertrain> .
+<http://example.ontology.com/car#Powertrain)" +
+        VIN +
+        R"(> <http://example.ontology.com/car#hasPart> <http://example.ontology.com/car#TractionBattery)" +
+        VIN + R"(> .
+<http://example.ontology.com/car#TractionBattery)" +
+        VIN +
+        R"(> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.ontology.com/car#TractionBattery> .
+<http://example.ontology.com/car#TractionBattery)" +
+        VIN +
+        R"(> <http://example.ontology.com/car#hasSignal> <http://example.ontology.com/car#StateOfCharge)" +
+        VIN + R"(> .
+<http://example.ontology.com/car#StateOfCharge)" +
+        VIN +
+        R"(> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.ontology.com/car#StateOfCharge> .
+<http://example.ontology.com/car#)" +
+        OBSERVATION_IDENTIFIER +
+        R"(> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/sosa/Observation> .
+<http://example.ontology.com/car#)" +
+        OBSERVATION_IDENTIFIER +
+        R"(> <http://www.w3.org/ns/sosa/hasFeatureOfInterest> <http://example.ontology.com/car#StateOfCharge)" +
+        VIN + R"(> .
+<http://example.ontology.com/car#)" +
+        OBSERVATION_IDENTIFIER + R"(> <http://www.w3.org/ns/sosa/hasSimpleResult> ")" +
+        OBSERVATION_VALUE + R"("^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://example.ontology.com/car#)" +
+        OBSERVATION_IDENTIFIER +
+        R"(> <http://www.w3.org/ns/sosa/observedProperty> <http://example.ontology.com/car#CurrentEnergy> .
+<http://example.ontology.com/car#)" +
+        OBSERVATION_IDENTIFIER + R"(> <http://www.w3.org/ns/sosa/phenomenonTime> ")" + DATE_TIME +
+        R"("^^<http://www.w3.org/2001/XMLSchema#dateTime> .)";
 
     // Run and Assert
     std::string result_triple_writer = triple_writer->generateTripleOutput(RDFSyntaxType::NTRIPLES);
@@ -125,23 +167,50 @@ TEST_F(TripleWriterIntegrationTest, WriteRDFTripleInNTriplesFormat) {
  * @brief Test case for writing RDF triples in N-Quads format.
  */
 TEST_F(TripleWriterIntegrationTest, WriteRDFTripleInNQuatdsFormat) {
-    triple_writer->initiateTriple(vin);
-    SetUpRDFObjects(prefixes_fixture);
-    SetUpRDFData(prefixes_fixture);
+    triple_writer->initiateTriple(VIN);
+    SetUpRDFObjects(prefixes_fixture_);
+    SetUpRDFData(prefixes_fixture_);
 
     std::string expected_RDF_triple =
-        R"(<http://example.ontology.com/car#VehicleWBY11CF080CH470711> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.ontology.com/car#Vehicle> .
-<http://example.ontology.com/car#VehicleWBY11CF080CH470711> <http://example.ontology.com/car#hasPart> <http://example.ontology.com/car#PowertrainWBY11CF080CH470711> .
-<http://example.ontology.com/car#PowertrainWBY11CF080CH470711> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.ontology.com/car#Powertrain> .
-<http://example.ontology.com/car#PowertrainWBY11CF080CH470711> <http://example.ontology.com/car#hasPart> <http://example.ontology.com/car#TractionBatteryWBY11CF080CH470711> .
-<http://example.ontology.com/car#TractionBatteryWBY11CF080CH470711> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.ontology.com/car#TractionBattery> .
-<http://example.ontology.com/car#TractionBatteryWBY11CF080CH470711> <http://example.ontology.com/car#hasSignal> <http://example.ontology.com/car#StateOfChargeWBY11CF080CH470711> .
-<http://example.ontology.com/car#StateOfChargeWBY11CF080CH470711> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.ontology.com/car#StateOfCharge> .
-<http://example.ontology.com/car#Observation20181116155027O0> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/sosa/Observation> .
-<http://example.ontology.com/car#Observation20181116155027O0> <http://www.w3.org/ns/sosa/hasFeatureOfInterest> <http://example.ontology.com/car#StateOfChargeWBY11CF080CH470711> .
-<http://example.ontology.com/car#Observation20181116155027O0> <http://www.w3.org/ns/sosa/hasSimpleResult> "98.6"^^<http://www.w3.org/2001/XMLSchema#float> .
-<http://example.ontology.com/car#Observation20181116155027O0> <http://www.w3.org/ns/sosa/observedProperty> <http://example.ontology.com/car#CurrentEnergy> .
-<http://example.ontology.com/car#Observation20181116155027O0> <http://www.w3.org/ns/sosa/phenomenonTime> "2018-11-16T15:50:27"^^<http://www.w3.org/2001/XMLSchema#dateTime> .)";
+        R"(<http://example.ontology.com/car#Vehicle)" + VIN +
+        R"(> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.ontology.com/car#Vehicle> .
+<http://example.ontology.com/car#Vehicle)" +
+        VIN +
+        R"(> <http://example.ontology.com/car#hasPart> <http://example.ontology.com/car#Powertrain)" +
+        VIN + R"(> .
+<http://example.ontology.com/car#Powertrain)" +
+        VIN +
+        R"(> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.ontology.com/car#Powertrain> .
+<http://example.ontology.com/car#Powertrain)" +
+        VIN +
+        R"(> <http://example.ontology.com/car#hasPart> <http://example.ontology.com/car#TractionBattery)" +
+        VIN + R"(> .
+<http://example.ontology.com/car#TractionBattery)" +
+        VIN +
+        R"(> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.ontology.com/car#TractionBattery> .
+<http://example.ontology.com/car#TractionBattery)" +
+        VIN +
+        R"(> <http://example.ontology.com/car#hasSignal> <http://example.ontology.com/car#StateOfCharge)" +
+        VIN + R"(> .
+<http://example.ontology.com/car#StateOfCharge)" +
+        VIN +
+        R"(> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.ontology.com/car#StateOfCharge> .
+<http://example.ontology.com/car#)" +
+        OBSERVATION_IDENTIFIER +
+        R"(> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/sosa/Observation> .
+<http://example.ontology.com/car#)" +
+        OBSERVATION_IDENTIFIER +
+        R"(> <http://www.w3.org/ns/sosa/hasFeatureOfInterest> <http://example.ontology.com/car#StateOfCharge)" +
+        VIN + R"(> .
+<http://example.ontology.com/car#)" +
+        OBSERVATION_IDENTIFIER + R"(> <http://www.w3.org/ns/sosa/hasSimpleResult> ")" +
+        OBSERVATION_VALUE + R"("^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://example.ontology.com/car#)" +
+        OBSERVATION_IDENTIFIER +
+        R"(> <http://www.w3.org/ns/sosa/observedProperty> <http://example.ontology.com/car#CurrentEnergy> .
+<http://example.ontology.com/car#)" +
+        OBSERVATION_IDENTIFIER + R"(> <http://www.w3.org/ns/sosa/phenomenonTime> ")" + DATE_TIME +
+        R"("^^<http://www.w3.org/2001/XMLSchema#dateTime> .)";
 
     // Run and Assert
     std::string result_triple_writer = triple_writer->generateTripleOutput(RDFSyntaxType::NQUADS);
@@ -152,35 +221,41 @@ TEST_F(TripleWriterIntegrationTest, WriteRDFTripleInNQuatdsFormat) {
  * @brief Test case for writing RDF triples in TriG format.
  */
 TEST_F(TripleWriterIntegrationTest, WriteRDFTripleInTriGFormat) {
-    triple_writer->initiateTriple(vin);
-    SetUpRDFObjects(prefixes_fixture);
-    SetUpRDFData(prefixes_fixture);
+    triple_writer->initiateTriple(VIN);
+    SetUpRDFObjects(prefixes_fixture_);
+    SetUpRDFData(prefixes_fixture_);
 
     std::string expected_RDF_triple = R"(@prefix car: <http://example.ontology.com/car#> .
 @prefix sosa: <http://www.w3.org/ns/sosa/> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-car:VehicleWBY11CF080CH470711
+car:Vehicle)" + VIN + R"(
 	a car:Vehicle ;
-	car:hasPart car:PowertrainWBY11CF080CH470711 .
+	car:hasPart car:Powertrain)" + VIN +
+                                      R"( .
 
-car:PowertrainWBY11CF080CH470711
+car:Powertrain)" + VIN + R"(
 	a car:Powertrain ;
-	car:hasPart car:TractionBatteryWBY11CF080CH470711 .
+	car:hasPart car:TractionBattery)" +
+                                      VIN + R"( .
 
-car:TractionBatteryWBY11CF080CH470711
+car:TractionBattery)" + VIN + R"(
 	a car:TractionBattery ;
-	car:hasSignal car:StateOfChargeWBY11CF080CH470711 .
+	car:hasSignal car:StateOfCharge)" +
+                                      VIN + R"( .
 
-car:StateOfChargeWBY11CF080CH470711
+car:StateOfCharge)" + VIN + R"(
 	a car:StateOfCharge .
 
-car:Observation20181116155027O0
+car:)" + OBSERVATION_IDENTIFIER + R"(
 	a sosa:Observation ;
-	sosa:hasFeatureOfInterest car:StateOfChargeWBY11CF080CH470711 ;
-	sosa:hasSimpleResult "98.6"^^xsd:float ;
+	sosa:hasFeatureOfInterest car:StateOfCharge)" +
+                                      VIN + R"( ;
+	sosa:hasSimpleResult ")" + OBSERVATION_VALUE +
+                                      R"("^^xsd:float ;
 	sosa:observedProperty car:CurrentEnergy ;
-	sosa:phenomenonTime "2018-11-16T15:50:27"^^xsd:dateTime .)";
+	sosa:phenomenonTime ")" + DATE_TIME +
+                                      R"("^^xsd:dateTime .)";
     // Run and Assert
     std::string result_triple_writer = triple_writer->generateTripleOutput(RDFSyntaxType::TRIG);
     ASSERT_EQ(result_triple_writer, expected_RDF_triple);
@@ -215,7 +290,7 @@ TEST_F(TripleWriterIntegrationTest, FailAddingRDFObjectToTripleSendingWrongDataC
         std::make_tuple("this_is_wrong", "<http://example.ontology.com/car#hasPart>",
                         "<http://example.ontology.com/car#Powertrain>");
 
-    EXPECT_THROW(triple_writer->addRDFObjectToTriple(prefixes_fixture, data_components),
+    EXPECT_THROW(triple_writer->addRDFObjectToTriple(prefixes_fixture_, data_components),
                  std::runtime_error);
 }
 
@@ -240,8 +315,8 @@ TEST_F(TripleWriterIntegrationTest, FailAddingRDFDataToTripleSendingWrongDataCom
         std::make_tuple("", "<http://example.ontology.com/car#CurrentEnergy>",
                         "<http://www.w3.org/2001/XMLSchema#float>");
 
-    EXPECT_THROW(triple_writer->addRDFDataToTriple(prefixes_fixture, data_components, "98.6",
-                                                   "2018-11-16T15:50:27"),
+    EXPECT_THROW(triple_writer->addRDFDataToTriple(prefixes_fixture_, data_components,
+                                                   OBSERVATION_VALUE, DATE_TIME),
                  std::runtime_error);
 }
 /**
@@ -255,7 +330,7 @@ TEST_F(TripleWriterIntegrationTest, FailAddingRDFDataToTripleSendingWrongDataVal
                                                  "<http://example.ontology.com/car#CurrentEnergy>",
                                                  "<http://www.w3.org/2001/XMLSchema#float>");
 
-    EXPECT_THROW(triple_writer->addRDFDataToTriple(prefixes_fixture, data_components, "",
-                                                   "2018-11-16T15:50:27"),
-                 std::runtime_error);
+    EXPECT_THROW(
+        triple_writer->addRDFDataToTriple(prefixes_fixture_, data_components, "", DATE_TIME),
+        std::runtime_error);
 }

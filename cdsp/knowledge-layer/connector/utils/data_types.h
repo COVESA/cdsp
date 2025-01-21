@@ -1,5 +1,5 @@
-#ifndef DATA_TYPES_DATA_TYPES_H
-#define DATA_TYPES_DATA_TYPES_H
+#ifndef DATA_TYPES_H
+#define DATA_TYPES_H
 
 #include <chrono>
 #include <map>
@@ -8,7 +8,10 @@
 #include <variant>
 #include <vector>
 
-#include "helper.h"
+// Forward declare the Helper namespace functions
+namespace Helper {
+std::string toLowerCase(const std::string& input);
+}
 
 enum class RDFSyntaxType {
     TURTLE,    ///< Terse triples http://www.w3.org/TR/turtle
@@ -91,6 +94,10 @@ enum class MessageType {
     UNSUBSCRIBE,
 };
 
+std::string messageTypeToString(const MessageType& type);
+
+RDFSyntaxType reasonerOutputFormatToRDFSyntaxType(const std::string& type);
+
 inline std::string messageTypeToString(const MessageType& type) {
     switch (type) {
         case MessageType::READ:
@@ -121,4 +128,4 @@ inline RDFSyntaxType reasonerOutputFormatToRDFSyntaxType(const std::string& type
     }
 }
 
-#endif  // DATA_TYPES_DATA_TYPES_H
+#endif  // DATA_TYPES_H
