@@ -4,7 +4,7 @@
 # Dockerfile for the CDSP build of Apache IoTDB.
 # ---------------------------------------------------------------------------
 
-ARG IOTDB_VERSION=1.2.2
+ARG IOTDB_VERSION=1.3.3
 ARG IOTDB_IMAGE=apache/iotdb:${IOTDB_VERSION}-standalone
 
 FROM ${IOTDB_IMAGE} AS cdsp-extras
@@ -15,9 +15,9 @@ ARG IOTDB_IMAGE
 # UDF Data Quality library
 ARG UDF_ARCHIVE_NAME=apache-iotdb-${IOTDB_VERSION}-library-udf-bin.zip
 ARG UDF_ARCHIVE_URL=https://archive.apache.org/dist/iotdb/${IOTDB_VERSION}/${UDF_ARCHIVE_NAME}
-ARG UDF_LIB_PATH=apache-iotdb-${IOTDB_VERSION}-library-udf-bin/ext/udf/library-udf.jar
+ARG UDF_LIB_PATH=apache-iotdb-${IOTDB_VERSION}-library-udf-bin/library-udf.jar
 ARG UDF_REG_SCRIPT_NAME=register-UDF.sh
-ARG UDF_REG_SCRIPT_PATH=apache-iotdb-${IOTDB_VERSION}-library-udf-bin/tools/${UDF_REG_SCRIPT_NAME}
+ARG UDF_REG_SCRIPT_PATH=apache-iotdb-${IOTDB_VERSION}-library-udf-bin/${UDF_REG_SCRIPT_NAME}
 ARG SERVICE_HOSTNAME=iotdb-service
 
 # General configuration
@@ -35,7 +35,7 @@ RUN unzip -j -o ${UDF_ARCHIVE_NAME} ${UDF_LIB_PATH} ${UDF_REG_SCRIPT_PATH} \
 
 WORKDIR ${IOTDB_HOME}/conf
 # Enable IoTDB REST API as it is used by the IoTDB Grafana Connector for queries
-RUN sed -i 's/^# enable_rest_service=false/enable_rest_service=true/g' iotdb-common.properties
+RUN echo "enable_rest_service=true" >> iotdb-system.properties
 
 # Set the entry point path to the IoTDB sbin directory where the IoTDB admin scripts are.
 # This mimics the upstream image.
