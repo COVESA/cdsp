@@ -11,6 +11,10 @@ target_link_libraries(websocket_client_integration_tests
         websocket_client
         test_fixtures
 )
+target_include_directories(websocket_client_integration_tests
+    PRIVATE
+        ${PROJECT_ROOT_DIR}/connector/websocket-client/tests/utils
+)
 
 # Add unit and integration tests to CTest
 add_test(NAME WebsocketClientIntegrationTests COMMAND websocket_client_integration_tests)

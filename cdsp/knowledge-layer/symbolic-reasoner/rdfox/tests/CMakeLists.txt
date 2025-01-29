@@ -1,10 +1,15 @@
 # Add the unit test executable for RDFoxAdapter
 add_executable(rdfox_adapter_unit_tests rdfox_adapter_unit_test.cpp)
+target_include_directories(rdfox_adapter_unit_tests
+    PRIVATE
+        ${PROJECT_ROOT_DIR}/symbolic-reasoner/test/utils
+)
 target_link_libraries(rdfox_adapter_unit_tests 
     PRIVATE 
         GTest::gtest_main 
         GTest::gmock 
         rdfox
+        test_fixtures
 )
 
 # Add the integration test executable for RDFoxAdapter
@@ -13,7 +18,8 @@ target_link_libraries(rdfox_adapter_integration_tests
     PRIVATE 
         GTest::gtest_main 
         rdfox
-        test_fixtures)
+        test_fixtures
+)
 target_include_directories(rdfox_adapter_integration_tests
     PRIVATE
         ${PROJECT_ROOT_DIR}/connector/utils   

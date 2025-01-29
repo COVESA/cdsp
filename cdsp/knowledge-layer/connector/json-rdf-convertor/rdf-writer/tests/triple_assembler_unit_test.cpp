@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "data_types.h"
+#include "mock_adapter.h"
 #include "rdfox_adapter.h"
 #include "triple_assembler.h"
 #include "vin_utils.h"
@@ -17,15 +18,6 @@ struct TestParamsTransformMessageToRDFTriple {
     std::string query_data;
     std::vector<std::string> object_triple_result;
     std::string data_triple_result;
-};
-
-class MockRDFoxAdapter : public RDFoxAdapter {
-   public:
-    MockRDFoxAdapter() : RDFoxAdapter("localhost", "8080", "test_auth", "test_ds") {}
-
-    MOCK_METHOD(bool, checkDataStore, (), (override));
-    MOCK_METHOD1(loadData, bool(const std::string& ttl_data));
-    MOCK_METHOD(std::string, queryData, (const std::string& sparql_query), (override));
 };
 
 class MockFileHandler : public IFileHandler {
@@ -58,7 +50,7 @@ class TripleAssemblerUnitTest : public ::testing::Test {
     DataMessage message_feature_;
 
     // Set up mock RDFoxAdapter
-    MockRDFoxAdapter mock_adapter_;
+    MockAdapter mock_adapter_{"localhost", "8080", "test_auth", "test_ds"};
     MockFileHandler mock_file_handler_;
     MockTripleWriter mock_triple_writer_;
 
@@ -148,11 +140,11 @@ SELECT some_data_query)";
             .WillRepeatedly(::testing::Return(query_data));
 
         // Mock querying data using the SHACL queries and returning predefined responses
-        EXPECT_CALL(mock_adapter_, queryData(query_object))
+        EXPECT_CALL(mock_adapter_, queryData(query_object, ::testing::StrEq("table/csv")))
             .Times(times_executing_object_related_functions)
             .WillRepeatedly(testing::Return(query_object_response));
 
-        EXPECT_CALL(mock_adapter_, queryData(query_data))
+        EXPECT_CALL(mock_adapter_, queryData(query_data, ::testing::StrEq("table/csv")))
             .Times(times_executing_data_related_functions)
             .WillRepeatedly(testing::Return(query_data_response));
     }
@@ -183,8 +175,10 @@ TEST_F(TripleAssemblerUnitTest, InitializeSuccess) {
         .WillOnce(testing::Return("data2"));
 
     // Mock loading data into the adapter and returning success
-    EXPECT_CALL(mock_adapter_, loadData(testing::StrEq("data1"))).WillOnce(testing::Return(true));
-    EXPECT_CALL(mock_adapter_, loadData(testing::StrEq("data2"))).WillOnce(testing::Return(true));
+    EXPECT_CALL(mock_adapter_, loadData(testing::StrEq("data1"), ::testing::_))
+        .WillOnce(testing::Return(true));
+    EXPECT_CALL(mock_adapter_, loadData(testing::StrEq("data2"), ::testing::_))
+        .WillOnce(testing::Return(true));
 
     // Assert that the initialization process does not throw any exceptions
     EXPECT_NO_THROW(triple_assembler->initialize());
@@ -266,7 +260,7 @@ car:Observation20181116155027O0
         .WillOnce(testing::Return(dummy_ttl));
 
     // Mock logging the generated TTL triples to RDFox
-    EXPECT_CALL(mock_adapter_, loadData(::testing::StrEq(dummy_ttl)))
+    EXPECT_CALL(mock_adapter_, loadData(::testing::StrEq(dummy_ttl), ::testing::_))
         .Times(1)
         .WillOnce(testing::Return(true));
 
@@ -321,8 +315,8 @@ TEST_F(TripleAssemblerUnitTest,
         .WillRepeatedly(::testing::Return("MOCK QUERY FOR DATA PROPERTY"));
 
     // Mock the SHACL queries responses (first and second node)
-    EXPECT_CALL(mock_adapter_, queryData("MOCK QUERY FOR OBJECTS PROPERTY")).Times(3);
-    EXPECT_CALL(mock_adapter_, queryData("MOCK QUERY FOR DATA PROPERTY")).Times(2);
+    EXPECT_CALL(mock_adapter_, queryData("MOCK QUERY FOR OBJECTS PROPERTY", ::testing::_)).Times(3);
+    EXPECT_CALL(mock_adapter_, queryData("MOCK QUERY FOR DATA PROPERTY", ::testing::_)).Times(2);
 
     // Mock the data added to the RDF triples (only first node)
     EXPECT_CALL(mock_triple_writer_, addRDFObjectToTriple(::testing::_, ::testing::_)).Times(3);
@@ -346,7 +340,7 @@ TEST_F(TripleAssemblerUnitTest,
     ;
 
     // Mock logging the generated TTL triples to RDFox
-    EXPECT_CALL(mock_adapter_, loadData(::testing::StrEq(dummy_ttl)))
+    EXPECT_CALL(mock_adapter_, loadData(::testing::StrEq(dummy_ttl), ::testing::_))
         .Times(1)
         .WillOnce(testing::Return(true));
 
@@ -405,7 +399,7 @@ TEST_F(TripleAssemblerUnitTest, InitializeFailIfShaclShapesContentIsEmpty) {
         .WillOnce(testing::Return(""));  // The content cannot be empty
 
     // Ensure no data loading is attempted with empty content
-    EXPECT_CALL(mock_adapter_, loadData(testing::_)).Times(0);
+    EXPECT_CALL(mock_adapter_, loadData(testing::_, ::testing::_)).Times(0);
 
     // Attempt to initialize the TripleAssembler and expect a runtime error
     TripleAssembler assembler(model_config_, mock_adapter_, mock_file_handler_,
@@ -427,7 +421,7 @@ TEST_F(TripleAssemblerUnitTest, InitializeFailsIfLoadingDataFromShaclShapesGoesW
         .WillOnce(testing::Return("data"));
 
     // Simulate a failure in loading the data, returning false
-    EXPECT_CALL(mock_adapter_, loadData(testing::StrEq("data")))
+    EXPECT_CALL(mock_adapter_, loadData(testing::StrEq("data"), ::testing::_))
         .WillOnce(testing::Return(false));  // Fail loading data
 
     // Initialize TripleAssembler and expect a runtime error to be thrown
@@ -451,7 +445,7 @@ TEST_F(TripleAssemblerUnitTest, TransformMessageToRDFTripleFailsWhenAnyRDFDataSt
     EXPECT_CALL(mock_triple_writer_, initiateTriple(::testing::_)).Times(0);
     EXPECT_CALL(mock_file_handler_, readFile(::testing::_)).Times(0);
     EXPECT_CALL(mock_file_handler_, writeFile(::testing::_, ::testing::_, ::testing::_)).Times(0);
-    EXPECT_CALL(mock_adapter_, queryData(::testing::_)).Times(0);
+    EXPECT_CALL(mock_adapter_, queryData(::testing::_, ::testing::_)).Times(0);
     EXPECT_CALL(mock_triple_writer_, addRDFObjectToTriple(::testing::_, ::testing::_)).Times(0);
     EXPECT_CALL(mock_triple_writer_, addRDFDataToTriple(::testing::_, ::testing::_, ::testing::_,
                                                         ::testing::_, ::testing::_))
@@ -508,7 +502,7 @@ TEST_F(TripleAssemblerUnitTest, TransformMessageToRDFTripleWithCoordinatesSucces
         .WillRepeatedly(testing::Return(dummy_ttl));
 
     // Mock logging the generated TTL triples to RDFox
-    EXPECT_CALL(mock_adapter_, loadData(::testing::StrEq(dummy_ttl)))
+    EXPECT_CALL(mock_adapter_, loadData(::testing::StrEq(dummy_ttl), ::testing::_))
         .Times(1)
         .WillOnce(testing::Return(true));
 
@@ -558,7 +552,7 @@ TEST_F(TripleAssemblerUnitTest, TransformMessageToRDFTripleFailsWhenCoordinatesA
         .WillRepeatedly(testing::Return(dummy_ttl));
 
     // Mock logging the generated TTL triples to RDFox
-    EXPECT_CALL(mock_adapter_, loadData(::testing::StrEq(dummy_ttl)))
+    EXPECT_CALL(mock_adapter_, loadData(::testing::StrEq(dummy_ttl), ::testing::_))
         .Times(1)
         .WillOnce(testing::Return(true));
 

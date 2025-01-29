@@ -27,8 +27,8 @@ void TripleAssembler::initialize() {
     }
     if (!model_config_.shacl_shapes_files.empty()) {
         for (const auto& file : model_config_.shacl_shapes_files) {
-            const std::string ttl_data = file_handler_.readFile(file);
-            if (ttl_data.empty() || !rdfox_adapter_.loadData(ttl_data)) {
+            const std::string data = file_handler_.readFile(file);
+            if (data.empty() || !rdfox_adapter_.loadData(data)) {
                 throw std::runtime_error(
                     "No SHACL shapes could be loaded. The triples cannot be generated.");
             }

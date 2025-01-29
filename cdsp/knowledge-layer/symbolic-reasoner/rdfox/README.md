@@ -1,7 +1,7 @@
 
 # RDFox Integration
 
-This folder contains the necessary files to interact with RDFox, a high-performance knowledge graph and reasoning engine used in this project.
+This folder contains the necessary files to interact with RDFox using the [RDFox adapter](./src/README.md), a high-performance knowledge graph and reasoning engine used in this project.
 
 ## How to Use RDFox
 
@@ -13,7 +13,7 @@ See how to interact with the RDFox server using the [RDF assembler](/cdsp/knowle
 
 ### Getting Started
 
-This project includes a small C++ application to verify that the RDFox service has been configured and started correctly. After compiling the project, you should be able to run the application from [`./rdfox-service-test/rdfox_test_main.cpp`](./rdfox-service-test/rdfox_test_main.cpp). The RDFox Test executable will be generated in the `/cdsp/knowledge-layer/build/bin/tests/` directory. You can run it with the following command:
+This project includes a small C++ application to verify that the RDFox service has been configured and started correctly. After compiling the project, you should be able to run the application from [`./tests/rdfox-service-test/rdfox_test_main.cpp`](./tests/rdfox-service-test/rdfox_test_main.cpp). The RDFox Test executable will be generated in the `/cdsp/knowledge-layer/build/bin/tests/` directory. You can run it with the following command:
 
 ```bash
 $ ./rdfox_test

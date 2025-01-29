@@ -16,6 +16,10 @@ target_link_libraries(triple_assembler_unit_tests
         rdf_writer
         test_fixtures
 )
+target_include_directories(triple_assembler_unit_tests
+    PRIVATE
+        ${PROJECT_ROOT_DIR}/symbolic-reasoner/test/utils
+)
 
 # Add unit and integration tests to CTest
 add_test(NAME TripleWriterIntegrationTests COMMAND triple_writer_integration_tests)

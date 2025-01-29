@@ -3,8 +3,12 @@
 
 #include <boost/asio.hpp>
 #include <boost/beast.hpp>
+#include <map>
 #include <optional>
 #include <string>
+#include <tuple>
+
+#include "request_builder.h"
 
 namespace beast = boost::beast;
 namespace http = beast::http;
@@ -17,23 +21,29 @@ class RDFoxAdapter {
                  const std::string& data_store);
 
     void initialize();
-    virtual bool loadData(const std::string& ttl_data);
-    virtual std::string queryData(const std::string& sparql_query);
+    virtual bool loadData(const std::string& data, const std::string& content_type = "text/turtle");
+    virtual std::string queryData(const std::string& sparql_query,
+                                  const std::string& accept_type = "table/csv");
     virtual bool checkDataStore();
     bool deleteDataStore();
-    virtual ~RDFoxAdapter() = default;
+
+    // Cursor-related methods
+    std::pair<std::string, std::string> createConnection();
+
+    bool checkConnection(const std::string& connection_id);
+    std::string createCursor(const std::string& connection_id, const std::string& auth_token,
+                             const std::string& query);
+    bool advanceCursor(const std::string& connection_id, const std::string& auth_token,
+                       const std::string& cursor_id, const std::string& accept_type,
+                       const std::string& operation, std::optional<int> limit,
+                       std::string* response);
+
+    bool deleteCursor(const std::string& connection_id, const std::string& cursor_id);
 
    protected:
-    virtual bool sendRequest(http::verb method, const std::string& target, const std::string& body,
-                             const std::string& content_Type, const std::string& accept_type,
-                             std::string& response_body);
+    virtual std::unique_ptr<RequestBuilder> createRequestBuilder() const;
 
    private:
-    std::string sendGetRequest(const std::string& target, const std::string& accept_type);
-    std::optional<std::string> sendPostRequest(const std::string& target, const std::string& body,
-                                               const std::string& content_type);
-
-    std::string createErrorMessage(const std::string& error_msg, int error_code);
     std::string host_;
     std::string port_;
     std::string auth_header_base64_;
