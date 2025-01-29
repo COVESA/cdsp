@@ -9,8 +9,8 @@ services:
     build:
       context: iotdb  # CDSP IoTDB image
       args:
-        iotdb_version: 1.2.2
-        service_hostname: iotdb-service
+        IOTDB_VERSION: 1.2.2
+        SERVICE_HOSTNAME: iotdb-service
     restart: on-failure:3
     ports:
       - "6667:6667"
