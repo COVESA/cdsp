@@ -27,8 +27,8 @@ services:
       - dn_data_region_consensus_port=10760
       - dn_seed_config_node=iotdb-service:10710
     volumes:
-        - ./data:/iotdb/data
-        - ./logs:/iotdb/logs
+        - ./iotdb-data:/iotdb/data
+        - ./iotdb-logs:/iotdb/logs
 
 # VISSR acting as VISS Data Server
 
@@ -70,6 +70,6 @@ services:
       - "0.0.0.0:8887:8887"
       - "0.0.0.0:8600:8600"
     volumes:
-      - ./logs:/app/logs
+      - ./vissr-logs:/app/logs
     volumes_from:
       - tmp
