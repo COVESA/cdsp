@@ -123,10 +123,10 @@ $ sudo docker compose -f docker-compose-cdsp.yml down
 Listing should show three running containers as shown below:
 ```
 $ sudo docker ps
-NAME            IMAGE                           COMMAND                  SERVICE         CREATED          STATUS          PORTS
-app_redis       redis                           "docker-entrypoint.s…"   redis           10 minutes ago   Up 10 minutes   6379/tcp
-iotdb-service   apache/iotdb:1.2.2-standalone   "/usr/bin/dumb-init …"   iotdb-service   10 minutes ago   Up 10 minutes   0.0.0.0:6667->6667/tcp, :::6667->6667/tcp
-vissv2server    cdsp-vissv2server               "/app/vissv2server -…"   vissv2server    10 minutes ago   Up 4 seconds    0.0.0.0:8081->8081/tcp, 0.0.0.0:8600->8600/tcp, 0.0.0.0:8887->8887/tcp, 127.0.0.1:8888->8888/tcp
+CONTAINER ID   IMAGE                COMMAND                  CREATED              STATUS              PORTS                                                                                              NAMES
+f43ed0c6ba0a   cdsp-iotdb-service   "/usr/bin/dumb-init …"   About a minute ago   Up About a minute   0.0.0.0:6667->6667/tcp, :::6667->6667/tcp                                                          iotdb-service
+7829813bdcb8   cdsp-vissv2server    "/app/vissv2server -…"   5 days ago           Up 8 seconds        0.0.0.0:8081->8081/tcp, 0.0.0.0:8600->8600/tcp, 0.0.0.0:8887->8887/tcp, 127.0.0.1:8888->8888/tcp   vissv2server
+8e21a556e398   redis                "docker-entrypoint.s…"   5 days ago           Up 5 days           6379/tcp                                                                                           app_redis
 ```
 #### Apache IoTDB
 You can confirm the Apache IoTDB server is running by connecting to it with the IoTDB CLI client (_quit_ to exit the client):

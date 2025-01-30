@@ -35,10 +35,10 @@ The dataset contains just over 13500 values recorded over approximately 5 minute
 ### Load
 In the example we will import the dataset into a VSS `Vehicle.Speed` timeseries within IoTDB.
 
-IoTDB provides [import/export tools](https://iotdb.apache.org/UserGuide/latest/Tools-System/TsFile-Import-Export-Tool.html) for its native TsFile file format and CSV and which are included in the image. We will use the [`import-csv.sh`](https://iotdb.apache.org/UserGuide/latest/Tools-System/TsFile-Import-Export-Tool.html#usage-of-import-csv-sh) tool to perform the import.
+IoTDB provides import/export tools for its native TsFile file format, SQL and CSV and which are included in the runtime image. We will use the [`import-data.sh`](https://iotdb.apache.org/UserGuide/latest/Tools-System/Data-Import-Tool.html) tool to perform the import.
 
 ### Transform
-IoTDB has a library of Data Quality functions which includes the function [`Sample`](https://iotdb.apache.org/UserGuide/latest/Reference/UDF-Libraries.html#sample) for sampling. Sample has three sampling methods: `Reservoir`, `Isometric` and `Triangle`. 
+IoTDB has a library of Data Quality functions which includes the function [`Sample`](https://iotdb.apache.org/UserGuide/latest/SQL-Manual/UDF-Libraries_apache.html#sample) for sampling. Sample has three sampling methods: `Reservoir`, `Isometric` and `Triangle`. 
 
 Sample function:
 
@@ -64,7 +64,7 @@ The following screenshot shows the results graphed in Grafana. The green graph i
 *Figure 1: Grafana visualisation of the results. Key: Green=input data, yellow=down-sampled result*
 
 Tips:
-+ Documentation for each Sample method and the other functions can be found in the [IoTDB library documentation](https://iotdb.apache.org/UserGuide/latest/Reference/UDF-Libraries.html).
++ Documentation for each Sample method and the other functions can be found in the [IoTDB library documentation](https://iotdb.apache.org/UserGuide/latest/SQL-Manual/UDF-Libraries_apache.html).
 
 + Triangle uses a *Largest-Triangle-Three-Buckets (LTTB)* algorithm to calculate the output timeseries. Details of which can be found in the originating academic research: [Downsampling Time Series for Visual Representation, Sveinn Steinarsson, 2013](https://skemman.is/bitstream/1946/15343/3/SS_MSthesis.pdf)
 
@@ -106,6 +106,8 @@ $ sudo docker exec -ti iotdb-service /iotdb/sbin/register-UDF.sh
 
 Info: See the online documentation site for [details](https://covesa.github.io/cdsp/manuals/apache-iotdb/#setup)
 
+Tip: If for some reason you are failing to register the Data Quality Library, substitute one of the [built-in sample functions](https://iotdb.apache.org/UserGuide/latest/SQL-Manual/Operator-and-Expression.html#sample-functions) rather than `Sample()` in the SQL below.
+
 ### Import the dataset
 
 1. Create the database in IoTDB into which we will import
@@ -120,19 +122,19 @@ Info: See the online documentation site for [details](https://covesa.github.io/c
 
     2.1. Copy the dataset file to a volume visible within the IoTDB image:
     ~~~
-    $ cp vehicle_speed_rl_dataset.csv ../../docker/data
+    $ sudo cp vehicle_speed_rl_dataset.csv ../../docker/iotdb-data
     ~~~
 
     2.2. Import the dataset
 
-    To import the dataset into IoTDB we need to execute the `import-csv.sh` tool in the IoTDB image. That can be done from the host terminal using the docker `exec` command.
+    To import the dataset into IoTDB we need to execute the `import-data.sh` tool in the IoTDB image. That can be done from the host terminal using the docker `exec` command.
     ~~~
-    $ docker exec -ti iotdb-service /iotdb/tools/import-csv.sh -h iotdb-service -p 6667 -u root -pw root -f /iotdb/data/vehicle_speed_rl_dataset.csv
+    $ sudo docker exec -ti iotdb-service /iotdb/tools/import-data.sh -h iotdb-service -p 6667 -u root -pw root -s /iotdb/data/vehicle_speed_rl_dataset.csv
     ~~~
 
     Example successful execution:
     ~~~
-    $ docker exec -ti iotdb-service /iotdb/tools/import-csv.sh -h iotdb-service -p 6667 -u root -pw root  -f /iotdb/data/vehicle_speed_rl_dataset.csv
+    $ sudo docker exec -ti iotdb-service /iotdb/tools/import-data.sh -h iotdb-service -p 6667 -u root -pw root -s /iotdb/data/vehicle_speed_rl_dataset.csv
     ------------------------------------------
     Starting IoTDB Client Import Script
     ------------------------------------------
@@ -325,7 +327,7 @@ It costs 0.028s
 
 ### Suggested next steps
 + Repeat the query with the same input data, but with different `k` parameter values to see what affects the number of samples has on the accuracy of the trace compared to the input data.
-+ Amend the query with other [SQL clauses](https://iotdb.apache.org/UserGuide/latest/User-Manual/Query-Data.html) to shape what you are interested in, e.g. use `WHERE` to define a time filter.
++ Amend the query with other [SQL clauses](https://iotdb.apache.org/UserGuide/latest/Basic-Concept/Query-Data.html) to shape what you are interested in, e.g. use `WHERE` to define a time filter.
 + A great way to explore these sampling queries is by using Grafana as discussed below.
 + Try the other [IoTDB data processing functions](https://covesa.github.io/cdsp/manuals/apache-iotdb/#data-processing-functions)
 
