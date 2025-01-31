@@ -1,0 +1,17 @@
+prefix car: <http://example.ontology.com/car#>
+prefix middleware: <http://target-nameospace-for-data-middleware#>
+prefix sh: <http://www.w3.org/ns/shacl#>
+prefix val: <http://example.ontology.com/validation#>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+
+
+ SELECT ?class1 ?data_property ?datatype
+ WHERE {
+   ?S sh:name "%A%";
+      sh:targetClass ?class1;
+      sh:property [ sh:name ?data_point_name;
+                    sh:path ?data_property;
+                    sh:datatype  ?datatype
+                   ].
+ FILTER (contains("%B%", ?data_point_name)) #The first value is from the data single point
+ }

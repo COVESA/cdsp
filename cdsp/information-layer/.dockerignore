@@ -1,0 +1,6 @@
+# ignore mongodb generated files
+mongodb-realm
+
+# ignore all node generated file
+node_modules
+package-lock.json

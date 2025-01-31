@@ -1,0 +1,24 @@
+{
+  "inputs": {
+    "vss_data": "inputs/vss_data_required.txt"
+  },
+  "ontologies": ["ontologies/example_ontology.ttl"],
+  "output": "output/",
+  "queries": {
+    "triple_assembler_helper": {
+      "vss": [
+        "queries/triple_assembler_helper/vss/data_property.rq",
+        "queries/triple_assembler_helper/vss/object_property.rq"
+      ],
+      "default": []
+    },
+    "output": "queries/output/"
+  },
+  "rules": ["rules/insight_rules.ttl"],
+  "shacl": ["shacl/vss_shacl.ttl", "shacl/observation_shacl.ttl"],
+  "reasoner_settings": {
+    "inference_engine": "RDFox",
+    "output_format": "turtle",
+    "supported_tree_types": ["vss"]
+  }
+}
