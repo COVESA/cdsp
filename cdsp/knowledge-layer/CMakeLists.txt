@@ -25,6 +25,16 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(json)
 
+# ############################
+# plugixml dependency
+# ############################
+FetchContent_Declare(
+    pugixml
+    GIT_REPOSITORY https://github.com/zeux/pugixml.git
+    GIT_TAG v1.15
+)
+FetchContent_MakeAvailable(pugixml)
+
 # ########################
 # geographiclib dependency
 # ########################
@@ -79,19 +89,23 @@ FetchContent_MakeAvailable(googletest)
 # Output directory for the executable
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-# Define the project root directory
+# Define the project directories
 set(PROJECT_ROOT_DIR "${CMAKE_SOURCE_DIR}")
+set(TEST_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin/tests/outputs/")
 
-# Pass the root directory to your C++ code
+# Pass the directories to your C++ code
 add_compile_definitions(PROJECT_ROOT="${PROJECT_ROOT_DIR}")
+add_compile_definitions(TEST_OUTPUT_DIR="${TEST_OUTPUT_DIR}")
 
 # Enable testing
 enable_testing()
 
 # Add subdirectories for project modules and tests
+add_subdirectory(connector/json-rdf-convertor/json-writer)
 add_subdirectory(connector/json-rdf-convertor/rdf-writer)
 add_subdirectory(connector/websocket-client)
 add_subdirectory(connector/websocket-client/tests)
+add_subdirectory(connector/json-rdf-convertor/json-writer/tests)
 add_subdirectory(connector/json-rdf-convertor/rdf-writer/tests)
 add_subdirectory(connector/json-rdf-convertor/rdf-writer/tests/serd_library_tests)
 add_subdirectory(symbolic-reasoner/rdfox)

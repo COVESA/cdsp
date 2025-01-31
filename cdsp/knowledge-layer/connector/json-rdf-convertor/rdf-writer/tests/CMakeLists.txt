@@ -18,7 +18,9 @@ target_link_libraries(triple_assembler_unit_tests
 )
 target_include_directories(triple_assembler_unit_tests
     PRIVATE
+        ${PROJECT_ROOT_DIR}/connector/utils/tests/utils
         ${PROJECT_ROOT_DIR}/symbolic-reasoner/test/utils
+        ${CMAKE_CURRENT_SOURCE_DIR}/utils
 )
 
 # Add unit and integration tests to CTest

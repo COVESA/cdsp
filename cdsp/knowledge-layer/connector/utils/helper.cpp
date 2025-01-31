@@ -49,11 +49,12 @@ namespace Helper {
  * @param include_milliseconds Boolean flag to include milliseconds in the output.
  * @param use_utc Boolean flag to use UTC time instead of local time.
  * @param custom_time Optional custom time to use instead of the current time.
- * @param custom_milliseconds Optional custom milliseconds to use instead of the current milliseconds.
+ * @param custom_milliseconds Optional custom milliseconds to use instead of the current
+ * milliseconds.
  * @return std::string The formatted timestamp string.
  */
-std::string getFormattedTimestamp(const std::string& format, bool include_milliseconds, bool use_utc,
-                                  const std::optional<std::tm>& custom_time,
+std::string getFormattedTimestamp(const std::string& format, bool include_milliseconds,
+                                  bool use_utc, const std::optional<std::tm>& custom_time,
                                   const std::optional<int>& custom_milliseconds) {
     std::tm time = custom_time.has_value() ? custom_time.value() : getCurrentTime(use_utc);
     int milliseconds = custom_milliseconds.has_value()
@@ -212,5 +213,42 @@ std::string trimTrailingNewlines(const std::string& str) {
         trimmed.pop_back();
     }
     return trimmed;
+}
+
+/**
+ * @brief Detects the type of a given string value for a JSON.
+ *
+ * This function attempts to detect the type of a given string value by checking
+ * if it can be converted to a boolean, integer, or floating-point number. If the
+ * value cannot be converted to any of these types, it is returned as a string.
+ *
+ * @param value The string value to detect the type of.
+ * @return nlohmann::json The detected type of the value.
+ */
+nlohmann::json detectType(const std::string& value) {
+    if (value.empty()) {
+        return "";  // Keep empty values as empty strings
+    }
+
+    // Check for boolean values
+    if (value == "true" || value == "false") {
+        return value == "true";
+    }
+
+    // Check for integer values
+    char* end;
+    long int_val = std::strtol(value.c_str(), &end, 10);
+    if (*end == '\0') {
+        return int_val;
+    }
+
+    // Check for floating-point values
+    double float_val = std::strtod(value.c_str(), &end);
+    if (*end == '\0') {
+        return float_val;
+    }
+
+    // Default to string
+    return value;
 }
 }  // namespace Helper

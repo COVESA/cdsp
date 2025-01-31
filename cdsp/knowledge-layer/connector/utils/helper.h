@@ -8,6 +8,7 @@
 #include <tuple>
 
 #include "coordinates_types.h"
+#include "nlohmann/json.hpp"
 
 namespace Helper {
 // TODO: Should be a more generic geographical point?
@@ -23,5 +24,6 @@ std::chrono::duration<double, std::milli> getMillisecondsSinceEpoch(const std::s
 std::string toLowerCase(const std::string& input);
 std::string toUppercase(const std::string& input);
 std::string trimTrailingNewlines(const std::string& str);
+nlohmann::json detectType(const std::string& value);
 }  // namespace Helper
 #endif  // HELPER_H

@@ -1,14 +1,16 @@
 #include "utc_date_utils.h"
 
+#include <chrono>
 #include <iomanip>
+#include <random>
 #include <sstream>
 
 /**
- * @brief Generates a random UTC date as an ISO 8601 string.
+ * @brief Generates a random UTC date as an ISO 8601 string with fractional seconds.
  *
  * @param start_year The earliest possible year for the random date.
  * @param end_year The latest possible year for the random date.
- * @return A random UTC date in ISO 8601 format.
+ * @return A random UTC date in ISO 8601 format with fractional seconds.
  */
 std::string UtcDateUtils::generateRandomUtcDate(int start_year, int end_year) {
     // Random number generator
@@ -22,6 +24,7 @@ std::string UtcDateUtils::generateRandomUtcDate(int start_year, int end_year) {
     std::uniform_int_distribution<> hour_dis(0, 23);
     std::uniform_int_distribution<> minute_dis(0, 59);
     std::uniform_int_distribution<> second_dis(0, 59);
+    std::uniform_int_distribution<> fractional_dis(0, 999999999);  // Nanoseconds
 
     // Populate tm structure
     std::tm time_struct{};
@@ -32,17 +35,30 @@ std::string UtcDateUtils::generateRandomUtcDate(int start_year, int end_year) {
     time_struct.tm_min = minute_dis(gen);
     time_struct.tm_sec = second_dis(gen);
 
-    return formatAsIso8601(time_struct);
+    // Generate fractional seconds (nanoseconds)
+    int fractional_seconds = fractional_dis(gen);
+
+    return formatAsIso8601(time_struct, fractional_seconds);
 }
 
 /**
- * @brief Helper function to format a tm structure as an ISO 8601 string.
+ * @brief Helper function to format a tm structure as an ISO 8601 string with fractional seconds.
  *
  * @param time_struct The tm structure to format.
- * @return The formatted date-time string in ISO 8601 format.
+ * @param fractional_seconds The fractional seconds to include in the ISO 8601 format (nanoseconds).
+ * @return The formatted date-time string in ISO 8601 format with fractional seconds.
  */
-std::string UtcDateUtils::formatAsIso8601(const std::tm& time_struct) {
+std::string UtcDateUtils::formatAsIso8601(const std::tm& time_struct, int fractional_seconds) {
     std::ostringstream oss;
-    oss << std::put_time(&time_struct, "%Y-%m-%dT%H:%M:%S") << "Z";
+
+    // Format the date-time part
+    oss << std::put_time(&time_struct, "%Y-%m-%dT%H:%M:%S");
+
+    // Append fractional seconds
+    oss << "." << std::setw(9) << std::setfill('0') << fractional_seconds;
+
+    // Append the 'Z' for UTC
+    oss << "Z";
+
     return oss.str();
 }

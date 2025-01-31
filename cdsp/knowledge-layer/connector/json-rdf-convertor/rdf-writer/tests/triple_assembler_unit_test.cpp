@@ -8,6 +8,8 @@
 
 #include "data_types.h"
 #include "mock_adapter.h"
+#include "mock_i_file_handler.h"
+#include "mock_triple_writer.h"
 #include "rdfox_adapter.h"
 #include "triple_assembler.h"
 #include "vin_utils.h"
@@ -20,28 +22,6 @@ struct TestParamsTransformMessageToRDFTriple {
     std::string data_triple_result;
 };
 
-class MockFileHandler : public IFileHandler {
-   public:
-    MOCK_METHOD(std::string, readFile, (const std::string& file_path), (override));
-    MOCK_METHOD(void, writeFile,
-                (const std::string& file_path, const std::string& content, bool append_data),
-                (override));
-};
-
-class MockTripleWriter : public TripleWriter {
-   public:
-    MOCK_METHOD(void, initiateTriple, (const std::string&), (override));
-    MOCK_METHOD(void, addRDFObjectToTriple,
-                (const std::string&, (const std::tuple<std::string, std::string, std::string>&) ),
-                (override));
-
-    MOCK_METHOD(void, addRDFDataToTriple,
-                ((const std::string&), (const std::tuple<std::string, std::string, std::string>&),
-                 (const std::string&), (const std::string&), (const std::optional<double>&) ),
-                (override));
-    MOCK_METHOD(std::string, generateTripleOutput, (const RDFSyntaxType&), (override));
-};
-
 class TripleAssemblerUnitTest : public ::testing::Test {
    protected:
     const std::string VIN = VinUtils::getRandomVinString();
@@ -51,7 +31,7 @@ class TripleAssemblerUnitTest : public ::testing::Test {
 
     // Set up mock RDFoxAdapter
     MockAdapter mock_adapter_{"localhost", "8080", "test_auth", "test_ds"};
-    MockFileHandler mock_file_handler_;
+    MockIFileHandler mock_i_file_handler_;
     MockTripleWriter mock_triple_writer_;
 
     // Create a mock ModelConfig
@@ -59,7 +39,7 @@ class TripleAssemblerUnitTest : public ::testing::Test {
 
     void SetUp() override {
         // Mock functions to be call and expectations
-        triple_assembler = new TripleAssembler(model_config_, mock_adapter_, mock_file_handler_,
+        triple_assembler = new TripleAssembler(model_config_, mock_adapter_, mock_i_file_handler_,
                                                mock_triple_writer_);
     }
 
@@ -131,11 +111,11 @@ prefix so: <http://www.some.com#>
 SELECT some_data_query)";
 
         // Mock the file reader to extract the SHACL query
-        EXPECT_CALL(mock_file_handler_, readFile(::testing::StrEq("object_property.rq")))
+        EXPECT_CALL(mock_i_file_handler_, readFile(::testing::StrEq("object_property.rq")))
             .Times(times_executing_object_related_functions)
             .WillRepeatedly(::testing::Return(query_object));
 
-        EXPECT_CALL(mock_file_handler_, readFile(::testing::StrEq("data_property.rq")))
+        EXPECT_CALL(mock_i_file_handler_, readFile(::testing::StrEq("data_property.rq")))
             .Times(times_executing_data_related_functions)
             .WillRepeatedly(::testing::Return(query_data));
 
@@ -169,9 +149,9 @@ TEST_F(TripleAssemblerUnitTest, InitializeSuccess) {
     EXPECT_CALL(mock_adapter_, checkDataStore()).WillOnce(testing::Return(true));
 
     // Mock reading SHACL shape files and returning predefined data
-    EXPECT_CALL(mock_file_handler_, readFile(testing::StrEq("shacl_shape1.ttl")))
+    EXPECT_CALL(mock_i_file_handler_, readFile(testing::StrEq("shacl_shape1.ttl")))
         .WillOnce(testing::Return("data1"));
-    EXPECT_CALL(mock_file_handler_, readFile(testing::StrEq("shacl_shape2.ttl")))
+    EXPECT_CALL(mock_i_file_handler_, readFile(testing::StrEq("shacl_shape2.ttl")))
         .WillOnce(testing::Return("data2"));
 
     // Mock loading data into the adapter and returning success
@@ -265,7 +245,7 @@ car:Observation20181116155027O0
         .WillOnce(testing::Return(true));
 
     // Mock writing the triple output to a file
-    EXPECT_CALL(mock_file_handler_,
+    EXPECT_CALL(mock_i_file_handler_,
                 writeFile(::testing::_, ::testing::Not(::testing::IsEmpty()), ::testing::Eq(true)))
         .Times(1);
 
@@ -305,12 +285,12 @@ TEST_F(TripleAssemblerUnitTest,
 
     // Mock the file reader to extract the SHACL query
     // - Only the first node uses the object query in, it in its name 5 elements
-    EXPECT_CALL(mock_file_handler_, readFile(::testing::StrEq("object_property.rq")))
+    EXPECT_CALL(mock_i_file_handler_, readFile(::testing::StrEq("object_property.rq")))
         .Times(3)
         .WillRepeatedly(::testing::Return("MOCK QUERY FOR OBJECTS PROPERTY"));
     // - Node one and two read the data query, the third one has throw an error, which should be
     //      logged.
-    EXPECT_CALL(mock_file_handler_, readFile(::testing::StrEq("data_property.rq")))
+    EXPECT_CALL(mock_i_file_handler_, readFile(::testing::StrEq("data_property.rq")))
         .Times(2)
         .WillRepeatedly(::testing::Return("MOCK QUERY FOR DATA PROPERTY"));
 
@@ -345,7 +325,7 @@ TEST_F(TripleAssemblerUnitTest,
         .WillOnce(testing::Return(true));
 
     // Mock write triple output file (only first two nodes)
-    EXPECT_CALL(mock_file_handler_, writeFile(::testing::_, ::testing::_, ::testing::Eq(true)))
+    EXPECT_CALL(mock_i_file_handler_, writeFile(::testing::_, ::testing::_, ::testing::Eq(true)))
         .Times(1);
 
     // Assert
@@ -361,7 +341,7 @@ TEST_F(TripleAssemblerUnitTest, InitializeFailWhenAnyRDFDataStoreIsSet) {
     EXPECT_CALL(mock_adapter_, checkDataStore()).WillOnce(testing::Return(false));
 
     // Ensure that no file reading operations are attempted
-    EXPECT_CALL(mock_file_handler_, readFile(testing::_)).Times(0);
+    EXPECT_CALL(mock_i_file_handler_, readFile(testing::_)).Times(0);
 
     // Assert that the initialization process throws a runtime error due to missing data store
     EXPECT_THROW(triple_assembler->initialize(), std::runtime_error);
@@ -378,7 +358,7 @@ TEST_F(TripleAssemblerUnitTest, InitializeFailIfShaclShapesAreEmptyInTheModelCon
     EXPECT_CALL(mock_adapter_, checkDataStore()).WillOnce(testing::Return(true));
 
     // Expect no file reads to occur since SHACL shapes are empty
-    EXPECT_CALL(mock_file_handler_, readFile(testing::_)).Times(0);
+    EXPECT_CALL(mock_i_file_handler_, readFile(testing::_)).Times(0);
 
     // Attempt to initialize the TripleAssembler and expect a runtime error to be thrown
     EXPECT_THROW(triple_assembler->initialize(), std::runtime_error);
@@ -395,14 +375,14 @@ TEST_F(TripleAssemblerUnitTest, InitializeFailIfShaclShapesContentIsEmpty) {
     EXPECT_CALL(mock_adapter_, checkDataStore()).WillOnce(testing::Return(true));
 
     // Simulate reading the SHACL shape file and returning empty content
-    EXPECT_CALL(mock_file_handler_, readFile(testing::StrEq("shacl_shape.ttl")))
+    EXPECT_CALL(mock_i_file_handler_, readFile(testing::StrEq("shacl_shape.ttl")))
         .WillOnce(testing::Return(""));  // The content cannot be empty
 
     // Ensure no data loading is attempted with empty content
     EXPECT_CALL(mock_adapter_, loadData(testing::_, ::testing::_)).Times(0);
 
     // Attempt to initialize the TripleAssembler and expect a runtime error
-    TripleAssembler assembler(model_config_, mock_adapter_, mock_file_handler_,
+    TripleAssembler assembler(model_config_, mock_adapter_, mock_i_file_handler_,
                               mock_triple_writer_);
     EXPECT_THROW(triple_assembler->initialize(), std::runtime_error);
 }
@@ -417,7 +397,7 @@ TEST_F(TripleAssemblerUnitTest, InitializeFailsIfLoadingDataFromShaclShapesGoesW
 
     // Mock functions
     EXPECT_CALL(mock_adapter_, checkDataStore()).WillOnce(testing::Return(true));
-    EXPECT_CALL(mock_file_handler_, readFile(testing::StrEq("shacl_shape.ttl")))
+    EXPECT_CALL(mock_i_file_handler_, readFile(testing::StrEq("shacl_shape.ttl")))
         .WillOnce(testing::Return("data"));
 
     // Simulate a failure in loading the data, returning false
@@ -425,7 +405,7 @@ TEST_F(TripleAssemblerUnitTest, InitializeFailsIfLoadingDataFromShaclShapesGoesW
         .WillOnce(testing::Return(false));  // Fail loading data
 
     // Initialize TripleAssembler and expect a runtime error to be thrown
-    TripleAssembler assembler(model_config_, mock_adapter_, mock_file_handler_,
+    TripleAssembler assembler(model_config_, mock_adapter_, mock_i_file_handler_,
                               mock_triple_writer_);
     EXPECT_THROW(triple_assembler->initialize(), std::runtime_error);
 }
@@ -443,8 +423,8 @@ TEST_F(TripleAssemblerUnitTest, TransformMessageToRDFTripleFailsWhenAnyRDFDataSt
 
     // Ensure that no other functions are called since the data store is not set up
     EXPECT_CALL(mock_triple_writer_, initiateTriple(::testing::_)).Times(0);
-    EXPECT_CALL(mock_file_handler_, readFile(::testing::_)).Times(0);
-    EXPECT_CALL(mock_file_handler_, writeFile(::testing::_, ::testing::_, ::testing::_)).Times(0);
+    EXPECT_CALL(mock_i_file_handler_, readFile(::testing::_)).Times(0);
+    EXPECT_CALL(mock_i_file_handler_, writeFile(::testing::_, ::testing::_, ::testing::_)).Times(0);
     EXPECT_CALL(mock_adapter_, queryData(::testing::_, ::testing::_)).Times(0);
     EXPECT_CALL(mock_triple_writer_, addRDFObjectToTriple(::testing::_, ::testing::_)).Times(0);
     EXPECT_CALL(mock_triple_writer_, addRDFDataToTriple(::testing::_, ::testing::_, ::testing::_,
@@ -507,7 +487,7 @@ TEST_F(TripleAssemblerUnitTest, TransformMessageToRDFTripleWithCoordinatesSucces
         .WillOnce(testing::Return(true));
 
     // Mock writing the triple output to a file
-    EXPECT_CALL(mock_file_handler_,
+    EXPECT_CALL(mock_i_file_handler_,
                 writeFile(::testing::_, ::testing::Not(::testing::IsEmpty()), ::testing::Eq(true)))
         .Times(1);
 
@@ -557,7 +537,7 @@ TEST_F(TripleAssemblerUnitTest, TransformMessageToRDFTripleFailsWhenCoordinatesA
         .WillOnce(testing::Return(true));
 
     // Mock write triple output file (only first node)
-    EXPECT_CALL(mock_file_handler_, writeFile(::testing::_, ::testing::_, ::testing::Eq(true)))
+    EXPECT_CALL(mock_i_file_handler_, writeFile(::testing::_, ::testing::_, ::testing::Eq(true)))
         .Times(1);
 
     // Assert

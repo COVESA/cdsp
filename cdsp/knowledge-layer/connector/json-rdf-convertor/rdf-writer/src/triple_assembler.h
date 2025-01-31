@@ -9,9 +9,9 @@
 #include <unordered_map>
 #include <vector>
 
-#include "../../utils/i_file_handler.h"
 #include "coordinates_types.h"
 #include "data_types.h"
+#include "i_file_handler.h"
 #include "rdfox_adapter.h"
 #include "triple_writer.h"
 

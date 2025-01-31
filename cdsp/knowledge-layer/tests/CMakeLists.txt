@@ -8,7 +8,6 @@ add_library(test_fixtures
     utils/random_utils.cpp
     utils/observation_id_utils.cpp
     ${PROJECT_ROOT_DIR}/connector/utils/helper.cpp
-    ${PROJECT_ROOT_DIR}/connector/utils/coordinate_transform.cpp
     ${PROJECT_ROOT_DIR}/connector/utils/model_config_utils.cpp
 )
 
