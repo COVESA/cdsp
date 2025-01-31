@@ -18,7 +18,7 @@ The ["Basic Functions"](https://iotdb.apache.org/UserGuide/latest/Basic-Concept/
 
 In IoTDB terminology *measurement* is the key in a key/value pair. In VSS terms the leaf node name. The timeseries is the record of the measurement on the time axis. A timeseries is a series of time/value data points.
 
-The IoTDB data model supports hierarchical partitioning and like VSS uses a dot notation to separate the levels. This means if we simply appended a VSS leaf node name like `Vehicle.CurrentLocation.Longitude` as the measurement (key) name to the end of a IoTDB path such as `root.test2.dev1` the `Vehicle.CurrentLocation.` IoTDB would treat it as part of the IoTDB data model partitioning which could cause unwanted issues when scaling over millions of vehicles.
+The IoTDB data model supports hierarchical partitioning and like VSS uses a dot notation to separate the levels. This means if we simply appended a VSS leaf node name like `Vehicle.CurrentLocation.Longitude` as the measurement (key) name to the end of a IoTDB path such as `root.test2.dev1` IoTDB would treat the VSS path prefix `Vehicle.CurrentLocation.` as part of the IoTDB data model partitioning which could cause unwanted issues when scaling over millions of vehicles.
 
 We have separated those two concepts by quoting the VSS leaf node name using backticks when processing the name in IoTDB. As shown below:
 ```
@@ -157,7 +157,7 @@ Steps:
 
 
 ### User Defined functions
-IoTDB also allows you to integrate your own functions as User Defined Functions (UDF). The [UDF section](https://iotdb.apache.org/UserGuide/latest/User-Manual/UDF-development.html) of the IoTDB documentation explains how to develop and register your own.
+IoTDB also allows you to integrate your own functions as User Defined Functions (UDF). The [UDF development section](https://iotdb.apache.org/UserGuide/latest/User-Manual/UDF-development.html) of the IoTDB documentation explains how to develop and register your own.
 
 ## VISSR (VISS) integration
 As part of the initial development of the playground the team extended VISSR to support connections to Apache IoTDB as a VISSR data store backend and upstreamed the support.
