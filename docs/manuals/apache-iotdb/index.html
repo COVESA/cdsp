@@ -12,22 +12,22 @@
     <title>Apache IoTDB :: Central Data Service Playground</title>
 
     
-    <link href="/cdsp/css/nucleus.css?1739455650" rel="stylesheet">
-    <link href="/cdsp/css/fontawesome-all.min.css?1739455650" rel="stylesheet">
-    <link href="/cdsp/css/hybrid.css?1739455650" rel="stylesheet">
-    <link href="/cdsp/css/featherlight.min.css?1739455650" rel="stylesheet">
-    <link href="/cdsp/css/perfect-scrollbar.min.css?1739455650" rel="stylesheet">
-    <link href="/cdsp/css/auto-complete.css?1739455650" rel="stylesheet">
-    <link href="/cdsp/css/atom-one-dark-reasonable.css?1739455650" rel="stylesheet">
-    <link href="/cdsp/css/theme.css?1739455650" rel="stylesheet">
-    <link href="/cdsp/css/tabs.css?1739455650" rel="stylesheet">
-    <link href="/cdsp/css/hugo-theme.css?1739455650" rel="stylesheet">
+    <link href="/cdsp/css/nucleus.css?1739464828" rel="stylesheet">
+    <link href="/cdsp/css/fontawesome-all.min.css?1739464828" rel="stylesheet">
+    <link href="/cdsp/css/hybrid.css?1739464828" rel="stylesheet">
+    <link href="/cdsp/css/featherlight.min.css?1739464828" rel="stylesheet">
+    <link href="/cdsp/css/perfect-scrollbar.min.css?1739464828" rel="stylesheet">
+    <link href="/cdsp/css/auto-complete.css?1739464828" rel="stylesheet">
+    <link href="/cdsp/css/atom-one-dark-reasonable.css?1739464828" rel="stylesheet">
+    <link href="/cdsp/css/theme.css?1739464828" rel="stylesheet">
+    <link href="/cdsp/css/tabs.css?1739464828" rel="stylesheet">
+    <link href="/cdsp/css/hugo-theme.css?1739464828" rel="stylesheet">
     
-    <link href="/cdsp/css/theme-blue.css?1739455650" rel="stylesheet">
+    <link href="/cdsp/css/theme-blue.css?1739464828" rel="stylesheet">
     
     
 
-    <script src="/cdsp/js/jquery-3.3.1.min.js?1739455650"></script>
+    <script src="/cdsp/js/jquery-3.3.1.min.js?1739464828"></script>
 
     <style>
       :root #header + #content > #left > #rlblock_left{
@@ -60,14 +60,14 @@
     <span data-search-clear=""><i class="fas fa-times"></i></span>
 </div>
 
-<script type="text/javascript" src="/cdsp/js/lunr.min.js?1739455650"></script>
-<script type="text/javascript" src="/cdsp/js/auto-complete.js?1739455650"></script>
+<script type="text/javascript" src="/cdsp/js/lunr.min.js?1739464828"></script>
+<script type="text/javascript" src="/cdsp/js/auto-complete.js?1739464828"></script>
 <script type="text/javascript">
     
         var baseurl = "https:\/\/covesa.github.io\/cdsp\/";
     
 </script>
-<script type="text/javascript" src="/cdsp/js/search.js?1739455650"></script>
+<script type="text/javascript" src="/cdsp/js/search.js?1739464828"></script>
 
     
   </div>
@@ -437,7 +437,7 @@
 <p>The IoTDB project <a href="https://iotdb.apache.org/">website</a> has extensive documentation on the IoTDB server. In the guide below we focus on topics specific to the playground such as VSS data schemas and the connector for the VISSR VISS data server.</p>
 <p>Info: The intention is to add more information such as a guide for feeder integration as the project progresses.</p>
 <h2 id="integrating-vss-data-into-the-iotdb-data-model">Integrating VSS data into the IoTDB data model</h2>
-<p>The <a href="https://iotdb.apache.org/UserGuide/latest/Basic-Concept/Data-Model-and-Terminology.html">&ldquo;Basic Functions&rdquo;</a> section of the IoTDB documentation introduces the IoTDB data model, data types, encoding and compression.</p>
+<p>The <a href="https://iotdb.apache.org/UserGuide/V1.3.3/Basic-Concept/Data-Model-and-Terminology.html">&ldquo;Basic Functions&rdquo;</a> section of the IoTDB documentation introduces the IoTDB data model, data types, encoding and compression.</p>
 <p>In IoTDB terminology <em>measurement</em> is the key in a key/value pair. In VSS terms the leaf node name. The timeseries is the record of the measurement on the time axis. A timeseries is a series of time/value data points.</p>
 <p>The IoTDB data model supports hierarchical partitioning and like VSS uses a dot notation to separate the levels. This means if we simply appended a VSS leaf node name like <code>Vehicle.CurrentLocation.Longitude</code> as the measurement (key) name to the end of a IoTDB path such as <code>root.test2.dev1</code> IoTDB would treat the VSS path prefix <code>Vehicle.CurrentLocation.</code> as part of the IoTDB data model partitioning which could cause unwanted issues when scaling over millions of vehicles.</p>
 <p>We have separated those two concepts by quoting the VSS leaf node name using backticks when processing the name in IoTDB. As shown below:</p>
@@ -462,7 +462,7 @@
 <p>Note: IoTDB has data type detection so creating a schema for the timeseries in step 2 is optional. However, the use of a schema has performance and meta-data benefits so is recommended.</p>
 <p>IoTDB has a very extensive collection of integrations, tools, clients and APIs that could be used to achieve this.</p>
 <h3 id="example-using-the-iotdb-cli-client">Example using the IoTDB CLI client</h3>
-<p>The following tutorial shows an example using the <a href="https://iotdb.apache.org/UserGuide/latest/Tools-System/CLI.html">IoTDB CLI client</a>, using two methods. Firstly, in interactive mode where you type the commands and then sending the same commands in batch command mode.</p>
+<p>The following tutorial shows an example using the <a href="https://iotdb.apache.org/UserGuide/V1.3.3/Tools-System/CLI.html">IoTDB CLI client</a>, using two methods. Firstly, in interactive mode where you type the commands and then sending the same commands in batch command mode.</p>
 <ol>
 <li>Connect to the CLI client from your host:</li>
 </ol>
@@ -528,7 +528,7 @@ bash ./sbin/start-cli.sh -h ${host} -p ${rpcPort} -u ${user} -pw ${pass} -e &#34
 <li>Sampling Functions, such as <code>M4</code>.</li>
 <li>Change Points Function, such as <code>CHANGE_POINTS</code>.</li>
 </ul>
-<p>A full function list with examples can be found in the upstream <a href="https://iotdb.apache.org/UserGuide/latest/SQL-Manual/Function-and-Expression.html">IoTDB Function reference manual</a>.</p>
+<p>A full function list with examples can be found in the upstream <a href="https://iotdb.apache.org/UserGuide/V1.3.3/SQL-Manual/Function-and-Expression.html">IoTDB Function reference manual</a>.</p>
 <h3 id="data-quality-library-functions">Data Quality Library functions</h3>
 <p>The IoTDB project also maintains a Data Quality Library which provides an additional collection of functions covering:</p>
 <ul>
@@ -541,7 +541,7 @@ bash ./sbin/start-cli.sh -h ${host} -p ${rpcPort} -u ${user} -pw ${pass} -e &#34
 <li>Series Discovery, such as <code>ConsecutiveSequences</code>.</li>
 <li>Machine Learning, such as <code>AR</code>.</li>
 </ul>
-<p>A full function list with examples can be found in the upstream <a href="https://iotdb.apache.org/UserGuide/latest/SQL-Manual/UDF-Libraries_apache.html">IoTDB UDF Data Quality Library reference manual</a>.</p>
+<p>A full function list with examples can be found in the upstream <a href="https://iotdb.apache.org/UserGuide/V1.3.3/SQL-Manual/UDF-Libraries_apache.html">IoTDB UDF Data Quality Library reference manual</a>.</p>
 <h4 id="setup">Setup</h4>
 <p>In the upstream IoTDB project the library is an optional install.</p>
 <p>For your convenience it is included in the Playground IoTDB image for you. However to call the functions they must first be registered in the running IoTDB instance, which you only need to do once. The script <code>/iotdb/sbin/register-UDF.sh</code> is included in the IoTDB image to do this for you.</p>
@@ -553,7 +553,7 @@ bash ./sbin/start-cli.sh -h ${host} -p ${rpcPort} -u ${user} -pw ${pass} -e &#34
 </code></pre></li>
 </ol>
 <h3 id="user-defined-functions">User Defined functions</h3>
-<p>IoTDB also allows you to integrate your own functions as User Defined Functions (UDF). The <a href="https://iotdb.apache.org/UserGuide/latest/User-Manual/UDF-development.html">UDF development section</a> of the IoTDB documentation explains how to develop and register your own.</p>
+<p>IoTDB also allows you to integrate your own functions as User Defined Functions (UDF). The <a href="https://iotdb.apache.org/UserGuide/V1.3.3/User-Manual/UDF-development.html">UDF development section</a> of the IoTDB documentation explains how to develop and register your own.</p>
 <h2 id="vissr-viss-integration">VISSR (VISS) integration</h2>
 <p>As part of the initial development of the playground the team extended VISSR to support connections to Apache IoTDB as a VISSR data store backend and upstreamed the support.</p>
 <h3 id="connector-scope">Connector scope</h3>
@@ -846,19 +846,19 @@ bash ./sbin/start-cli.sh -h ${host} -p ${rpcPort} -u ${user} -pw ${pass} -e &#34
     <div style="left: -1000px; overflow: scroll; position: absolute; top: -1000px; border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;">
       <div style="border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;"></div>
     </div>
-    <script src="/cdsp/js/clipboard.min.js?1739455650"></script>
-    <script src="/cdsp/js/perfect-scrollbar.min.js?1739455650"></script>
-    <script src="/cdsp/js/perfect-scrollbar.jquery.min.js?1739455650"></script>
-    <script src="/cdsp/js/jquery.sticky.js?1739455650"></script>
-    <script src="/cdsp/js/featherlight.min.js?1739455650"></script>
-    <script src="/cdsp/js/highlight.pack.js?1739455650"></script>
+    <script src="/cdsp/js/clipboard.min.js?1739464828"></script>
+    <script src="/cdsp/js/perfect-scrollbar.min.js?1739464828"></script>
+    <script src="/cdsp/js/perfect-scrollbar.jquery.min.js?1739464828"></script>
+    <script src="/cdsp/js/jquery.sticky.js?1739464828"></script>
+    <script src="/cdsp/js/featherlight.min.js?1739464828"></script>
+    <script src="/cdsp/js/highlight.pack.js?1739464828"></script>
     <script>hljs.initHighlightingOnLoad();</script>
-    <script src="/cdsp/js/modernizr.custom-3.6.0.js?1739455650"></script>
-    <script src="/cdsp/js/learn.js?1739455650"></script>
-    <script src="/cdsp/js/hugo-learn.js?1739455650"></script>
+    <script src="/cdsp/js/modernizr.custom-3.6.0.js?1739464828"></script>
+    <script src="/cdsp/js/learn.js?1739464828"></script>
+    <script src="/cdsp/js/hugo-learn.js?1739464828"></script>
     
         
-            <script src="/cdsp/mermaid/mermaid.js?1739455650"></script>
+            <script src="/cdsp/mermaid/mermaid.js?1739464828"></script>
         
         <script>
             mermaid.initialize({ startOnLoad: true });
