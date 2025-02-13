@@ -44,7 +44,7 @@ Topic examples: vsome/ip (SOME/IP), uServices, Vehicle API, VISS etc.
 | Name | Relationship to the category |
 |------|-------------|
 | [VISSR/VISS hello-world](https://covesa.github.io/vissr/build-system/hello-world/) | hello-world tutorial for making VISS requests using VISSR in the upstream VISSR project |
-| [VISS transport examples](https://raw.githack.com/COVESA/vehicle-information-service-specification/main/spec/VISSv3.0_TransportExamples.html) | Examples in the VISS Specification for making VISS requests and the responses for various transport protocols |
+| [VISS transport examples](https://raw.githack.com/COVESA/vehicle-information-service-specification/main/spec/VISSv3.0_Transport.html) | Examples in the VISS Specification for making VISS requests and the responses for various transport protocols |
 
 ## Databases
 Topic examples: Apache IoTDB, MongoDB Realm, Redis/SQLite/memcache etc.
