@@ -35,10 +35,10 @@ The dataset contains just over 13500 values recorded over approximately 5 minute
 ### Load
 In the example we will import the dataset into a VSS `Vehicle.Speed` timeseries within IoTDB.
 
-IoTDB provides import/export tools for its native TsFile file format, SQL and CSV and which are included in the runtime image. We will use the [`import-data.sh`](https://iotdb.apache.org/UserGuide/latest/Tools-System/Data-Import-Tool.html) tool to perform the import.
+IoTDB provides import/export tools for its native TsFile file format, SQL and CSV and which are included in the runtime image. We will use the [`import-data.sh`](https://iotdb.apache.org/UserGuide/V1.3.3/Tools-System/Data-Import-Tool.html) tool to perform the import.
 
 ### Transform
-IoTDB has a library of Data Quality functions which includes the function [`Sample`](https://iotdb.apache.org/UserGuide/latest/SQL-Manual/UDF-Libraries_apache.html#sample) for sampling. Sample has three sampling methods: `Reservoir`, `Isometric` and `Triangle`. 
+IoTDB has a library of Data Quality functions which includes the function [`Sample`](https://iotdb.apache.org/UserGuide/V1.3.3/SQL-Manual/UDF-Libraries_apache.html#sample) for sampling. Sample has three sampling methods: `Reservoir`, `Isometric` and `Triangle`. 
 
 Sample function:
 
@@ -64,7 +64,7 @@ The following screenshot shows the results graphed in Grafana. The green graph i
 *Figure 1: Grafana visualisation of the results. Key: Green=input data, yellow=down-sampled result*
 
 Tips:
-+ Documentation for each Sample method and the other functions can be found in the [IoTDB library documentation](https://iotdb.apache.org/UserGuide/latest/SQL-Manual/UDF-Libraries_apache.html).
++ Documentation for each Sample method and the other functions can be found in the [IoTDB library documentation](https://iotdb.apache.org/UserGuide/V1.3.3/SQL-Manual/UDF-Libraries_apache.html).
 
 + Triangle uses a *Largest-Triangle-Three-Buckets (LTTB)* algorithm to calculate the output timeseries. Details of which can be found in the originating academic research: [Downsampling Time Series for Visual Representation, Sveinn Steinarsson, 2013](https://skemman.is/bitstream/1946/15343/3/SS_MSthesis.pdf)
 
@@ -106,7 +106,7 @@ $ sudo docker exec -ti iotdb-service /iotdb/sbin/register-UDF.sh
 
 Info: See the online documentation site for [details](https://covesa.github.io/cdsp/manuals/apache-iotdb/#setup)
 
-Tip: If for some reason you are failing to register the Data Quality Library, substitute one of the [built-in sample functions](https://iotdb.apache.org/UserGuide/latest/SQL-Manual/Operator-and-Expression.html#sample-functions) rather than `Sample()` in the SQL below.
+Tip: If for some reason you are failing to register the Data Quality Library, substitute one of the [built-in sample functions](https://iotdb.apache.org/UserGuide/V1.3.3/SQL-Manual/Operator-and-Expression.html#sample-functions) rather than `Sample()` in the SQL below.
 
 ### Import the dataset
 
@@ -327,7 +327,7 @@ It costs 0.028s
 
 ### Suggested next steps
 + Repeat the query with the same input data, but with different `k` parameter values to see what affects the number of samples has on the accuracy of the trace compared to the input data.
-+ Amend the query with other [SQL clauses](https://iotdb.apache.org/UserGuide/latest/Basic-Concept/Query-Data.html) to shape what you are interested in, e.g. use `WHERE` to define a time filter.
++ Amend the query with other [SQL clauses](https://iotdb.apache.org/UserGuide/V1.3.3/Basic-Concept/Query-Data.html) to shape what you are interested in, e.g. use `WHERE` to define a time filter.
 + A great way to explore these sampling queries is by using Grafana as discussed below.
 + Try the other [IoTDB data processing functions](https://covesa.github.io/cdsp/manuals/apache-iotdb/#data-processing-functions)
 
@@ -345,7 +345,7 @@ This ability to use the same SQL query in the IoTDB CLI Client, any code and Gra
 
 ### Setup
 #### Grafana connection setup
-The IoTDB project maintains the IoTDB Grafana Plugin to allow Grafana to interact with IoTDB data sources using the IoTDB REST API. This Plugin has been upstreamed into the Grafana project and can be installed from Grafana. Installation and usage instructions can be found in the IoTDB [online documentation](https://iotdb.apache.org/UserGuide/latest/Ecosystem-Integration/Grafana-Plugin.html).
+The IoTDB project maintains the IoTDB Grafana Plugin to allow Grafana to interact with IoTDB data sources using the IoTDB REST API. This Plugin has been upstreamed into the Grafana project and can be installed from Grafana. Installation and usage instructions can be found in the IoTDB [online documentation](https://iotdb.apache.org/UserGuide/V1.3.3/Ecosystem-Integration/Grafana-Plugin.html).
 
 Note: The Plugin install instructions describe enabling the IoTDB REST API, which is disabled by default in IoTDB. This has already been done for you in the Playground IoTDB Docker image.
 
