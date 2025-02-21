@@ -12,7 +12,7 @@ export enum COLORS {
 }
 
 // Define the MessageType enum to strictly enforce allowed types
-export enum MessageType {
+export enum LogMessageType {
   RECEIVED = "RECEIVED",
   SENT = "SENT",
   ERROR = "ERROR",
@@ -21,12 +21,12 @@ export enum MessageType {
 }
 
 // Mapping MessageType to their corresponding colors
-const MessageTypeColors: Record<MessageType, COLORS> = {
-  [MessageType.RECEIVED]: COLORS.GREEN,
-  [MessageType.SENT]: COLORS.BLUE,
-  [MessageType.ERROR]: COLORS.RED,
-  [MessageType.WARNING]: COLORS.YELLOW,
-  [MessageType.OTHER]: COLORS.PALE_WHITE,
+const MessageTypeColors: Record<LogMessageType, COLORS> = {
+  [LogMessageType.RECEIVED]: COLORS.GREEN,
+  [LogMessageType.SENT]: COLORS.BLUE,
+  [LogMessageType.ERROR]: COLORS.RED,
+  [LogMessageType.WARNING]: COLORS.YELLOW,
+  [LogMessageType.OTHER]: COLORS.PALE_WHITE,
 };
 
 /**
@@ -49,7 +49,7 @@ export function logWithColor(message: string, color: COLORS): void {
  */
 export function logMessage(
   featureStr: string,
-  type: MessageType = MessageType.OTHER,
+  type: LogMessageType = LogMessageType.OTHER,
   label: string = ""
 ): void {
   let color: COLORS = MessageTypeColors[type];
@@ -57,16 +57,16 @@ export function logMessage(
   let labelText: string;
 
   switch (type) {
-    case MessageType.RECEIVED:
+    case LogMessageType.RECEIVED:
       labelText = "\u2193 ".concat("Client Received ws: ").concat(label);
       break;
-    case MessageType.SENT:
+    case LogMessageType.SENT:
       labelText = "\u2191 ".concat("Client Sent ws: ").concat(label);
       break;
-    case MessageType.ERROR:
+    case LogMessageType.ERROR:
       labelText = "\u2716 ".concat(label || "Internal Error");
       break;
-    case MessageType.OTHER:
+    case LogMessageType.OTHER:
       labelText = label || "Message";
       color = COLORS.RESET;
       break;
@@ -94,7 +94,7 @@ export function logError(featureStr: string, error: Error | unknown): void {
   const errMsg = featureStr
     .concat(": ")
     .concat(error instanceof Error ? error.message : "Unknown error");
-  logMessage(errMsg, MessageType.ERROR);
+  logMessage(errMsg, LogMessageType.ERROR);
 }
 
 /**
@@ -104,5 +104,5 @@ export function logError(featureStr: string, error: Error | unknown): void {
  * @returns void
  */
 export function logErrorStr(errMsg: string): void {
-  logMessage(errMsg, MessageType.ERROR);
+  logMessage(errMsg, LogMessageType.ERROR);
 }

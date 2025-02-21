@@ -29,34 +29,49 @@ jest.mock('../utils/database-helper', () => ({
   transformSessionDataSet: jest.fn(),  // Ensure transformSessionDataSet is a mock function
 }));
 
-import { SubscriptionSimulator } from '../src//SubscriptionSimulator'; 
-import { WebSocketWithId, Message } from '../../../utils/data-types';  
-import { Session } from '../src//Session';
+import {SubscriptionSimulator} from '../src/SubscriptionSimulator';
+import {WebSocketWithId} from '../../../../utils/database-params';
+import {Session} from '../src/Session';
+import {DataContentMessage, StatusMessage, SubscribeMessageType, UnsubscribeMessageType} from '../../../../router/utils/NewMessage';
 
 describe('SubscriptionSimulator', () => {
   let simulator: SubscriptionSimulator;
   let mockSession: Session;
   let mockWebSocket: WebSocketWithId;
-  let mockMessage: Message;
+  let mockSubscribeMessage: SubscribeMessageType;
+  let mockUnsubscribeMessage: UnsubscribeMessageType;
   let mockKey: string;
   let sendMessageToClientMock: jest.Mock;
 
   beforeEach(() => {
     mockSession = new Session();
 
+    const createStatusMessageMock = jest.fn<
+      StatusMessage, // Return type
+      [number, string, string?] // Parameters: code, message, optional requestId
+    >((code, statusMessage, requestId) => ({
+      type: "status",
+      code,
+      message: statusMessage,
+      ...(requestId && {requestId}),
+      timestamp: {seconds: 1715253322, nanoseconds: 123000000}, // Mocked timestamp
+    }));
+
+
     sendMessageToClientMock = jest.fn();
-    simulator = new SubscriptionSimulator(sendMessageToClientMock, jest.fn(), jest.fn());
-    
-    mockWebSocket = { id: 'ws1' } as WebSocketWithId;
-    mockMessage = { id: 'vehicle123', tree: 'VSS' } as Message;
-    mockKey = `${mockMessage.id}-${mockMessage.tree}`;
+    simulator = new SubscriptionSimulator(sendMessageToClientMock, jest.fn(), createStatusMessageMock);
+
+    mockWebSocket = {id: 'ws1'} as WebSocketWithId;
+    mockSubscribeMessage = {instance: 'vehicle123'} as SubscribeMessageType;
+    mockUnsubscribeMessage = {instance: 'vehicle123'} as UnsubscribeMessageType;
+    mockKey = `${mockSubscribeMessage.instance}-VSS`;
   });
 
   afterEach(() => {
     jest.clearAllMocks();
     if (simulator["intervalId"]) {
-        clearInterval(simulator["intervalId"]);
-        simulator["intervalId"] = null; // Reset intervalId
+      clearInterval(simulator["intervalId"]);
+      simulator["intervalId"] = null; // Reset intervalId
     }
     jest.clearAllTimers(); // Clear any remaining active timers
 
@@ -68,20 +83,19 @@ describe('SubscriptionSimulator', () => {
    * subscribe
    */
 
-
   test('calls sendMessageToClient if subscription with same WebSocket already exists', () => {
     // Arrange: Manually add a subscription to simulate the "already exists" condition
     simulator['subscriptions'].set(mockKey, [mockWebSocket]);
 
     // Act: Call subscribe with the existing WebSocket and message key
-    simulator.subscribe(mockMessage, mockWebSocket);
+    simulator.subscribe(mockSubscribeMessage, mockWebSocket);
 
     // Assert: Check that sendMessageToClient was called with the expected error message
     expect(sendMessageToClientMock).toHaveBeenCalledWith(
       mockWebSocket,
       expect.objectContaining({
-        category: 'subscribe',
-        statusCode: 400,
+        type: 'status',
+        code: 400,
         message: expect.stringContaining('Subscription already done')
       })
     );
@@ -89,11 +103,11 @@ describe('SubscriptionSimulator', () => {
 
   test('Creates a new subscription if no subscription with that key exists', () => {
     // Arrange: Add a subscription with another key and the same websocket
-    const key = `otherId-${mockMessage.tree}`;
+    const key = `otherId-VSS`;
     simulator['subscriptions'].set(key, [mockWebSocket]);
 
     // Act: Call subscribe with the existing WebSocket and another message key
-    simulator.subscribe(mockMessage, mockWebSocket);
+    simulator.subscribe(mockSubscribeMessage, mockWebSocket);
 
     // Assert: Check that a new subscription was added
     expect(simulator['subscriptions'].size).toBe(2);
@@ -102,11 +116,11 @@ describe('SubscriptionSimulator', () => {
 
   test('Adds a websocket to an existing subscription if websocket is not there yet', () => {
     // Arrange: Add a subscription with same key and different websocket
-    const otherWebsocket = { id: 'otherWs' } as WebSocketWithId;
+    const otherWebsocket = {id: 'otherWs'} as WebSocketWithId;
     simulator['subscriptions'].set(mockKey, [otherWebsocket]);
 
     // Act: Call subscribe with another WebSocket and existing message key
-    simulator.subscribe(mockMessage, mockWebSocket);
+    simulator.subscribe(mockSubscribeMessage, mockWebSocket);
 
     // Assert: Check that the existing subscription has a new websocket
     expect(simulator['subscriptions'].size).toBe(1);
@@ -119,7 +133,7 @@ describe('SubscriptionSimulator', () => {
     simulator['intervalId'] = null;
 
     // Act: Call subscribe to trigger the timer start
-    simulator.subscribe(mockMessage, mockWebSocket);
+    simulator.subscribe(mockSubscribeMessage, mockWebSocket);
 
     // Assert: Check that intervalId is no longer null
     expect(simulator['intervalId']).not.toBeNull();
@@ -131,11 +145,11 @@ describe('SubscriptionSimulator', () => {
 
   test('remove websocket from existing subscription if websocket and subscription exist', () => {
     // Arrange: Add a subscription with same key and same websocket + 1 other websocket
-    const otherWebsocket = { id: 'otherWs' } as WebSocketWithId;
+    const otherWebsocket = {id: 'otherWs'} as WebSocketWithId;
     simulator['subscriptions'].set(mockKey, [otherWebsocket, mockWebSocket]);
 
     // Act: Call subscribe with existing WebSocket and message key
-    simulator.unsubscribe(mockMessage, mockWebSocket);
+    simulator.unsubscribe(mockUnsubscribeMessage, mockWebSocket);
 
     // Assert: Check that the subscription exists with only the other websocket left
     expect(simulator['subscriptions'].size).toBe(1);
@@ -147,7 +161,7 @@ describe('SubscriptionSimulator', () => {
     simulator['subscriptions'].set(mockKey, [mockWebSocket]);
 
     // Act: Call unsubscribe with existing WebSocket and message key
-    simulator.unsubscribe(mockMessage, mockWebSocket);
+    simulator.unsubscribe(mockUnsubscribeMessage, mockWebSocket);
 
     // Assert: Check that the subscription has been removed
     expect(simulator['subscriptions'].size).toBe(0);
@@ -155,18 +169,18 @@ describe('SubscriptionSimulator', () => {
 
   test('calls sendMessageToClient if unsubscribe is done on non-existing subscription', () => {
     // Arrange: Manually add a subscription with another key
-    const key = `otherId-${mockMessage.tree}`;
+    const key = `otherId-VSS`;
     simulator['subscriptions'].set(key, [mockWebSocket]);
 
     // Act: Call unsubscribe with existing WebSocket and non-existing message key
-    simulator.unsubscribe(mockMessage, mockWebSocket);
+    simulator.unsubscribe(mockUnsubscribeMessage, mockWebSocket);
 
     // Assert: Check that sendMessageToClient was called with the expected error message
     expect(sendMessageToClientMock).toHaveBeenCalledWith(
       mockWebSocket,
       expect.objectContaining({
-        category: 'unsubscribe',
-        statusCode: 400,
+        type: 'status',
+        code: 400,
         message: expect.stringContaining('Cannot unsubscribe')
       })
     );
@@ -174,11 +188,11 @@ describe('SubscriptionSimulator', () => {
 
   test('stops the timer if there is no subscription left', () => {
     // Arrange: create a subscription to start the timer
-    simulator.subscribe(mockMessage, mockWebSocket);
+    simulator.subscribe(mockSubscribeMessage, mockWebSocket);
     expect(simulator['intervalId']).not.toBeNull();
 
     // Act: Call unsubscribe to trigger the timer removal
-    simulator.unsubscribe(mockMessage, mockWebSocket);
+    simulator.unsubscribe(mockUnsubscribeMessage, mockWebSocket);
 
     // Assert: Check that intervalId is null
     expect(simulator['intervalId']).toBeNull();
@@ -190,7 +204,7 @@ describe('SubscriptionSimulator', () => {
 
   test('remove only subscriptions of one websocket', () => {
     // Arrange: Add some subscriptions with different websockets
-    const otherWebsocket = { id: 'otherWs' } as WebSocketWithId;
+    const otherWebsocket = {id: 'otherWs'} as WebSocketWithId;
     simulator['subscriptions'].set('key-this-and-other', [otherWebsocket, mockWebSocket]);
     simulator['subscriptions'].set('key-only-this', [mockWebSocket]);
     simulator['subscriptions'].set('key-only-other', [otherWebsocket]);
@@ -204,7 +218,7 @@ describe('SubscriptionSimulator', () => {
     expect(simulator['subscriptions'].get('key-only-this')).toBe(undefined);
     expect(simulator['subscriptions'].get('key-only-other')).toEqual([otherWebsocket]);
   });
-  
+
   test('remove all subscriptions of websocket and none left', () => {
     // Arrange: Add 2 subscriptions with the same websocket
     simulator['subscriptions'].set(mockKey, [mockWebSocket]);
@@ -216,10 +230,10 @@ describe('SubscriptionSimulator', () => {
     // Assert: Check that the subscription has been removed
     expect(simulator['subscriptions'].size).toBe(0);
   });
-  
+
   test('stops the timer if there is no subscription left', () => {
     // Arrange: create a subscription to start the timer
-    simulator.subscribe(mockMessage, mockWebSocket);
+    simulator.subscribe(mockSubscribeMessage, mockWebSocket);
     expect(simulator['intervalId']).not.toBeNull();
 
     // Act: Call unsubscribeClient to trigger the timer removal
@@ -243,9 +257,9 @@ describe('SubscriptionSimulator', () => {
     let timeIntervals: { lower: number; upper: number }[] = [];
 
     // Add an entry to `subscriptions` to ensure `checkForChanges` will be called
-    const mockWebSocket = { id: 'ws1' } as WebSocketWithId;
+    const mockWebSocket = {id: 'ws1'} as WebSocketWithId;
     simulator['subscriptions'].set('vehicle123-VSS', [mockWebSocket]);
-    
+
     (jest.spyOn(simulator as any, 'checkForChanges') as jest.Mock)
       .mockImplementation((id: string, upperLimit: number) => {
         timeIntervals.push({
@@ -267,8 +281,8 @@ describe('SubscriptionSimulator', () => {
     // Expect two interval records (one for each call)
     expect(timeIntervals.length).toBe(2);
 
-    const { lower: lower1, upper: upper1 } = timeIntervals[0];
-    const { lower: lower2, upper: upper2 } = timeIntervals[1];
+    const {lower: lower1, upper: upper1} = timeIntervals[0];
+    const {lower: lower2, upper: upper2} = timeIntervals[1];
 
     // Assertions
     expect(upper1).toBeGreaterThan(lower1); // First interval: upper > lower
@@ -278,31 +292,36 @@ describe('SubscriptionSimulator', () => {
 
   test('calls sendMessageToClient if there is a matching subscription and update', async () => {
     simulator["timeIntervalLowerLimit"] = Date.now();
-  
+
     // Add a subscription that should match the `id` in the mocked session data
     simulator['subscriptions'].set('vehicle123-VSS', [mockWebSocket]);
-  
+
+
     // Mock checkForChanges to return an update message
     jest.spyOn(simulator as any, 'checkForChanges').mockResolvedValueOnce({
-      type: "update",
-      id: 'vehicle123',
-      tree: 'VSS',
-      uuid: 'test-uuid',
-      nodes: [{ name: 'speed', value: 100 }],
-    } as Message); // Return type MessageWithNodes
-  
+      type: "data",
+      instance: 'WBY11CF080CH470711_test1',
+      schema: 'Vehicle',
+      data: [{"CurrentLocation.Latitude": 55, "CurrentLocation.Longitude": 66}]
+    } as DataContentMessage); // Return type MessageWithNodes
+
     // Call notifyDatabaseChanges
     await (simulator as any).notifyDatabaseChanges();
-  
+
     // Assert that sendMessageToClient was called with the matching websocket and update message
     expect(sendMessageToClientMock).toHaveBeenCalledWith(
-      { id: 'ws1' }, // WebSocket in the subscription
-      expect.objectContaining({
-        id: 'vehicle123',
-        type: 'update',
-        nodes: [{ name: 'speed', value: 100 }],
-      })
+      {id: 'ws1'}, // WebSocket in the subscription
+      expect.objectContaining(
+        {
+          instance: "WBY11CF080CH470711_test1",
+          schema: 'Vehicle',
+          type: 'data',
+          data: [{
+            "CurrentLocation.Latitude": 55,
+            "CurrentLocation.Longitude": 66
+          }],
+        })
     );
   });
-  
+
 });

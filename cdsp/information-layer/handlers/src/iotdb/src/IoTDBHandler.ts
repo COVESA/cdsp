@@ -1,27 +1,25 @@
-import { Session } from "./Session";
-import { getSubscriptionSimulator, SubscriptionSimulator } from "./SubscriptionSimulator";
-import { SupportedMessageDataTypes } from "./../utils/iotdb-constants";
-const {
-  TSInsertRecordReq,
-}: any = require("../gen-nodejs/client_types");
-import { HandlerBase } from "../../HandlerBase";
-import { SessionDataSet } from "../utils/SessionDataSet";
-import { IoTDBDataInterpreter } from "../utils/IoTDBDataInterpreter";
+import {Session} from "./Session";
+import {getSubscriptionSimulator, SubscriptionSimulator} from "./SubscriptionSimulator";
+import {SupportedMessageDataTypes} from "../utils/iotdb-constants";
+import {HandlerBase, QueryResult} from "../../HandlerBase";
+import {SessionDataSet} from "../utils/SessionDataSet";
+import {IoTDBDataInterpreter} from "../utils/IoTDBDataInterpreter";
+import {createDataPointsSchema, isSupportedDataPoint, SupportedDataPoints,} from "../config/iotdb-config";
+import {databaseConfig, databaseParams} from "../config/database-params";
+import {COLORS, logErrorStr, logWithColor,} from "../../../../utils/logger";
+import {STATUS_ERRORS, STATUS_SUCCESS} from "../../../../router/utils/ErrorMessage";
+import {WebSocketWithId} from "../../../../utils/database-params";
+import {transformSessionDataSet} from "../utils/database-helper";
 import {
-  createDataPointsSchema,
-  isSupportedDataPoint,
-  SupportedDataPoints,
-} from "../config/iotdb-config";
-import { databaseParams, databaseConfig } from "../config/database-params";
-import {
-  logErrorStr,
-  logWithColor,
-  COLORS,
-} from "../../../../utils/logger";
-import { createErrorMessage } from "../../../../utils/error-message-helper";
-import { Message, STATUS_ERRORS, WebSocketWithId } from "../../../utils/data-types";
-import { transformSessionDataSet } from "../utils/database-helper";
-import { transformDataPointsWithUnderscores } from "../../../utils/transformations";
+  NewMessage,
+  SetMessageType,
+  StatusMessage,
+  SubscribeMessageType, UnsubscribeMessageType
+} from "../../../../router/utils/NewMessage";
+import {replaceDotsWithUnderscore} from "../../../utils/transformations";
+
+import {TSInsertRecordReq} from "../gen-nodejs/client_types";
+
 
 export class IoTDBHandler extends HandlerBase {
   private session: Session;
@@ -34,63 +32,34 @@ export class IoTDBHandler extends HandlerBase {
       throw new Error("Invalid database configuration.");
     }
     this.session = new Session();
-    this.subscriptionSimulator = getSubscriptionSimulator(this.sendMessageToClient, this.createUpdateMessage, this.createSubscribeStatusMessage);
+    this.subscriptionSimulator = getSubscriptionSimulator(this.sendMessageToClient, this.createDataContentMessage, this.createStatusMessage);
   }
 
   async authenticateAndConnect(): Promise<void> {
-    this.session.authenticateAndConnect();
+    await this.session.authenticateAndConnect();
     const supportedDataPoint: SupportedDataPoints =
       this.getSupportedDataPoints() as SupportedDataPoints;
-    this.dataPointsSchema = createDataPointsSchema(supportedDataPoint);  
+    this.dataPointsSchema = createDataPointsSchema(supportedDataPoint);
   }
 
-  protected subscribe(message: Message, ws: WebSocketWithId): void {
+  protected subscribe(message: SubscribeMessageType, ws: WebSocketWithId): void {
     this.subscriptionSimulator.subscribe(message, ws);
   }
 
-  protected unsubscribe(message: Message, ws: WebSocketWithId): void {
+  protected unsubscribe(message: UnsubscribeMessageType, ws: WebSocketWithId): void {
     this.subscriptionSimulator.unsubscribe(message, ws);
   }
 
   async unsubscribe_client(ws: WebSocketWithId): Promise<void> {
-     this.subscriptionSimulator.unsubscribeClient(ws);
-     await this.session.closeSession();
+    this.subscriptionSimulator.unsubscribeClient(ws);
+    await this.session.closeSession();
   }
   
-  protected async read(message: Message, ws: WebSocketWithId): Promise<void> {
+  protected async set(message: SetMessageType, ws: WebSocketWithId): Promise<void> {
     if (this.areNodesValid(message, ws)) {
+      let statusMessage: StatusMessage;
       try {
-        const responseNodes = await this.queryLastFields(message, ws);
-        if (responseNodes.length > 0) {
-          const responseMessage = this.createUpdateMessage(
-            message.id, message.tree, message.uuid,
-            responseNodes
-          );
-          this.sendMessageToClient(ws, responseMessage);
-        } else {
-          this.sendMessageToClient(
-            ws,
-            createErrorMessage(
-              "read",
-              STATUS_ERRORS.NOT_FOUND,
-              `No data found with the Id: ${message.id}`
-            )
-          );
-        }
-      } catch (error: unknown) {
-        const errMsg = error instanceof Error ? error.message : "Unknown error";
-        this.sendMessageToClient(
-          ws,
-          createErrorMessage("read", STATUS_ERRORS.NOT_FOUND, errMsg)
-        );
-      }
-    }
-  }
-
-  protected async write(message: Message, ws: WebSocketWithId): Promise<void> {
-    if (this.areNodesValid(message, ws)) {
-      try {
-        const data = this.createObjectToInsert(message);
+        const data = this.extractNodesFromMessageWithVinAsNode(message);
         let measurements: string[] = [];
         let dataTypes: string[] = [];
         let values: any[] = [];
@@ -101,12 +70,7 @@ export class IoTDBHandler extends HandlerBase {
           values.push(value);
         }
 
-        const tree = message.tree as keyof typeof databaseParams;
-        if (!tree || !databaseParams[tree]) {
-          throw new Error(`Invalid tree specified: ${message.tree}`);
-        }
-
-        const deviceId = databaseParams[tree].databaseName;
+        const deviceId = databaseParams["VSS"].databaseName;
         const status = await this.insertRecord(
           deviceId,
           measurements,
@@ -114,42 +78,17 @@ export class IoTDBHandler extends HandlerBase {
           values
         );
 
-        logWithColor(
-          `Record inserted to device ${deviceId}, status code: `.concat(
-            JSON.stringify(status)
-          ),
+        logWithColor(`Record inserted to device ${deviceId}, 
+          status code: `.concat(JSON.stringify(status)),
           COLORS.GREY
         );
 
-        const responseNodes = await this.queryLastFields(message, ws);
-
-        if (responseNodes.length) {
-          const responseMessage = this.createUpdateMessage(
-            message.id, message.tree, message.uuid,
-            responseNodes
-          );
-          this.sendMessageToClient(ws, responseMessage);
-        } else {
-          this.sendMessageToClient(
-            ws,
-            createErrorMessage(
-              "write",
-              STATUS_ERRORS.NOT_FOUND,
-              `No data found with the Id: ${message.id}`
-            )
-          );
-        }
+        statusMessage = this.createStatusMessage(STATUS_SUCCESS.OK, "Successfully wrote data to database.");
       } catch (error: unknown) {
         const errMsg = error instanceof Error ? error.message : "Unknown error";
-        this.sendMessageToClient(
-          ws,
-          createErrorMessage(
-            "write",
-            STATUS_ERRORS.SERVICE_UNAVAILABLE,
-            `Failed writing data. ${errMsg}`
-          )
-        );
+        statusMessage = this.createStatusMessage(STATUS_ERRORS.SERVICE_UNAVAILABLE, `Failed writing data. ${errMsg}`);
       }
+      this.sendMessageToClient(ws, statusMessage);
     }
   }
 
@@ -160,27 +99,16 @@ export class IoTDBHandler extends HandlerBase {
    * @param ws - The WebSocket object for communication.
    * @returns - Returns true if all nodes are valid against the schema, otherwise false.
    */
-  private areNodesValid(message: Message, ws: WebSocketWithId): boolean {
-    const { type } = message;
-
-    const errorData = this.validateNodesAgainstSchema(
+  private areNodesValid(message: NewMessage, ws: WebSocketWithId): boolean {
+    const errorMessage = this.validateNodesAgainstSchema(
       message,
       this.dataPointsSchema
     );
 
-    if (errorData) {
-      logErrorStr(
-        `Error validating message nodes against schema: ${JSON.stringify(errorData)}`
-      );
-      this.sendMessageToClient(
-        ws,
-        createErrorMessage(
-          `${type}`,
-          STATUS_ERRORS.NOT_FOUND,
-          JSON.stringify(errorData)
-        )
-      );
-
+    if (errorMessage) {
+      logErrorStr(`Error validating message nodes against schema: ${errorMessage}`);
+      const statusMessage = this.createStatusMessage(STATUS_ERRORS.NOT_FOUND, errorMessage);
+      this.sendMessageToClient(ws, statusMessage);
       return false;
     }
     return true;
@@ -213,6 +141,11 @@ export class IoTDBHandler extends HandlerBase {
       throw "Length of data types does not equal to length of values!";
     }
 
+    // Transform measurements (paths) from dots to underscores
+    const transformedMeasurements = measurements.map((measurement) =>
+      replaceDotsWithUnderscore(measurement)
+    );
+
     // Validate the dataTypes before using them
     const validatedDataTypes: (keyof typeof SupportedMessageDataTypes)[] = [];
 
@@ -232,7 +165,7 @@ export class IoTDBHandler extends HandlerBase {
     const request = new TSInsertRecordReq({
       sessionId: this.session.getSessionId()!,
       prefixPath: deviceId,
-      measurements: measurements,
+      measurements: transformedMeasurements,
       values: valuesInBytes,
       timestamp: Date.now(),
       isAligned: isAligned,
@@ -241,103 +174,35 @@ export class IoTDBHandler extends HandlerBase {
     return await this.session.getClient().insertRecord(request);
   }
 
-  /**
-   * Queries the last fields from the database based on the provided message and sends the response to the client.
-   *
-   * @param message - The message object containing the query details.
-   * @param ws - The WebSocket connection to send the response to.
-   */
-  private async queryLastFields(
-    message: Message,
-    ws: WebSocketWithId
-  ): Promise<Array<{ name: string; value: any }>> {
-    const { id: objectId, tree } = message;
+  async getDataPointsFromDB(
+    dataPoints: string[],
+    vin: string
+  ): Promise<QueryResult> {
 
-    if (!tree || !(tree in databaseParams)) {
-      const errorMsg = `Invalid or undefined tree provided: ${tree}`;
-      logErrorStr(errorMsg);
-      this.sendMessageToClient(
-        ws,
-        createErrorMessage("read", STATUS_ERRORS.NOT_FOUND, errorMsg)
-      );
-      return [];
-    }
-    const { databaseName, dataPointId } =
-      databaseParams[tree as keyof typeof databaseParams];
-
-    const fieldsToSearch = this.extractDataPointsFromNodes(message).join(", ");
-    const sql = `SELECT ${fieldsToSearch} FROM ${databaseName} WHERE ${dataPointId} = '${objectId}' ORDER BY Time ASC`;
+    const {databaseName, dataPointId} = databaseParams["VSS"];
+    const fieldsToSearch = dataPoints.join(", ");
+    const sql = `SELECT ${fieldsToSearch}
+                 FROM ${databaseName}
+                 WHERE ${dataPointId} = '${vin}'
+                 ORDER BY Time ASC`;
 
     try {
       const sessionDataSet = await this.session.executeQueryStatement(sql);
 
       // Check if sessionDataSet is not an instance of SessionDataSet, and handle the error
       if (!(sessionDataSet instanceof SessionDataSet)) {
-        throw new Error(
-          "Failed to retrieve session data. Invalid session dataset."
-        );
+        return {success: false, error: "Invalid session dataset received."};
       }
-      return transformSessionDataSet(sessionDataSet, databaseName);
-      
+      return {success: true, nodes: transformSessionDataSet(sessionDataSet, databaseName)};
+
     } catch (error: unknown) {
-      const errMsg = error instanceof Error ? error.message : "Unknown error";
-      this.sendMessageToClient(
-        ws,
-        createErrorMessage("read", STATUS_ERRORS.SERVICE_UNAVAILABLE, errMsg)
-      );
-      return [];
+      const errMsg = error instanceof Error ? error.message : "Unknown database error";
+      return {success: false, error: errMsg};
     }
   }
 
-  /**
-   * Extracts data point names from the given message.
-   *
-   * This function checks if the message has a single node or multiple nodes and
-   * extracts the names accordingly.
-   *
-   * @param message - The message containing node(s).
-   * @returns An array of data point names.
-   */
-  private extractDataPointsFromNodes(message: Message): string[] {
-    let dataPoints: string[] = [];
-
-    if (message.node) {
-      dataPoints.push(
-        transformDataPointsWithUnderscores(message.node.name)
-      );
-    } else if (message.nodes) {
-      dataPoints = message.nodes.map((node) =>
-        transformDataPointsWithUnderscores(node.name)
-      );
-    }
-    return dataPoints;
-  }
-
-  /**
-   * Creates an object to be inserted into the database based on the provided message.
-   * The object is constructed using the message's ID and its associated nodes.
-   *
-   * @param message - The message object containing the ID, tree, and nodes.
-   * @returns An object representing the data to be inserted.
-   * @throws Will throw an error if the tree is invalid or undefined.
-   */
-  private createObjectToInsert(message: Message): Record<string, any> {
-    const { id, tree } = message;
-
-    if (!tree || !(tree in databaseParams)) {
-      throw new Error(`Invalid or undefined tree provided: ${tree}`);
-    }
-    const { dataPointId } = databaseParams[tree as keyof typeof databaseParams];
-    const data: Record<string, any> = { [dataPointId]: id };
-
-    if (message.node) {
-      data[transformDataPointsWithUnderscores(message.node.name)] =
-        message.node.value;
-    } else if (message.nodes) {
-      message.nodes.forEach((node) => {
-        data[transformDataPointsWithUnderscores(node.name)] = node.value;
-      });
-    }
-    return data;
+  getKnownDatapointsByPrefix(datapointPrefix: string) {
+    const allKnownDataPoints: string[] = Object.keys(this.dataPointsSchema);
+    return allKnownDataPoints.filter(value => value.startsWith(datapointPrefix));
   }
 }

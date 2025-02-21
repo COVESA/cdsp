@@ -5,8 +5,8 @@ This directory contains the IoTDB Handler as a Node.js application. As [Apache I
 # Features
 
 - **Authentication**: Authenticates with IoTDB using the IoTDB host, port, user credentials, number of rows to be fetched, and time zone.
-- **Read Data**: Retrieves data from the IoTDB using a VIN as object ID.
-- **Write Data**: Write data to the IoTDB using a VIN as object ID.
+- **Get Data**: Retrieves data from the IoTDB using a VIN as object ID.
+- **Set Data**: Write data to the IoTDB using a VIN as object ID.
 - **Error Handling**: Logs and handles errors during database operations and synchronization.
 
 # Configure IoTDB

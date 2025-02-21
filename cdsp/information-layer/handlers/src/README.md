@@ -1,21 +1,20 @@
 # Database handlers
 
-This project already contains handlers configured to be use with RealmDB and IoTDB.
+This project already contains handlers configured to be used with RealmDB and IoTDB.
 
 ## Adding a New Database Handler
 
-This project uses a handler interface to dynamically integrate new database backends such as RealmDB or IoTDB. Each handler must implement the core functionality to handle WebSocket messages (read, write, subscribe, unsubscribe).
+This project uses a handler interface to dynamically integrate new database backends such as RealmDB or IoTDB. Each handler must implement the core functionality to handle WebSocket messages (get, set, subscribe, unsubscribe).
 
 ### How to Add a New Database Handler
 
 1. **Create a new handler class**: 
-    Create a new file for your database handler (e.g., `mydb-handler.js`) in the `./mydb/src` directory. This handler should extend the base `Handler` class from [handler.js](./handler.js).
-
+    Create a new file for your database handler (e.g., `mydb-handler.ts`) in the `./mydb/src` directory. This handler should extend the base class from [HandlerBase.js](./HandlerBase.ts).
 2. **Implement the handler methods**: 
     You must implement the following methods in your new handler:
    - `authenticateAndConnect()`: Establish a connection with the database and authenticate.
-   - `read(message, ws)`: Retrieve data from the database based on the incoming WebSocket message.
-   - `write(message, ws)`: Write data to the database.
+   - `get(message, ws)`: Retrieve data from the database based on the incoming WebSocket message.
+   - `set(message, ws)`: Write data to the database.
    - `subscribe(message, ws)`: Subscribe to changes in the database, and automatically send updates over WebSocket.
    - `unsubscribe(message, ws)`: Unsubscribe from database updates.
 
@@ -29,11 +28,11 @@ async authenticateAndConnect() {
     // Connect to your database here
 }
 
-async read(message, ws) {
+async get(message, ws) {
     // Implement the logic to read data from the database
 }
 
-async write(message, ws) {
+async set(message, ws) {
     // Implement the logic to write data to the database
 }
 

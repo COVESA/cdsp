@@ -1,4 +1,4 @@
-import { ErrorMessage } from "../handlers/utils/data-types";
+import { ErrorMessage } from "../router/utils/ErrorMessage";
 
 /**
  * Creates an error message object with the specified category, status code, and message.

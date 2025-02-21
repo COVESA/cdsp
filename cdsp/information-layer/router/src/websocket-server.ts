@@ -1,25 +1,25 @@
-import { v4 as uuidv4 } from 'uuid';
-import WebSocket, { RawData } from "ws";
-import { createHandler } from "../../handlers/src/HandlerCreator";
-import { validateMessage } from "../utils/message-validator";
+import {v4 as uuidv4} from 'uuid';
+import WebSocket, {RawData} from "ws";
+import {createHandler} from "../../handlers/src/HandlerCreator";
+import {RequestValidator} from '../utils/RequestValidator';
 import {
   logMessage,
-  logError,
   logWithColor,
-  MessageType,
+  LogMessageType,
   COLORS,
+  logErrorStr,
 } from "../../utils/logger";
-import { Message, WebSocketWithId } from "../../handlers/utils/data-types";
-
+import {WebSocketWithId} from "../../utils/database-params";
+import {ErrorMessage, STATUS_ERRORS} from "../utils/ErrorMessage";
 // WebSocket server creation
-const server = new WebSocket.Server({ port: 8080 });
+const server = new WebSocket.Server({port: 8080});
 
 // Define clients Map globally to store connected clients
 const clients = new Map<string, WebSocket>();
 
 // Handle new client connections
 server.on("connection", (ws: WebSocket) => {
-  // add a uuid to the websocket connection
+  // add an uuid to the websocket connection
   const wsWithId = addIdToWebsocket(ws);
   const connectionId = wsWithId.id;
   clients.set(connectionId, ws); // Add client to the Map
@@ -30,18 +30,30 @@ server.on("connection", (ws: WebSocket) => {
   // Handle messages from the client
   ws.on("message", (message: WebSocket.RawData) => {
     let messageString = rawDataToString(message);
-    logMessage(JSON.stringify(messageString), MessageType.RECEIVED, connectionId);
-    const validatedMessage = validateMessage(messageString);
+    logMessage(JSON.stringify(messageString), LogMessageType.RECEIVED, connectionId);
 
-    if (validatedMessage instanceof Error) {
-      logError("Invalid message format", validatedMessage);
-      JSON.parse(validatedMessage.message).forEach((error: any) => {
-        ws.send(JSON.stringify(error));
-      });
-    } else {
-      // Pass the validated message to the handler
-      handler.handleMessage(validatedMessage, wsWithId);
+    // validation
+    const validator = new RequestValidator();
+    const result = validator.validate(messageString); // new validation
+
+    if (result.valid) {
+      // Handle valid Message and exit
+      handler.handleMessage(result.message!, wsWithId);
+      return;
     }
+
+    // Unified error section
+    logErrorStr("Processing failed:");
+    result.errors?.forEach((error) => {
+      logErrorStr(error);
+      const statusMessage = {
+        type: "status",
+        code: STATUS_ERRORS.BAD_REQUEST,
+        message: `Processing Error: ${error}`,
+      }
+      ws.send(JSON.stringify(statusMessage));
+    });
+
   });
 
   // Handle client disconnection
@@ -56,7 +68,7 @@ server.on("connection", (ws: WebSocket) => {
 logWithColor(`Web-Socket server started on ws://localhost:8080\n`, COLORS.BOLD);
 
 function addIdToWebsocket(ws: WebSocket): WebSocketWithId {
-  return Object.assign(ws, { id: uuidv4() });
+  return Object.assign(ws, {id: uuidv4()});
 }
 
 

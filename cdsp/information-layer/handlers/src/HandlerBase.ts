@@ -1,62 +1,98 @@
 import fs from "fs";
 import yaml from "js-yaml";
 import {
-  Message,
-  WebSocketWithId,
-  DataPointSchema,
-  MessageBase,
-  ErrorMessage,
-} from "../utils/data-types";
-import { getDataPointsPath } from "../config/config";
-import { logMessage, MessageType } from "../../utils/logger";
-import { transformDataPointsWithUnderscores } from "../utils/transformations";
+  DataContentMessage,
+  ensureMessageType,
+  GetMessageType,
+  NewMessage,
+  NewMessageType,
+  SetMessageType,
+  StatusMessage,
+  SubscribeMessageType, UnsubscribeMessageType
+} from "../../router/utils/NewMessage"
+import {DataPointSchema, WebSocketWithId} from "../../utils/database-params"
+import {ErrorMessage, STATUS_ERRORS} from "../../router/utils/ErrorMessage";
+import {getDataPointsPath} from "../config/config";
+import {logMessage, LogMessageType} from "../../utils/logger";
+import {replaceDotsWithUnderscore, replaceUnderscoresWithDots} from "../utils/transformations";
+import {databaseParams} from "./iotdb/config/database-params";
 
 export abstract class HandlerBase {
+
+  /**
+   *  Returns a list of all known data point names that begin with the specified prefix.
+   */
+  abstract getKnownDatapointsByPrefix(prefix: string): string[]
+  
+  /**
+   * Returns the dataPoints from DB based on the provided list of dataPoints and VIN.
+   * @param dataPoints to extract from DB
+   * @param vin VIN
+   */
+  abstract getDataPointsFromDB(dataPoints: string[], vin: string): Promise<QueryResult>;
+
   // Default implementations of required functions
   authenticateAndConnect(): void {
     logMessage(
       "authenticateAndConnect() is not implemented",
-      MessageType.WARNING
+      LogMessageType.WARNING
     );
   }
 
-  protected read(message: Message, ws: WebSocketWithId): void {
-    logMessage("read() is not implemented", MessageType.WARNING);
+  async get(message: GetMessageType, ws: WebSocketWithId):Promise<void> {
+    const requestedDataPoints = this.getKnownDatapointsByPrefix(message.path);
+
+    if (requestedDataPoints.length === 0) { // no valid datapoints found for requested path 
+      this.sendMessageToClient(ws, this.createStatusMessage(
+        STATUS_ERRORS.BAD_REQUEST,
+        `There are no known datapoints with prefix ${replaceUnderscoresWithDots(message.path)}`
+      ));
+      return;
+    }
+
+    // Access the DB for the datapoints and their values
+    const queryResult = await this.getDataPointsFromDB(requestedDataPoints, message.instance);
+
+    this.sendGetResponseToClient(queryResult, message.instance, requestedDataPoints, ws);
   }
 
-  protected write(message: Message, ws: WebSocketWithId): void {
-    logMessage("write() is not implemented", MessageType.WARNING);
+  protected set(message: SetMessageType, ws: WebSocketWithId): void {
+    logMessage("set() is not implemented", LogMessageType.WARNING);
   }
 
-  protected subscribe(message: Message, ws: WebSocketWithId): void {
-    logMessage("subscribe() is not implemented", MessageType.WARNING);
+  protected subscribe(message: SubscribeMessageType, ws: WebSocketWithId): void {
+    logMessage("subscribe() is not implemented", LogMessageType.WARNING);
   }
 
-  protected unsubscribe(message: Message, ws: WebSocketWithId): void {
-    logMessage("unsubscribe() is not implemented", MessageType.WARNING);
+  protected unsubscribe(message: UnsubscribeMessageType, ws: WebSocketWithId): void {
+    logMessage("unsubscribe() is not implemented", LogMessageType.WARNING);
   }
 
   unsubscribe_client(ws: WebSocketWithId): void {
-    logMessage("unsubscribe_client() is not implemented", MessageType.WARNING);
+    logMessage("unsubscribe_client() is not implemented", LogMessageType.WARNING);
   }
 
-  handleMessage(message: Message, ws: WebSocketWithId): void {
+  handleMessage(message: NewMessage, ws: WebSocketWithId): void {
     try {
       switch (message.type) {
-        case "read":
-          this.read(message, ws);
+        case "get":
+          const aGetMessage = ensureMessageType<GetMessageType>(message, NewMessageType.Get);
+          this.get(aGetMessage, ws);
           break;
-        case "write":
-          this.write(message, ws);
+        case "set":
+          const aSetMessage = ensureMessageType<SetMessageType>(message, NewMessageType.Set);
+          this.set(aSetMessage, ws);
           break;
         case "subscribe":
-          this.subscribe(message, ws);
+          const aSubscribeMessage = ensureMessageType<SubscribeMessageType>(message, NewMessageType.Subscribe);
+          this.subscribe(aSubscribeMessage, ws);
           break;
         case "unsubscribe":
-          this.unsubscribe(message, ws);
+          const anUnsubscribeMessage = ensureMessageType<UnsubscribeMessageType>(message, NewMessageType.Unsubscribe);
+          this.unsubscribe(anUnsubscribeMessage, ws);
           break;
         default:
-          ws.send(JSON.stringify({ error: "Unknown message type" }));
+          ws.send(JSON.stringify({error: "Unknown message type"}));
       }
     } catch (error: unknown) {
       const errMsg = error instanceof Error ? error.message : "Unknown error";
@@ -65,59 +101,113 @@ export abstract class HandlerBase {
   }
 
   /**
+   * Takes the queryResults and sends a response to the client. 3 different responses are possible:
+   * 1. Valida response with all available datapoints in the DB (number of datapoints can be less than requested)
+   * 2. Client Error 404 if no requested datapoint could be found.
+   * 3. Internal Server Error 500 if the DB access was not successful.
+   *
+   */
+  protected sendGetResponseToClient(
+    queryResult: QueryResult,
+    vin: string,
+    requestedDataPoints: string[],
+    ws: WebSocketWithId): void {
+    // There was an issue accessing the DB, notify the client and return
+    if (!queryResult.success) {
+      this.sendMessageToClient(ws, this.createStatusMessage(STATUS_ERRORS.INTERNAL_SERVER_ERROR, queryResult.error));
+      return;
+    }
+
+    let responseMessage: DataContentMessage | StatusMessage;
+    if (queryResult.nodes.length > 0) {
+      responseMessage = this.createDataContentMessage(vin, queryResult.nodes);
+    } else {
+      responseMessage = this.createStatusMessage(
+        STATUS_ERRORS.NOT_FOUND,
+        `No values found for dataPoints [${replaceUnderscoresWithDots(requestedDataPoints.join(", "))}] for the instance: ${vin}`
+      );
+    }
+
+    this.sendMessageToClient(ws, responseMessage);
+  }
+
+  /**
    * Sends a message to the client.
    */
   protected sendMessageToClient(
     ws: WebSocketWithId,
-    message: Message | MessageBase | ErrorMessage
+    message: StatusMessage | DataContentMessage | ErrorMessage
   ): void {
-    logMessage(JSON.stringify(message), MessageType.SENT, ws.id);
+    logMessage(JSON.stringify(message), LogMessageType.SENT, ws.id);
     ws.send(JSON.stringify(message));
   }
 
   /**
-   * Generic function to create an update message.
-   * @param message - The original message from client.
-   * @param nodes - The nodes to be included in the message.
-   * @returns - The transformed message.
+   * Generic function to create a status message.
+   * @param code - status code (http-based).
+   * @param statusMessage - A descriptive message.
+   * @param requestId - The ID of the corresponding request.
+   * @returns - A status message.
    */
-  protected createUpdateMessage(
-    id: string, tree: string, uuid: string,
-    nodes: Array<{ name: string; value: any }>
-  ): Message {
+  protected createStatusMessage(
+    code: number,
+    statusMessage: string,
+    requestId?: string
+  ): StatusMessage {
     return {
-      type: "update",
-      tree,
-      id,
-      dateTime: new Date().toISOString(),
-      uuid,
-      ...(nodes.length === 1
-        ? { node: nodes[0] } // Return single node as 'node'
-        : { nodes }), // Return array as 'nodes' } as Message;
+      type: "status", // Constant string
+      code, // Status code
+      message: statusMessage, // Status message
+      ...(requestId && {requestId}), // Include requestId only if provided
+      timestamp: getCurrentTimestamp(), // Generated timestamp
     };
   }
 
   /**
-   * Generic function to create a subscription status message.
-   * @param type - Type of subscription message.
-   * @param message - The original message from client.
-   * @param status - The status of the subscription.
-   * @returns - The transformed message.
+   * Generic function to create a data content message.
+   * @param instance - The ID of the element in the tree.
+   * @param nodes - the data point nodes.
+   * @param requestId - The ID of the corresponding request.
+   * @param shouldBeNested - Controls format of the data response structure: Nested if true, flat if false.
+   * @returns - A data content message.
    */
-  protected createSubscribeStatusMessage(
-    type: "subscribe" | "unsubscribe",
-    message: Pick<Message, "id" | "tree" | "uuid">,
-    status: string
-  ): MessageBase {
-    const { id, tree, uuid } = message;
+  protected createDataContentMessage(
+    instance: string,
+    nodes: Array<{ name: string; value: any }>,
+    requestId?: string,
+    shouldBeNested: boolean = false
+  ): DataContentMessage {
+    // Ensure nodes are valid
+    if (nodes.length === 0) {
+      throw new Error("Nodes array cannot be empty.");
+    }
+
     return {
-      type: `${type}:status` as MessageBase["type"],
-      tree,
-      id,
-      dateTime: new Date().toISOString(),
-      uuid,
-      status: status,
+      type: "data",
+      instance: instance,
+      schema: getSchemaOrThrow(nodes),
+      data: shouldBeNested ? buildDataStructureAsTreeWithoutRootElement(nodes) : buildDataStructureFlatWithoutRootElement(nodes),
+      requestId: requestId,
     };
+  }
+
+
+  protected extractNodesFromData(path: string, data: Record<string, any>): Record<string, any> {
+    const result: Record<string, any> = {};
+
+    function traverse(currentPath: string, currentData: Record<string, any>): void {
+      for (const [key, value] of Object.entries(currentData)) {
+        const fullPath = `${currentPath}.${key}`;
+        if (typeof value === "object" && value !== null) {
+          traverse(fullPath, value); // Recursive call for nested objects
+        } else {
+          result[fullPath] = value; // Add leaf node to the result
+        }
+      }
+    }
+
+    traverse(path, data);
+    return result;
   }
 
   /**
@@ -179,7 +269,7 @@ export abstract class HandlerBase {
     const supportedDataPoints = this.extractDataTypes(dataPointObj);
     const result: { [key: string]: any } = {};
     Object.entries(supportedDataPoints).forEach(([node, value]) => {
-      const underscored_node = transformDataPointsWithUnderscores(node);
+      const underscored_node = replaceDotsWithUnderscore(node);
       if (value !== null) {
         result[underscored_node] = value;
       }
@@ -190,28 +280,143 @@ export abstract class HandlerBase {
   /**
    * Validates nodes against a given schema.
    *
-   * @param message - The message containing nodes to be validated.
+   * @param message - The message containing a path to be validated.
    * @param dataPointsSchema - The schema against which nodes are validated.
-   * @returns An object containing error details if validation fails, otherwise null.
+   * @returns An error message with details if validation fails, otherwise null.
    */
   protected validateNodesAgainstSchema(
-    message: Message,
+    message: NewMessage,
     dataPointsSchema: DataPointSchema
-  ): object | null {
-    const nodes = message.node ? [message.node] : message.nodes || [];
+  ): string | null {
+    // build the nodes from path and data
+    if (message.type == NewMessageType.PermissionsEdit) {
+      return null;
+    }
+    const data = message.type === NewMessageType.Set ? message.data : undefined;
+    const requestNodes = extractLeafNodesFromRequest(message.path, data);
 
-    const unknownFields = nodes.filter(({ name }) => {
-      const transformedName = transformDataPointsWithUnderscores(name);
-      return !dataPointsSchema.hasOwnProperty(transformedName);
+    const unknownFields = Array.from(requestNodes).filter(node => {
+      return !dataPointsSchema.hasOwnProperty(node);
     });
 
     if (unknownFields.length > 0) {
-      const errors = unknownFields.map(({ name }) => ({
-        name,
-        status: "Parent object or node not found.",
-      }));
-      return errors.length === 1 ? { node: errors[0] } : { nodes: errors };
+      return "Could not find node: " + unknownFields.join(", ");
     }
     return null;
   }
+
+  protected extractNodesFromMessage(message: SetMessageType): Record<string, any> {
+    const result: Record<string, any> = {};
+
+    if (typeof message.data === "object" && message.data !== null) {
+      // Case: data is a nested object or key-value structure
+      const nodes = this.extractNodesFromData(message.path, message.data);
+      for (const [key, value] of Object.entries(nodes)) {
+        result[replaceDotsWithUnderscore(key)] = value;
+      }
+    } else {
+      // Case: data is a single value
+      result[replaceDotsWithUnderscore(message.path)] = message.data;
+    }
+
+    return result;
+  }
+
+  protected extractNodesFromMessageWithVinAsNode(message: SetMessageType): Record<string, any> {
+    const result = this.extractNodesFromMessage(message);
+    // Add VIN as Node
+    const {dataPointId} = databaseParams["VSS"];
+    result[dataPointId] = message.instance;
+    return result;
+  }
 }
+
+function extractLeafNodesFromRequest(path: string, data?: any): Set<string> {
+  const leafNodes = new Set<string>();
+
+  if (data && typeof data === "object") {
+    for (const [key, value] of Object.entries(data)) {
+      const fullPath = `${path}.${key}`;
+      if (typeof value === "object" && value !== null) {
+        // Recursive call for nested objects
+        const childLeafNodes = extractLeafNodesFromRequest(fullPath, value);
+        for (const child of childLeafNodes) {
+          leafNodes.add(child); // Add all child leaf nodes
+        }
+      } else {
+        // If it's not an object, it's a leaf node
+        leafNodes.add(fullPath);
+      }
+    }
+  } else {
+    // If data is not an object, the base path itself is a leaf node
+    leafNodes.add(path);
+  }
+
+  return new Set<string>(
+    Array.from(leafNodes, (value) => replaceDotsWithUnderscore(value))
+  );
+}
+
+/**
+ * Return the schema that is always the prefix (until the first dot) of all node names.
+ * Throw in case of error
+ * @param nodes list of nodes with names and values
+ */
+function getSchemaOrThrow(nodes: Array<{ name: string; value: any }>) {
+  return nodes[0]?.name.split(".")[0] ?? (() => {
+    throw new Error("Nodes array is empty");
+  })();
+}
+
+// Helper function to build the flat data structure string without the root element
+function buildDataStructureFlatWithoutRootElement(
+  nodes: Array<{ name: string; value: any }>
+): Record<string, any> {
+  return nodes.reduce((accumulator, { name, value }) => {
+    const nameWithoutRoot = name.includes(".") ? name.split(".").slice(1).join(".") : name;
+    accumulator[nameWithoutRoot] = value;
+    return accumulator;
+  }, {} as Record<string, any>);
+}
+
+// Helper function to build the nested data structure string without the root element
+function buildDataStructureAsTreeWithoutRootElement(
+  nodes: Array<{ name: string; value: any }>,
+): any {
+  const data: any = {};
+  const splitNames = nodes.map((node) => node.name.split("."));
+
+  for (let i = 0; i < nodes.length; i++) {
+    let currentLevel = data;
+    const remainingPath = splitNames[i].slice(1); // Remaining part of the path after the common prefix
+
+    for (let j = 0; j < remainingPath.length; j++) {
+      const key = remainingPath[j];
+      if (j === remainingPath.length - 1) {
+        // Leaf node
+        currentLevel[key] = nodes[i].value;
+      } else {
+        // Intermediate node
+        if (!currentLevel[key]) {
+          currentLevel[key] = {};
+        }
+        currentLevel = currentLevel[key];
+      }
+    }
+  }
+
+  return data;
+}
+
+function getCurrentTimestamp(): { seconds: number; nanoseconds: number } {
+  const now = new Date();
+  const seconds = Math.floor(now.getTime() / 1000); // Convert milliseconds to seconds
+  const nanoseconds = (now.getTime() % 1000) * 1e6; // Remainder in milliseconds converted to nanoseconds
+  return {seconds, nanoseconds: nanoseconds};
+}
+
+export type QueryResult =
+  | { success: true; nodes: Array<{ name: string; value: any }> }
+  | { success: false; error: string };
+

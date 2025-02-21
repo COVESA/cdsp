@@ -5,8 +5,8 @@ This directory contains the RealmDB Handler as Node.js application. As [RealmDB]
 # Features
 
 - **Authentication**: Authenticates with MongoDB Realm using an API key.
-- **Read Data**: Retrieves data from the Realm database using a VIN (for VSS object) object ID.
-- **Write Data**: Write data to the Realm database using a VIN (for VSS object) as object ID.- 
+- **Get Data**: Retrieves data from the Realm database using a VIN (for VSS object) object ID.
+- **Set Data**: Write data to the Realm database using a VIN (for VSS object) as object ID.- 
 - **Subscribe to Changes**: Listens to changes in specific data objects using VIN (for VSS object) as object ID and sends updates to WebSocket clients.
 - **Unsubscribe to Changes**: Unsubscribe listener to a specific data object using VIN (for VSS object) as object ID.
 - **Unsubscribe client**: Unsubscribe all listeners applied to a client.

@@ -1,6 +1,6 @@
 import { SessionDataSet } from "./SessionDataSet";
 import { IoTDBDataInterpreter } from "./IoTDBDataInterpreter";
-import { transformDataPointsWithDots } from "../../../utils/transformations";
+import { replaceUnderscoresWithDots } from "../../../utils/transformations";
 
 /**
  * Transforms a session data set to a set with the latest values of a vehicle.
@@ -17,12 +17,12 @@ export function transformSessionDataSet(
     while (sessionDataSet.hasNext()) {
       mediaElements.push(sessionDataSet.next());
     }
-
+  
     const latestValues: Record<string, any> = {};
     mediaElements.forEach((mediaElement) => {
       const transformedMediaElement = Object.fromEntries(
         Object.entries(mediaElement).map(([key, value]) => {
-          const newKey = transformDataPointsWithDots(key);
+          const newKey = replaceUnderscoresWithDots(key);
           return [newKey, value];
         })
       );

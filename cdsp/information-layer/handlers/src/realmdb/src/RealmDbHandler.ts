@@ -1,19 +1,26 @@
 import Realm from "realm";
-import { v4 as uuidv4 } from "uuid";
-import { HandlerBase } from "../../../../handlers/src/HandlerBase";
-import { mediaElementsParams, databaseConfig } from "../config/database-params";
-import { realmConfig, SupportedDataPoints } from "../config/realm-config";
+import {v4 as uuidv4} from "uuid";
+import {HandlerBase, QueryResult} from "../../HandlerBase";
+import {mediaElementsParams, databaseConfig, PRIMARY_KEY} from "../config/database-params";
+import {realmConfig, SupportedDataPoints} from "../config/realm-config";
 import {
   logMessage,
   logError,
   logWithColor,
-  MessageType,
+  LogMessageType,
   COLORS,
   logErrorStr,
 } from "../../../../utils/logger";
-import { createErrorMessage } from "../../../../utils/error-message-helper";
-import { WebSocketWithId, Message, STATUS_ERRORS } from "../../../utils/data-types";
-import { transformDataPointsWithDots, transformDataPointsWithUnderscores } from "../../../utils/transformations";
+import {WebSocketWithId} from "../../../../utils/database-params";
+import {STATUS_ERRORS, STATUS_SUCCESS} from "../../../../router/utils/ErrorMessage";
+import {replaceUnderscoresWithDots} from "../../../utils/transformations";
+import {
+  NewMessage,
+  SetMessageType,
+  StatusMessage,
+  SubscribeMessageType,
+  UnsubscribeMessageType
+} from "../../../../router/utils/NewMessage";
 
 // Define a type for changes
 interface Changes {
@@ -33,7 +40,7 @@ function parseOnMediaElementChangeResponse(
   mediaElement: any
 ) {
   return changes.changedProperties.map((prop) => ({
-    name: transformDataPointsWithDots(prop),
+    name: replaceUnderscoresWithDots(prop),
     value: mediaElement[prop],
   }));
 }
@@ -53,7 +60,7 @@ export class RealmDBHandler extends HandlerBase {
 
   async authenticateAndConnect(): Promise<void> {
     try {
-      const app = new Realm.App({ id: databaseConfig!.realmAppId });
+      const app = new Realm.App({id: databaseConfig!.realmAppId});
       const credentials = Realm.Credentials.apiKey(databaseConfig!.realmApiKey);
       const user = await app.logIn(credentials);
       logMessage("Successfully authenticated to RealmDB");
@@ -78,32 +85,29 @@ export class RealmDBHandler extends HandlerBase {
     }
   }
 
-  protected async read(message: Message, ws: WebSocketWithId): Promise<void> {
-    if (this.areNodesValid(message, ws)) {
-      try {
-        const updateMessage = await this.getMessageData(message);
-        this.sendMessageToClient(ws, updateMessage);
-      } catch (error: unknown) {
-        const errMsg = error instanceof Error ? error.message : "Unknown error";
-        logError("Error reading object from Realm", error);
-        this.sendMessageToClient(
-          ws,
-          createErrorMessage("read", STATUS_ERRORS.NOT_FOUND, errMsg)
-        );
-      }
+  getKnownDatapointsByPrefix(prefix: string) {
+    const mediaElementSchema = this.realm?.schema.find(
+      (schema) => schema.name === mediaElementsParams["VSS"].databaseName
+    );
+    const allSchemaFields: string[] = Object.keys(mediaElementSchema?.properties ?? {})
+    // remove primary key from the list of fields, so only datapoints are left
+    const allKnownDataPoints = allSchemaFields.filter(field => field !== PRIMARY_KEY)
+
+    if (allKnownDataPoints.length === 0) {
+      logError("Retrieving known datapoints from RealmDB was not possible. This should not happen!", new Error())
     }
+    return allKnownDataPoints.filter(value => value.startsWith(prefix));
   }
 
-  protected async write(message: Message, ws: WebSocketWithId): Promise<void> {
+  protected async set(message: SetMessageType, ws: WebSocketWithId): Promise<void> {
     if (this.areNodesValid(message, ws)) {
       try {
-        const mediaElement = await this.getMediaElement(message);
-        const nodes = message.node ? [message.node] : message.nodes;
+        const mediaElement = await this.getMediaElement(message.instance);
+        const nodes = this.extractNodesFromMessage(message);
 
-        const transformAndAssign = (element: any, nodes: any[]) => {
-          nodes.forEach(({ name, value }) => {
-            const prop = transformDataPointsWithUnderscores(name);
-            element[prop] = value;
+        const transformAndAssign = (element: any, nodes: Record<string, any>) => {
+          Object.entries(nodes).forEach(([name, value]) => {
+            element[name] = value;
           });
         };
 
@@ -111,69 +115,58 @@ export class RealmDBHandler extends HandlerBase {
           if (mediaElement) {
             transformAndAssign(mediaElement, nodes ?? []);
           } else {
-            if (!message.tree || !mediaElementsParams[message.tree]) {
-              const errorMessage =
-                "Tree is undefined or does not exist in mediaElementsParams";
+            if (!mediaElementsParams["VSS"]) {
+              const errorMessage = "Tree does not exist in mediaElementsParams";
               logErrorStr(errorMessage);
-              this.sendMessageToClient(
-                ws,
-                createErrorMessage(
-                  "write",
-                  STATUS_ERRORS.NOT_FOUND,
-                  errorMessage
-                )
-              );
+              const statusMessage = this.createStatusMessage(STATUS_ERRORS.NOT_FOUND, errorMessage);
+              this.sendMessageToClient(ws, statusMessage);
               return;
             }
 
-            const dataPointId = mediaElementsParams[message.tree].dataPointId;
-            const document = { _id: uuidv4(), [dataPointId]: message.id };
+            const dataPointId = mediaElementsParams["VSS"].dataPointId;
+            const document = {_id: uuidv4(), [dataPointId]: message.instance};
             transformAndAssign(document, nodes ?? []);
-            const databaseName = mediaElementsParams[message.tree].databaseName;
+            const databaseName = mediaElementsParams["VSS"].databaseName;
             this.realm?.create(databaseName, document);
           }
         });
 
-        await this.read(message, ws);
+        const statusMessage = this.createStatusMessage(STATUS_SUCCESS.OK, "Successfully wrote data to database");
+        this.sendMessageToClient(ws, statusMessage);
       } catch (error: unknown) {
         const errMsg = error instanceof Error ? error.message : "Unknown error";
         const errorMessage = `Schema is not compatible for that media element: ${errMsg}`;
         logErrorStr(errorMessage);
-        this.sendMessageToClient(
-          ws,
-          createErrorMessage("write", STATUS_ERRORS.NOT_FOUND, errorMessage)
-        );
+        const statusMessage = this.createStatusMessage(STATUS_ERRORS.NOT_FOUND, errorMessage);
+        this.sendMessageToClient(ws, statusMessage);
       }
     }
   }
 
-  protected async subscribe(message: Message, ws: WebSocketWithId): Promise<void> {
+  protected async subscribe(message: SubscribeMessageType, ws: WebSocketWithId): Promise<void> {
+    let responseMessage: StatusMessage;
     try {
-      const mediaElement = await this.getMediaElement(message);
+      const mediaElement = await this.getMediaElement(message.instance);
 
       if (mediaElement) {
         const objectId = mediaElement._id;
-        const { id, tree, uuid } = message;
-        if (!id || !tree || !mediaElementsParams[tree]) {
-          const errorMessage =
-            "Tree or id is undefined or does not exist in mediaElementsParams";
+        if (!mediaElementsParams["VSS"]) {
+          const errorMessage = "Tree does not exist in mediaElementsParams";
           logErrorStr(errorMessage);
-          this.sendMessageToClient(
-            ws,
-            createErrorMessage("write", STATUS_ERRORS.NOT_FOUND, errorMessage)
-          );
+          const statusMessage = this.createStatusMessage(STATUS_ERRORS.NOT_FOUND, errorMessage);
+          this.sendMessageToClient(ws, statusMessage);
           return;
         }
 
-        const { databaseName, dataPointId } = mediaElementsParams[tree];
+        const {databaseName, dataPointId} = mediaElementsParams["VSS"];
 
         if (!this.listeners.has(ws)) {
           this.listeners.set(ws, new Map());
         }
 
-        if (!this.listeners.get(ws)?.has(id)) {
+        if (!this.listeners.get(ws)?.has(message.instance)) {
           logWithColor(
-            `Subscribing element for user '${uuid}': Object ID: ${objectId} with ${dataPointId}: '${id}' on ${databaseName}`,
+            `Subscribing element: Object ID: ${objectId} with ${dataPointId}: '${message.instance}' on ${databaseName}`,
             COLORS.GREY
           );
 
@@ -181,118 +174,78 @@ export class RealmDBHandler extends HandlerBase {
             this.onMediaElementChange(
               mediaElement,
               changes,
-              { id, tree, uuid },
+              message.instance,
               ws
             );
 
           mediaElement.addListener(listener);
 
-          this.listeners.get(ws)?.set(id, {
+          this.listeners.get(ws)?.set(message.instance, {
             objectId: objectId,
             mediaElement: mediaElement,
             listener: listener,
           });
 
-          this.sendMessageToClient(
-            ws,
-            this.createSubscribeStatusMessage("subscribe", message, "succeed")
-          );
+          responseMessage = this.createStatusMessage(STATUS_SUCCESS.OK, "Successfully subscribed");
 
           logWithColor(
             `Subscription added! Amount Clients: ${this.listeners.size}`,
             COLORS.GREY
           );
         } else {
-          this.sendMessageToClient(
-            ws,
-            createErrorMessage(
-              "subscribe",
-              STATUS_ERRORS.BAD_REQUEST,
-              `Subscription already done to ${dataPointId}: '${id}'`
-            )
-          );
+          responseMessage = this.createStatusMessage(STATUS_ERRORS.SERVICE_UNAVAILABLE,
+            `Subscription already done to ${dataPointId}: '${message.instance}'`);
         }
       } else {
-        this.sendMessageToClient(
-          ws,
-          createErrorMessage(
-            "subscribe",
-            STATUS_ERRORS.BAD_REQUEST,
-            "Object not found"
-          )
-        );
+        responseMessage = this.createStatusMessage(STATUS_ERRORS.SERVICE_UNAVAILABLE,
+          "Object not found");
       }
     } catch (error: unknown) {
       const errMsg = error instanceof Error ? error.message : "Unknown error";
-      this.sendMessageToClient(
-        ws,
-        createErrorMessage(
-          "subscribe",
-          STATUS_ERRORS.SERVICE_UNAVAILABLE,
-          `Subscription process could not finish, try again: ${errMsg}`
-        )
-      );
+      responseMessage = this.createStatusMessage(STATUS_ERRORS.SERVICE_UNAVAILABLE,
+        `Subscription process could not finish, try again: ${errMsg}`);
     }
+    this.sendMessageToClient(ws, responseMessage)
   }
 
-  protected async unsubscribe(message: Message, ws: WebSocketWithId): Promise<void> {
-    const { id, tree, uuid } = message;
-    if (!id || !tree || !mediaElementsParams[tree]) {
-      const errorMessage =
-        "Tree or id is undefined or does not exist in mediaElementsParams";
+  protected async unsubscribe(message: UnsubscribeMessageType, ws: WebSocketWithId): Promise<void> {
+    if (!mediaElementsParams["VSS"]) {
+      const errorMessage = "Tree does not exist in mediaElementsParams";
       logErrorStr(errorMessage);
-      this.sendMessageToClient(
-        ws,
-        createErrorMessage("write", STATUS_ERRORS.NOT_FOUND, errorMessage)
-      );
+      const statusMessage = this.createStatusMessage(STATUS_ERRORS.NOT_FOUND, errorMessage);
+      this.sendMessageToClient(ws, statusMessage);
       return;
     }
 
-    const { databaseName, dataPointId } = mediaElementsParams[tree];
+    const {databaseName, dataPointId} = mediaElementsParams["VSS"];
 
+    let responseMessage: StatusMessage;
     if (this.listeners.has(ws)) {
       const wsListeners = this.listeners.get(ws);
-      if (wsListeners?.has(id)) {
-        const listener = wsListeners.get(id);
+      if (wsListeners?.has(message.instance)) {
+        const listener = wsListeners.get(message.instance);
         logWithColor(
-          `Unsubscribing element for user '${uuid}': Object ID: ${listener.objectId} with ${dataPointId}: '${id}' on ${databaseName}`,
+          `Unsubscribing element: Object ID: ${listener.objectId} with ${dataPointId}: '${message.instance}' on ${databaseName}`,
           COLORS.GREY
         );
         listener.mediaElement.removeListener(listener.listener);
-        wsListeners.delete(id);
+        wsListeners.delete(message.instance);
 
         if (wsListeners.size === 0) {
           this.listeners.delete(ws);
         }
 
-        this.sendMessageToClient(
-          ws,
-          this.createSubscribeStatusMessage("unsubscribe", message, "succeed")
-        );
+        logWithColor(`Subscription removed! Amount Clients: ${this.listeners.size}`, COLORS.GREY);
+        responseMessage = this.createStatusMessage(STATUS_SUCCESS.OK, "Successfully unsubscribed");
       } else {
-        this.sendMessageToClient(
-          ws,
-          createErrorMessage(
-            "unsubscribe",
-            STATUS_ERRORS.BAD_REQUEST,
-            `No subscription found for VIN: ${id}`
-          )
-        );
+        responseMessage = this.createStatusMessage(STATUS_ERRORS.BAD_REQUEST,
+          `No subscription found for VIN: ${message.instance}`);
       }
     } else {
-      this.sendMessageToClient(
-        ws,
-        createErrorMessage(
-          "unsubscribe",
-          STATUS_ERRORS.BAD_REQUEST,
-          `No subscription found for this client`
-        )
-      );
+      responseMessage = this.createStatusMessage(STATUS_ERRORS.BAD_REQUEST,
+        `No subscription found for this client`);
     }
-    logWithColor(
-      `Subscription removed! Amount Clients: ${this.listeners.size}`,
-      COLORS.GREY
-    );
+    this.sendMessageToClient(ws, responseMessage);
   }
 
   async unsubscribe_client(ws: WebSocketWithId): Promise<void> {
@@ -310,110 +263,78 @@ export class RealmDBHandler extends HandlerBase {
    * @param ws - The WebSocket object for communication.
    * @returns - Returns true if all nodes are valid against the schema, otherwise false.
    */
-  private areNodesValid(message: Message, ws: WebSocketWithId): boolean {
-    const { type, tree } = message;
-    if (!tree || !mediaElementsParams[tree]) {
-      logErrorStr("Tree is undefined or does not exist in mediaElementsParams");
-      return false;
-    }
-
-    const { databaseName } = mediaElementsParams[tree];
+  private areNodesValid(message: NewMessage, ws: WebSocketWithId): boolean {
+    const {databaseName} = mediaElementsParams["VSS"];
 
     const mediaElementSchema = this.realm?.schema.find(
       (schema) => schema.name === databaseName
     );
 
-    const errorData = this.validateNodesAgainstSchema(
+    const errorMessage = this.validateNodesAgainstSchema(
       message,
       mediaElementSchema?.properties ?? {}
     );
 
-    if (errorData) {
-      logErrorStr(
-        `Error validating message nodes against schema: ${JSON.stringify(errorData)}`
-      );
-      this.sendMessageToClient(
-        ws,
-        createErrorMessage(
-          `${type}`,
-          STATUS_ERRORS.NOT_FOUND,
-          JSON.stringify(errorData)
-        )
-      );
+    if (errorMessage) {
+      logErrorStr(`Error validating message nodes against schema: ${errorMessage}`);
+      const statusMessage = this.createStatusMessage(STATUS_ERRORS.NOT_FOUND, errorMessage);
+      this.sendMessageToClient(ws, statusMessage);
       return false;
     }
     return true;
   }
 
-  /**
-   * Asynchronously processes a message to fetch and handle media data.
-   *
-   * @param  message - The message object containing details for the request.
-   * @returns Returns a promise that resolves to an updated message object.
-   * @throws Throws an error if no media element for the message ID is found.
-   * @private
-   */
-  private async getMessageData(message: Message): Promise<Message> {
-    const mediaElement = await this.getMediaElement(message);
-
+  async getDataPointsFromDB(dataPoints: string[], vin: string): Promise<QueryResult> {
+    const mediaElement = await this.getMediaElement(vin);
     if (!mediaElement) {
-      throw new Error(`No data found with the Id: ${message.id}`);
+      return {success: false, error: `No data found with the Id: ${vin}`}
     }
 
-    logWithColor(
-      `Media Element: \n ${JSON.stringify(mediaElement)}`,
-      COLORS.GREY
-    );
+    logWithColor(`Media Element: \n ${JSON.stringify(mediaElement)}`, COLORS.GREY);
+    const responseNodes = this.extractNodes(dataPoints, mediaElement);
+    const responseNodesWithDots = responseNodes.map(node => ({
+      name: replaceUnderscoresWithDots(node.name),
+      value: node.value
+    }));
 
-    const responseNodes = this.parseReadResponse(message, mediaElement);
-    return this.createUpdateMessage(message.id, message.tree, message.uuid, responseNodes);
+    return {success: true, nodes: responseNodesWithDots};
   }
 
+
   /**
-   * Parses the response from a read event.
+   * Extract from the media element the requested datapoints with their values
    *
-   * @param message - The message object containing node or nodes information.
-   * @param queryResponseObj - The query response object containing values to be mapped.
-   * @returns - A data object with keys from the message nodes and values from the query response.
+   * @param requestedDataPoints DataPoints of interest.
+   * @param mediaElement - The RealmDB query response object containing all key value pairs.
+   * @returns - A list of nodes (name-value pairs) from a media element for provided list of datapoints.
    * @private
    */
-  private parseReadResponse(
-    message: Message,
-    queryResponseObj: any
+  private extractNodes(
+    requestedDataPoints: string[],
+    mediaElement: any
   ): { name: string; value: any }[] {
     const data: { name: string; value: any }[] = [];
-    const nodes = message.node ? [message.node] : message.nodes;
-    nodes?.forEach((node: any) => {
-      const prop = transformDataPointsWithUnderscores(node.name);
+    requestedDataPoints.forEach((dataPoint) => {
       data.push({
-        name: node.name,
-        value: queryResponseObj[prop],
+        name: dataPoint,
+        value: mediaElement[dataPoint],
       });
-    });
+    })
     return data;
   }
 
   /**
-   * Asynchronously retrieves a media element from the database based on the provided message.
+   * Asynchronously retrieves a media element from the database based on the provided vin.
    *
-   * @param message - The message containing the id and tree information.
-   * @returns - The media element object from the database.
+   * @param vin - VIN
+   * @returns - The media element object from the database for provided VIN
    * @private
    */
-  private async getMediaElement(message: Message): Promise<any> {
+  private async getMediaElement(vin: string): Promise<any> {
     try {
-      const { id, tree } = message;
-      if (!tree || !mediaElementsParams[tree]) {
-        logErrorStr(
-          "Tree is undefined or does not exist in mediaElementsParams"
-        );
-        return false;
-      }
-
-      const { databaseName, dataPointId } = mediaElementsParams[tree];
-      return await this.realm
-        ?.objects(databaseName)
-        .filtered(`${dataPointId} = '${id}'`)[0];
+      const {databaseName, dataPointId} = mediaElementsParams["VSS"];
+      return this.realm?.objects(databaseName)
+        .filtered(`${dataPointId} = '${vin}'`)[0];
     } catch (error: unknown) {
       logError("Error trying to get media element from Realm", error);
     }
@@ -423,18 +344,18 @@ export class RealmDBHandler extends HandlerBase {
    * Handles changes to a media element and sends update messages to clients.
    * @param mediaElement - The media element that has changed.
    * @param changes - An object containing information about the changes.
-   * @param messageHeader - The header information for the message.
+   * @param instance - Vehicle identifier for the client message.
    * @param ws - The WebSocket object for communication.
    */
   private onMediaElementChange(
     mediaElement: any,
     changes: Changes,
-    messageHeader: Pick<Message, "id" | "tree" | "uuid">,
+    instance: string,
     ws: WebSocketWithId
   ): void {
     logMessage(
       "Media element changed",
-      MessageType.RECEIVED,
+      LogMessageType.RECEIVED,
       `Web-Socket Connection Event Received`
     );
     if (changes.deleted) {
@@ -445,11 +366,8 @@ export class RealmDBHandler extends HandlerBase {
           changes,
           mediaElement
         );
-        const updateMessage = this.createUpdateMessage(
-          messageHeader.id, messageHeader.tree, messageHeader.uuid,
-          responseNodes
-        );
-        this.sendMessageToClient(ws, updateMessage);
+        const dataContentMessage = this.createDataContentMessage(instance, responseNodes);
+        this.sendMessageToClient(ws, dataContentMessage);
       }
     }
   }

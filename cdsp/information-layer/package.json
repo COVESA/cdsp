@@ -11,10 +11,13 @@
     "lint": "eslint",
     "lint-and-fix": "eslint --fix",
     "build": "tsc && npm run copy-files",
-    "start": "node ./dist/router/src/websocket-server.js"
+    "start": "node ./dist/router/src/websocket-server.js",
+    "test": "jest"
   },
   "dependencies": {
     "ajv": "^8.17.1",
+    "ajv-errors": "^3.0.0",
+    "ajv-formats": "^3.0.1",
     "dotenv": "^16.4.5",
     "js-yaml": "^4.1.0",
     "realm": "^12.13.1",

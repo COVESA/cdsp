@@ -84,8 +84,10 @@ HANDLER_TYPE=iotdb IOTDB_HOST=localhost npm start
 
 ### Prepare cloud
 
-- Ensure that in your [ATLAS cloud](https://cloud.mongodb.com/) app there is a vehicle _document_ with an `Vehicle_VehicleIdentification_VIN` in a collection named _`Vehicles`_.
-- Ensure that this document as well contains VSS data. Here you can see the data supported in this repository for a vehicle document within _Vehicles_ that should be reflected in ATLAS:
+- Ensure that in your [ATLAS cloud](https://cloud.mongodb.com/) app there is a vehicle _document_ with an
+  `Vehicle_VehicleIdentification_VIN` in a collection named _`Vehicles`_.
+- Ensure that this document as well contains VSS data. Here you can see the data supported in this repository for a vehicle document within
+  _Vehicles_ that should be reflected in ATLAS:
 
 ```
 _id: "<SOME_STRING>" (String)
@@ -118,116 +120,139 @@ Connect your own websocket client by connecting to `ws://localhost:8080`.
 
 The examples use [websocat](https://github.com/vi/websocat) and [jq](https://github.com/jqlang/jq)
 
-## Read
+## Get
 
 Schema:
-```jsonc
+```yaml
+# only the root node provided to get all data points
 {
-  "type": "read",
-  "tree": "VSS",
-  "id": "123", // The VIN
-  "uuid": "testClient", // The unique client ID
-  // For reading one
-  "node": { "name": "Vehicle.Speed" },
-  // For reading N
-  "nodes": [{ "name": "Vehicle.Speed" },{ "name": "Vehicle.TraveledDistance" }]
+  "type": "get",
+  "instance": "WBY11CF080CH470711_test1",
+  "schema": "Vehicle",
+  "requestId": "123-456"
 }
+# with path to non-leaf node to get multiple data points below this node
+{
+  "type": "get",
+  "instance": "WBY11CF080CH470711_test1",
+  "schema": "Vehicle",
+  "path": "CurrentLocation",
+  "requestId": "123-456"
+}
+# with path to leaf node to get one data point
+{
+  "type": "get",
+  "instance": "WBY11CF080CH470711_test1",
+  "schema": "Vehicle",
+  "path": "CurrentLocation.Latitude",
+  "requestId": "123-456"
+  }
 ```
 
+Example (websocat currently not working because of racing condition between DB connection creation and DB request):
+```bash
+echo '{"type": "get","instance": "WBY11CF080CH470711_test1","schema": "Vehicle","path": "Speed","requestId": "123-456"}' | websocat ws://localhost:8080 | jq
+```
+
+## Set
+
+Schema:
+```yaml
+# leaf node with single value in data
+{
+  "type": "set",
+  "path": "CurrentLocation.Latitude",
+  "instance": "WBY11CF080CH470711_test1",
+  "schema": "Vehicle",
+  "data": 21,
+  "requestId": "235-183"
+}
+# root node with multiple values in data nested and flat (no path provided)
+{
+  "type": "set",
+  "instance": "WBY11CF080CH470711_test1",
+  "schema": "Vehicle",
+  "data": {
+    "CurrentLocation": {
+      "Latitude": 22,
+      "Longitude": 46
+    },
+    "Chassis.SteeringWheel.Angle": 22
+  },
+  "requestId": "235-183"
+}
+# non-leaf node with multiple values in data
+{
+  "type": "set",
+  "instance": "WBY11CF080CH470711_test1",
+  "schema": "Vehicle",
+  "path": "CurrentLocation",
+  "data": {
+    "Latitude": 22,
+    "Longitude": 46
+  },
+  "requestId": "235-183"
+}
+```
 Example:
 ```bash
-echo '{ "type": "read", "tree": "VSS", "id": "123", "uuid": "testClient", "node": { "name": "Vehicle.Speed" } }' | websocat ws://localhost:8080 | jq
+echo '{"type": "set","path": "CurrentLocation.Latitude","instance": "WBY11CF080CH470711_test1","schema": "Vehicle","data": 21}' | websocat ws://localhost:8080 | jq
 ```
-```json
+```yaml
 {
-  "type": "update",
-  "tree": "VSS",
-  "id": "123",
-  "dateTime": "2024-10-16T12:09:13.084Z",
-  "uuid": "test",
-  "node": {
-    "name": "Vehicle.Speed",
-    "value": 300
+  "type": "status",
+  "code": 200,
+  "message": "Successfully wrote data to database.",
+  "timestamp": {
+    "seconds": 1738613888,
+    "nanos": 143000000
   }
 }
 ```
 
-## Write
+## Subscribe
 
 Schema:
-```jsonc
-{
-  "type": "write",
-  "tree": "VSS",
-  "id": "123", // The VIN
-  "uuid": "testClient", // The unique client ID
-  // For writing one
-  "node": { "name": "Vehicle.Speed", "value": 300 },
-  // For writing N
-  "nodes": [{ "name": "Vehicle.Speed", "value": 300 },{ "name": "Vehicle.TraveledDistance", "value": 100000 }]
-}
-```
-Example:
-```bash
-echo '{ "type": "write", "tree": "VSS", "id": "123", "uuid": "testClient", "node": { "name": "Vehicle.Speed", "value": 300 } }' | websocat ws://localhost:8080 | jq
-```
-```json
-{
-  "type": "update",
-  "tree": "VSS",
-  "id": "123",
-  "dateTime": "2024-10-16T12:09:13.084Z",
-  "uuid": "test",
-  "node": {
-    "name": "Vehicle.Speed",
-    "value": 300
-  }
-}
-```
-
-## Subscribe (Realm Only)
-
-Schema:
-```json
+```yaml
 {
   "type": "subscribe",
-  "tree": "VSS",
-  "id": "123",
-  "uuid": "testClient"
+  "instance": "WBY11CF080CH470711_test1",
+  "schema": "Vehicle"
 }
 ```
 
 On success:
-```json
+```yaml
 {
-  "type": "subscribe:status",
-  "tree": "VSS",
-  "id": "123",
-  "dateTime": "2024-09-12T15:50:17.232Z",
-  "uuid": "testClient",
-  "status": "succeed"
+  "type": "status",
+  "code": 200,
+  "message": "Successfully subscribed",
+  "timestamp": {
+    "seconds": 1738613971,
+    "nanos": 955000000
+  }
 }
 ```
 ## Unsubscribe
 
-```json
+```yaml
 {
   "type": "unsubscribe",
-  "tree": "VSS",
-  "id": "123",
-  "uuid": "testClient"
+  "schema": "Vehicle",
+  "instance": "WBY11CF080CH470711_test1"
 }
 ```
 
 On success:
-```json
+```yaml
 {
-  "type": "unsubscribe:status",
-  "tree": "VSS",
-  "id": "123",
-  "dateTime": "2024-09-12T17:40:00.754Z",
-  "uuid": "testClient",
-  "status": "succeed"
+  "type": "status",
+  "code": 200,
+  "message": "Successfully unsubscribed",
+  "timestamp": {
+    "seconds": 1738614001,
+    "nanos": 562000000
+  }
 }
 ```
 

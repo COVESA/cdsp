@@ -1,4 +1,4 @@
-import { mediaElementsParams, databaseConfig } from "./database-params";
+import {mediaElementsParams, databaseConfig, PRIMARY_KEY} from "./database-params";
 import { getEnvValue } from "../../../config/config";
 import { User, Configuration, SyncConfiguration } from "realm"; // Import Realm SDK types
 import { logError } from "../../../../utils/logger";
@@ -62,7 +62,7 @@ function createMediaElementSchema(
   });
 
   return {
-    primaryKey: "_id",
+    primaryKey: PRIMARY_KEY,
     name: mediaElementsParams.VSS.databaseName, // Assuming mediaElementsParams contains 'VSS'
     properties: properties,
   };
@@ -86,7 +86,7 @@ const getSchemaVersion = (): number => {
  * Configures the Realm database settings.
  *
  * @param user - The user object for authentication.
- * @param  supportedEndpoints - List of supported endpoints for the media element schema.
+ * @param  supportedDataPoints - List of supported datapoints for the media element schema.
  * @return The configuration object for the Realm database.
  */
 export function realmConfig(

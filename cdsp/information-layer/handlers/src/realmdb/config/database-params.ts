@@ -1,5 +1,5 @@
 import { getEnvValue } from "../../../config/config";
-import { DatabaseParamsRecord } from "../../../utils/data-types";
+import { DatabaseParamsRecord } from "../../../../utils/database-params";
 
 interface RealmDBConfig {
   storePath: string;
@@ -49,3 +49,8 @@ const getDatabaseConfig = (): Readonly<RealmDBConfig> => {
  */
 export const databaseConfig =
   getEnvValue("HANDLER_TYPE") === "realmdb" ? getDatabaseConfig() : undefined;
+
+/**
+ * Primary Key that should be used when storing entities in RealmDB
+ */
+export const PRIMARY_KEY = "_id"

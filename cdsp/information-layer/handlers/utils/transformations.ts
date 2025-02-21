@@ -1,18 +1,18 @@
   /**
-   * Transforms a database field name by replacing underscores with dots.
-   * @param field - The database filed to transform.
-   * @returns - The transformed to message node replacing underscores by dots.
+   * Replace all underscores in the string with dots.
+   * @param str - The database filed to transform.
+   * @returns - The transformed string with underscores replaced by dots.
    */
-  export function transformDataPointsWithDots(field: string): string {
-    return field.replace(/\_/g, ".");
+  export function replaceUnderscoresWithDots(str: string): string {
+    return str.replace(/\_/g, ".");
   }
 
   /**
-   * Transforms a message node by replacing dots with underscores.
-   * @param node - The message node to transform.
-   * @returns - The transformed message node with dots replaced by underscores.
+   * Replace all dots in the string with underscores.
+   * @param str - The string to transform.
+   * @returns - The transformed string with dots replaced by underscores.
    */
-  export function transformDataPointsWithUnderscores(node: string): string {
-    return node.replace(/\./g, "_");
+  export function replaceDotsWithUnderscore(str: string): string {
+    return str.replace(/\./g, "_");
   }
 

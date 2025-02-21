@@ -1,5 +1,5 @@
 import { getEnvValue } from "../../../config/config";
-import { DatabaseParamsRecord } from "../../../utils/data-types";
+import { DatabaseParamsRecord } from "../../../../utils/database-params";
 
 /**
  * Defines the shape of the IoTDB configuration object.
