@@ -75,13 +75,13 @@ bool RDFoxAdapter::checkDataStore() {
  * @param content_type The content type of the data to be loaded. Default is "text/turtle".
  * @return true if the data is successfully loaded; false otherwise.
  */
-bool RDFoxAdapter::loadData(const std::string& data, const std::string& content_type) {
+bool RDFoxAdapter::loadData(const std::string& data, const RDFSyntaxType& content_type) {
     std::string target = "/datastores/" + data_store_ + "/content";
 
     return createRequestBuilder()
         ->setMethod(http::verb::post)
         .setTarget(target)
-        .setContentType(content_type)
+        .setContentType(RDFSyntaxTypeToContentType(content_type))
         .setBody(data)
         .sendRequest();
 };
@@ -96,7 +96,7 @@ bool RDFoxAdapter::loadData(const std::string& data, const std::string& content_
  * @return The response body of the query.
  */
 std::string RDFoxAdapter::queryData(const std::string& sparql_query,
-                                    const std::string& accept_type) {
+                                    const DataQueryAcceptType& accept_type) {
     std::string target = "/datastores/" + data_store_ + "/sparql";
     std::string response_body;
     return createRequestBuilder()
@@ -104,6 +104,7 @@ std::string RDFoxAdapter::queryData(const std::string& sparql_query,
                    .setTarget(target)
                    .setContentType("application/sparql-query")
                    .setBody(sparql_query)
+                   .setAcceptType(queryAcceptTypeToString(accept_type))
                    .sendRequest(nullptr, &response_body)
                ? response_body
                : "";
@@ -263,7 +264,8 @@ std::string RDFoxAdapter::createCursor(const std::string& connection_id,
  *         - Returns `false` if the operation is invalid or if the request fails.
  */
 bool RDFoxAdapter::advanceCursor(const std::string& connection_id, const std::string& auth_token,
-                                 const std::string& cursor_id, const std::string& accept_type,
+                                 const std::string& cursor_id,
+                                 const DataQueryAcceptType& accept_type,
                                  const std::string& operation, std::optional<int> limit,
                                  std::string* response) {
     if (operation != "open" && operation != "advance") {
@@ -281,7 +283,7 @@ bool RDFoxAdapter::advanceCursor(const std::string& connection_id, const std::st
         ->setMethod(http::verb::patch)
         .setAuthorization(auth_token)
         .setTarget(target)
-        .setAcceptType(accept_type)
+        .setAcceptType(queryAcceptTypeToString(accept_type))
         .sendRequest(nullptr, response);
 }
 

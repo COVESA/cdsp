@@ -27,4 +27,4 @@ std::string rdf_output = writer.generateTripleOutput(RDFSyntaxType::TURTLE);
 
 # Testing
 
-An Integration [test](../tests/) is provided to ensure functionality. Tests cover the main components (`TripleAssembler`, `TripleWriter`) to verify to verify message transformation, RDF generation, and error handling.
+An Integration [test](../tests/) is provided to ensure functionality. Tests cover the main components (`TripleAssembler`, `TripleWriter`) to verify message transformation, RDF generation, and error handling.

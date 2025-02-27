@@ -1,28 +1,35 @@
 #include <iostream>
 #include <string>
 
+#include "helper.h"
 #include "observation_id_utils.h"
 #include "random_utils.h"
 #include "utc_date_utils.h"
 #include "websocket_client_base_integration_test.h"
 
+#define ASSERT_CONDITIONAL(condition, expected, message) \
+    do {                                                 \
+        if (expected) {                                  \
+            ASSERT_TRUE(condition) << message;           \
+        } else {                                         \
+            ASSERT_FALSE(condition) << message;          \
+        }                                                \
+    } while (0)
+
 class WebSocketClientCoordinatesIntegrationTest : public WebSocketClientBaseIntegrationTest {
    protected:
-    const std::string createObservationQuery(
-        const std::string& vin, const std::string& observation_id, const std::string& class_name,
-        const std::string& observed_property, const std::string& node_value,
-        const std::string& node_type, const std::string& date_time) {
+    const std::string createObservationQuery(const std::string& vin, const std::string& class_name,
+                                             const std::string& observed_property,
+                                             const std::string& node_value,
+                                             const std::string& node_type,
+                                             const std::string& data_time) {
         return R"(
             PREFIX car: <http://example.ontology.com/car#>
             PREFIX sosa: <http://www.w3.org/ns/sosa/>
             PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
-            SELECT ?exists ?ntmValue WHERE {
-                {
-                    car:)" +
-               class_name + vin + R"( a car:)" + class_name + R"( .
-                    car:Observation)" +
-               observation_id + R"( a sosa:Observation ;
+            SELECT ?obs ?ntmValue {
+                    ?obs a sosa:Observation ;
                         sosa:hasFeatureOfInterest car:)" +
                class_name + vin + R"( ;
                         sosa:hasSimpleResult ")" +
@@ -30,144 +37,285 @@ class WebSocketClientCoordinatesIntegrationTest : public WebSocketClientBaseInte
                         sosa:observedProperty car:)" +
                observed_property + R"( ;
                         sosa:phenomenonTime ")" +
-               date_time + R"("^^xsd:dateTime ;
-                        car:hasSimpleResultNTM ?ntmValue.
-                }
-                BIND(true AS ?exists)
+               data_time + R"("^^xsd:dateTime ;
+                        car:hasSimpleResultNTM ?ntmValue.                
             } LIMIT 1
         )";
     }
 
-    // Helper function to simulate receiving messages and verify RDFox data
-    void processAndVerifyMessages(
-        const std::vector<std::pair<std::string, std::vector<Node>>>& messages,
-        const std::string& latitude, const std::string& longitude,
-        const std::string& expected_date_time, bool expect_exists,
-        const int consecutive_observation_latitude = 0,
-        const int consecutive_observation_longitude = 1) {
-        // Add received messages
-        for (const auto& [date_time, nodes] : messages) {
-            mock_connection_->addReceivedMessage(
-                createUpdateMessage(init_config_.oid, date_time, nodes));
+    /**
+     * Processes and verifies messages by adding them to a mock connection, executing a mock
+     * WebSocket behavior, and querying RDFox to verify the existence of latitude and longitude
+     * observations.
+     *
+     * @param messages_nodes A vector of vectors containing Node objects representing the messages
+     * to be processed.
+     * @param latitude The expected latitude value to verify in the RDFox query.
+     * @param longitude The expected longitude value to verify in the RDFox query.
+     * @param expect_exists A boolean indicating whether the observations are expected to exist in
+     * the RDFox query results.
+     * @param consecutive_observation_latitude An integer representing the expected consecutive
+     * observation ID for latitude. Defaults to 0.
+     * @param consecutive_observation_longitude An integer representing the expected consecutive
+     * observation ID for longitude. Defaults to 1.
+     */
+    void processAndVerifyMessages(const std::vector<std::vector<MessageNodeData>>& messages_nodes,
+                                  const std::string& latitude, const std::string& longitude,
+                                  const std::string& data_time_latitude,
+                                  const std::string& data_time_longitude, bool expect_exists,
+                                  const int consecutive_observation_latitude = 0,
+                                  const int consecutive_observation_longitude = 1) {
+        // Add received messages_nodes
+        for (const auto& nodes : messages_nodes) {
+            std::string vin = init_config_.oid.at(SchemaType::VEHICLE);
+            mock_connection_->addReceivedMessage(createDataJsonMessage(vin, nodes));
         }
 
         // Use the inherited mockWebSocketBehavior
         mockWebSocketBehavior();
 
         // Verify triples in RDFox
-        const std::string observation_id_latitude =
-            ObservationIdentifier::createObservationIdentifier(expected_date_time,
-                                                               consecutive_observation_latitude);
-        const std::string observation_id_longitude =
-            ObservationIdentifier::createObservationIdentifier(expected_date_time,
-                                                               consecutive_observation_longitude);
+        std::string vin = init_config_.oid.at(SchemaType::VEHICLE);
+        std::string sparql_query_latitude = createObservationQuery(
+            vin, "CurrentLocation", "latitude", latitude, "double", data_time_latitude);
+        std::string sparql_query_longitude = createObservationQuery(
+            vin, "CurrentLocation", "longitude", longitude, "double", data_time_longitude);
 
-        std::string sparql_query_latitude =
-            createObservationQuery(init_config_.oid, observation_id_latitude, "CurrentLocation",
-                                   "latitude", latitude, "double", expected_date_time);
-        std::string sparql_query_longitude =
-            createObservationQuery(init_config_.oid, observation_id_longitude, "CurrentLocation",
-                                   "longitude", longitude, "double", expected_date_time);
+        std::string result_latitude =
+            rdfox_adapter_->queryData(sparql_query_latitude, DataQueryAcceptType::SPARQL_JSON);
+        std::string result_longitude =
+            rdfox_adapter_->queryData(sparql_query_longitude, DataQueryAcceptType::SPARQL_JSON);
 
-        std::string result_latitude = rdfox_adapter_->queryData(sparql_query_latitude);
-        std::string result_longitude = rdfox_adapter_->queryData(sparql_query_longitude);
+        // Helper function to check if the observation exists and `ntmValue` is valid
+        auto verifyObservation = [](const std::string& result, bool expect_exist,
+                                    int expected_obs_id) {
+            try {
+                json json_result = json::parse(result);
 
-        // Assert data existence or absence in RDFox
-        if (expect_exists) {
-            ASSERT_TRUE(result_latitude.find("true") != std::string::npos)
-                << "Expected latitude triples not found in RDFox.";
-            ASSERT_TRUE(result_longitude.find("true") != std::string::npos)
-                << "Expected longitude triples not found in RDFox.";
-        } else {
-            ASSERT_FALSE(result_latitude.find("true") != std::string::npos)
-                << "Unexpected latitude triples found in RDFox.";
-            ASSERT_FALSE(result_longitude.find("true") != std::string::npos)
-                << "Unexpected longitude triples found in RDFox.";
-        }
+                // Check if the expected structure exists
+                if (!json_result.contains("results") ||
+                    !json_result["results"].contains("bindings")) {
+                    FAIL() << "Missing expected observation data in RDFox response!";
+                }
+                if (!expect_exist) {
+                    ASSERT_TRUE(json_result["results"]["bindings"].empty())
+                        << "Unexpected observation data found in RDFox response!";
+                } else {
+                    json first_binding = json_result["results"]["bindings"][0];
+
+                    // Assert observation ID exists
+                    ASSERT_TRUE(first_binding.contains("obs") &&
+                                first_binding["obs"].contains("value"))
+                        << "Observation ID is missing in RDFox response!";
+                    std::string observation_id = first_binding["obs"]["value"];
+                    ASSERT_TRUE(observation_id.find("O" + std::to_string(expected_obs_id)) !=
+                                std::string::npos)
+                        << "Expected observation ID not found! Found: " << observation_id;
+
+                    // Assert `ntmValue` exists and is a valid float/double
+                    ASSERT_TRUE(first_binding.contains("ntmValue") &&
+                                first_binding["ntmValue"].contains("value"))
+                        << "ntmValue is missing in RDFox response!";
+                    std::string ntm_value_str = first_binding["ntmValue"]["value"];
+
+                    std::regex float_regex(R"([-+]?\d*\.?\d+([eE][-+]?\d+)?)");
+                    ASSERT_TRUE(std::regex_match(ntm_value_str, float_regex))
+                        << "Invalid ntmValue format: " << ntm_value_str;
+                }
+
+            } catch (const std::exception& e) {
+                FAIL() << "JSON Parsing failed: " << e.what();
+            }
+        };
+
+        // Check latitude and longitude observations
+        verifyObservation(result_latitude, expect_exists, consecutive_observation_latitude);
+        verifyObservation(result_longitude, expect_exists, consecutive_observation_longitude);
     }
 };
 
+/**
+ * @brief Test case for verifying that coordinates in the same message generate triples.
+ *
+ * This test generates random latitude and longitude values, constructs message nodes
+ * with these coordinates, and verifies that the messages are processed correctly to
+ * generate triples.
+ */
 TEST_F(WebSocketClientCoordinatesIntegrationTest, CoordinatesInSameMessageGenerateTriples) {
-    const std::string date_time(UtcDateUtils::generateRandomUtcDate());
+    // Generate random latitude and longitude values as strings
     const std::string latitude = std::to_string(RandomUtils::generateRandomDouble(-90, 90));
     const std::string longitude = std::to_string(RandomUtils::generateRandomDouble(-63, 86));
 
-    const std::vector<Node> nodes = {{"Vehicle.CurrentLocation.Latitude", latitude},
-                                     {"Vehicle.CurrentLocation.Longitude", longitude}};
+    // Create message nodes with latitude and longitude data
+    const std::vector<MessageNodeData> nodes = {
+        {"CurrentLocation.Latitude", latitude, Metadata()},
+        {"CurrentLocation.Longitude", longitude, Metadata()}};
 
-    processAndVerifyMessages({{date_time, nodes}}, latitude, longitude, date_time, true);
+    // Format the timestamps for latitude and longitude data
+    std::string data_time_latitude = Helper::getFormattedTimestampCustom(
+        "%Y-%m-%dT%H:%M:%S", nodes.at(0).metadata.getReceived(), true);
+    std::string data_time_longitude = Helper::getFormattedTimestampCustom(
+        "%Y-%m-%dT%H:%M:%S", nodes.at(1).metadata.getReceived(), true);
+
+    // Process and verify the messages with the generated coordinates and timestamps
+    processAndVerifyMessages({nodes}, latitude, longitude, data_time_latitude, data_time_longitude,
+                             true);
 }
 
+/**
+ * @brief Test to verify that coordinates received in different messages within two seconds
+ * generate triples.
+ *
+ * This test simulates the reception of coordinates in separate messages with specific timestamps
+ * and verifies that they are processed correctly to form triples. The timestamps are generated
+ * such that some messages are within the two-second window required to form a triple, while others
+ * are not.
+ */
 TEST_F(WebSocketClientCoordinatesIntegrationTest,
        CoordinatesInDifferentMessagesWithinTwoSecondsGenerateTriples) {
-    const std::string date_time_msg1("2021-09-01T12:00:00Z");
-    const std::string date_time_msg2("2021-09-01T12:00:03.000Z");  // 3 second later than message 1
-    const std::string date_time_msg3("2021-09-01T12:00:04.000Z");  // 1 second later than message 2
-    const std::string date_time_msg4(
-        "2021-09-01T12:00:05.500Z");  // 1.5 second later than message 3
+    // Generate timestamps for each message
+    std::chrono::system_clock::time_point timestamp_msg1 = std::chrono::system_clock::now();
+    std::chrono::system_clock::time_point timestamp_msg2 = timestamp_msg1 + std::chrono::seconds(3);
+    std::chrono::system_clock::time_point timestamp_msg3 = timestamp_msg2 + std::chrono::seconds(1);
+    std::chrono::system_clock::time_point timestamp_msg4 =
+        timestamp_msg3 + std::chrono::milliseconds(1500);
 
+    // Create Metadata for each message using generated timestamps
+    Metadata metadata_msg1 = Metadata(std::nullopt, timestamp_msg1);
+    Metadata metadata_msg2 = Metadata(std::nullopt, timestamp_msg2);
+    Metadata metadata_msg3 = Metadata(std::nullopt, timestamp_msg3);
+    Metadata metadata_msg4 = Metadata(std::nullopt, timestamp_msg4);
+
+    // Generate random coordinates
     const std::string latitude_msg1 = std::to_string(RandomUtils::generateRandomDouble(-90, 90));
     const std::string longitude_msg2 = std::to_string(RandomUtils::generateRandomDouble(-63, 86));
     const std::string longitude_msg3 = std::to_string(RandomUtils::generateRandomDouble(-63, 86));
     const std::string latitude_msg4 = std::to_string(RandomUtils::generateRandomDouble(-90, 90));
 
-    const std::vector<Node> node_msg_1 = {{"Vehicle.CurrentLocation.Latitude", latitude_msg1}};
-    const std::vector<Node> node_msg_2 = {{"Vehicle.CurrentLocation.Longitude", longitude_msg2}};
-    const std::vector<Node> node_msg_3 = {{"Vehicle.CurrentLocation.Longitude", longitude_msg3}};
-    const std::vector<Node> node_msg_4 = {{"Vehicle.CurrentLocation.Latitude", latitude_msg4}};
+    const std::vector<MessageNodeData> node_msg_1 = {
+        {"CurrentLocation.Latitude", latitude_msg1, metadata_msg1}};
+    const std::vector<MessageNodeData> node_msg_2 = {
+        {"CurrentLocation.Longitude", longitude_msg2, metadata_msg2}};
+    const std::vector<MessageNodeData> node_msg_3 = {
+        {"CurrentLocation.Longitude", longitude_msg3, metadata_msg3}};
+    const std::vector<MessageNodeData> node_msg_4 = {
+        {"CurrentLocation.Latitude", latitude_msg4, metadata_msg4}};
 
-    processAndVerifyMessages({{date_time_msg1, node_msg_1},
-                              {date_time_msg2, node_msg_2},
-                              {date_time_msg3, node_msg_3},
-                              {date_time_msg4, node_msg_4}},
-                             latitude_msg4, longitude_msg3, date_time_msg4, true);
+    std::string data_time_longitude_msg3 = Helper::getFormattedTimestampCustom(
+        "%Y-%m-%dT%H:%M:%S", node_msg_3.at(0).metadata.getGenerated().value(), true);
+    std::string data_time_latitude_msg4 = Helper::getFormattedTimestampCustom(
+        "%Y-%m-%dT%H:%M:%S", node_msg_4.at(0).metadata.getGenerated().value(), true);
+
+    // Process and verify the messages with the generated coordinates and timestamps
+    processAndVerifyMessages({node_msg_1, node_msg_2, node_msg_3, node_msg_4}, latitude_msg4,
+                             longitude_msg3, data_time_latitude_msg4, data_time_longitude_msg3,
+                             true);
 }
 
+/**
+ * @brief Test case for verifying that coordinates in different messages after a two-second interval
+ * generate any triples.
+ *
+ * This test simulates the reception of coordinates in separate messages with specific timestamps
+ * and verifies that they are processed correctly to form triples. The timestamps are generated such
+ * that the messages are not within the two-second window required to form a triple.
+ */
 TEST_F(WebSocketClientCoordinatesIntegrationTest,
        CoordinatesInDifferentMessagesAfterTwoSecondsGenerateAnyTriples) {
-    const std::string date_time_msg1("2021-09-01T12:00:00Z");
-    const std::string date_time_msg2("2021-09-01T12:00:03Z");  // 3 seconds later
+    // Generate timestamps for each message, with a 3-second interval between them
+    std::chrono::system_clock::time_point timestamp_msg1 = std::chrono::system_clock::now();
+    std::chrono::system_clock::time_point timestamp_msg2 = timestamp_msg1 + std::chrono::seconds(3);
 
+    // Create Metadata objects for each message using the generated timestamps
+    Metadata metadata_msg1 = Metadata(std::nullopt, timestamp_msg1);
+    Metadata metadata_msg2 = Metadata(std::nullopt, timestamp_msg2);
+
+    // Generate random latitude and longitude coordinates as strings
     const std::string latitude = std::to_string(RandomUtils::generateRandomDouble(-90, 90));
     const std::string longitude = std::to_string(RandomUtils::generateRandomDouble(-63, 86));
 
-    const std::vector<Node> node_msg_1 = {{"Vehicle.CurrentLocation.Latitude", latitude}};
-    const std::vector<Node> node_msg_2 = {{"Vehicle.CurrentLocation.Longitude", longitude}};
+    // Create message node data for latitude and longitude with associated metadata
+    const std::vector<MessageNodeData> node_msg_1 = {
+        {"CurrentLocation.Latitude", latitude, metadata_msg1}};
+    const std::vector<MessageNodeData> node_msg_2 = {
+        {"CurrentLocation.Longitude", longitude, metadata_msg2}};
 
-    processAndVerifyMessages({{date_time_msg1, node_msg_1}, {date_time_msg2, node_msg_2}}, latitude,
-                             longitude, date_time_msg2, false);
+    // Format the timestamps for latitude and longitude messages into a custom string format
+    std::string data_time_latitude_msg1 = Helper::getFormattedTimestampCustom(
+        "%Y-%m-%dT%H:%M:%S", node_msg_1.at(0).metadata.getGenerated().value(), true);
+    std::string data_time_longitude_msg2 = Helper::getFormattedTimestampCustom(
+        "%Y-%m-%dT%H:%M:%S", node_msg_2.at(0).metadata.getGenerated().value(), true);
+
+    // Process and verify the messages with the generated coordinates and timestamps
+    processAndVerifyMessages({node_msg_1, node_msg_2}, latitude, longitude, data_time_latitude_msg1,
+                             data_time_longitude_msg2, false);
 }
 
+/**
+ * @brief Test case for WebSocketClientCoordinatesIntegrationTest.
+ *
+ * This test verifies the behavior of the WebSocket client when handling messages
+ * with missing coordinates. It waits for the message processing to complete and
+ * checks if the messages are processed correctly.
+ */
 TEST_F(WebSocketClientCoordinatesIntegrationTest,
        MessageWithMissingCoordinatesWaitForMessageToComplete) {
-    const std::string date_time_msg1("2021-09-01T12:00:00Z");
-    const std::string date_time_msg2("2021-09-01T12:00:01Z");  // 1 second later
+    // Generate timestamps for each message
+    std::chrono::system_clock::time_point timestamp_msg1 = std::chrono::system_clock::now();
+    std::chrono::system_clock::time_point timestamp_msg2 = timestamp_msg1 + std::chrono::seconds(1);
 
+    // Create Metadata for each message using generated timestamps
+    Metadata metadata_msg1 = Metadata(std::nullopt, timestamp_msg1);
+    Metadata metadata_msg2 = Metadata(std::nullopt, timestamp_msg2);
+
+    // Generate random coordinates
     const std::string latitude_1 = std::to_string(RandomUtils::generateRandomDouble(-90, 90));
     const std::string latitude_2 = std::to_string(RandomUtils::generateRandomDouble(-90, 90));
     const std::string longitude = std::to_string(RandomUtils::generateRandomDouble(-63, 86));
 
-    const std::vector<Node> node_msg_1 = {
-        {"Vehicle.CurrentLocation.Latitude", latitude_1}};  // This should be ignored
-    const std::vector<Node> node_msg_2 = {{"Vehicle.CurrentLocation.Longitude", longitude},
-                                          {"Vehicle.CurrentLocation.Latitude", latitude_2}};
+    // Create message node data for the first message, which should be ignored
+    const std::vector<MessageNodeData> node_msg_1 = {
+        {"CurrentLocation.Latitude", latitude_1, metadata_msg1}};
 
-    processAndVerifyMessages({{date_time_msg1, node_msg_1}, {date_time_msg2, {node_msg_2}}},
-                             latitude_2, longitude, date_time_msg2, true);
+    // Create message node data for the second message
+    const std::vector<MessageNodeData> node_msg_2 = {
+        {"CurrentLocation.Longitude", longitude, metadata_msg2},
+        {"CurrentLocation.Latitude", latitude_2, metadata_msg2}};
+
+    // Format the timestamp for the second message
+    std::string data_time_both = Helper::getFormattedTimestampCustom(
+        "%Y-%m-%dT%H:%M:%S", node_msg_2.at(0).metadata.getGenerated().value(), true);
+
+    // Process and verify the messages
+    processAndVerifyMessages({node_msg_1, node_msg_2}, latitude_2, longitude, data_time_both,
+                             data_time_both, true);
 }
 
+/**
+ * @brief Test case for verifying the processing of mixed content messages in WebSocket client.
+ *
+ * This test simulates the sending of mixed content messages containing latitude, longitude,
+ * and speed data points. It generates random latitude and longitude values, constructs
+ * message nodes with these values, and then processes and verifies the messages.
+ */
 TEST_F(WebSocketClientCoordinatesIntegrationTest, MixedContentMessages) {
-    const std::string date_time_msg1("2021-09-01T12:00:00Z");
-    const std::string date_time_msg2("2021-09-01T12:00:01Z");  // 1 second later
-
+    // Generate random latitude and longitude values as strings.
     const std::string latitude = std::to_string(RandomUtils::generateRandomDouble(-90, 90));
     const std::string longitude = std::to_string(RandomUtils::generateRandomDouble(-63, 86));
 
-    const std::vector<Node> node_msg_1 = {{"Vehicle.CurrentLocation.Latitude", latitude},
-                                          {"Vehicle.Speed", "100"}};
-    const std::vector<Node> node_msg_2 = {{"Vehicle.CurrentLocation.Longitude", longitude},
-                                          {"Vehicle.Speed", "200"}};
+    // Construct message nodes with latitude, longitude, and speed data points.
+    const std::vector<MessageNodeData> node_msg_1 = {
+        {"CurrentLocation.Latitude", latitude, Metadata()}, {"Speed", "100", Metadata()}};
+    const std::vector<MessageNodeData> node_msg_2 = {
+        {"CurrentLocation.Longitude", longitude, Metadata()}, {"Speed", "200", Metadata()}};
 
-    processAndVerifyMessages({{date_time_msg1, node_msg_1}, {date_time_msg2, node_msg_2}}, latitude,
-                             longitude, date_time_msg2, true, 1, 2);
+    // Format timestamps for the latitude and longitude data points.
+    std::string data_time_latitude = Helper::getFormattedTimestampCustom(
+        "%Y-%m-%dT%H:%M:%S", node_msg_1.at(0).metadata.getReceived(), true);
+    std::string data_time_longitude = Helper::getFormattedTimestampCustom(
+        "%Y-%m-%dT%H:%M:%S", node_msg_2.at(0).metadata.getReceived(), true);
+
+    // Process and verify the constructed messages with the generated data.
+    processAndVerifyMessages({node_msg_1, node_msg_2}, latitude, longitude, data_time_latitude,
+                             data_time_longitude, true, 1, 2);
 }

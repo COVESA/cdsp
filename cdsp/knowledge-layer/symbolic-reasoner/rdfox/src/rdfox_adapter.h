@@ -8,6 +8,7 @@
 #include <string>
 #include <tuple>
 
+#include "data_types.h"
 #include "request_builder.h"
 
 namespace beast = boost::beast;
@@ -21,9 +22,11 @@ class RDFoxAdapter {
                  const std::string& data_store);
 
     void initialize();
-    virtual bool loadData(const std::string& data, const std::string& content_type = "text/turtle");
-    virtual std::string queryData(const std::string& sparql_query,
-                                  const std::string& accept_type = "table/csv");
+    virtual bool loadData(const std::string& data,
+                          const RDFSyntaxType& content_type = RDFSyntaxType::TURTLE);
+    virtual std::string queryData(
+        const std::string& sparql_query,
+        const DataQueryAcceptType& accept_type = DataQueryAcceptType::TEXT_TSV);
     virtual bool checkDataStore();
     bool deleteDataStore();
 
@@ -34,7 +37,7 @@ class RDFoxAdapter {
     std::string createCursor(const std::string& connection_id, const std::string& auth_token,
                              const std::string& query);
     bool advanceCursor(const std::string& connection_id, const std::string& auth_token,
-                       const std::string& cursor_id, const std::string& accept_type,
+                       const std::string& cursor_id, const DataQueryAcceptType& accept_type,
                        const std::string& operation, std::optional<int> limit,
                        std::string* response);
 

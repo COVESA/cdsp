@@ -39,7 +39,7 @@ nlohmann::json JSONWriter::writeToJson(const std::string& query_result,
         throw std::runtime_error("Unsupported query result format");
     }
     nlohmann::json json_object;
-    json_object["created_at"] = Helper::getFormattedTimestamp("%Y-%m-%dT%H:%M:%S", true, true);
+    json_object["created_at"] = Helper::getFormattedTimestampNow("%Y-%m-%dT%H:%M:%S", true, true);
     json_object["results"] = json_result;
 
     !output_file_path.value_or("").empty()
@@ -213,18 +213,19 @@ void JSONWriter::storeJsonToFile(const nlohmann::json& json_data,
 
     // Ensure the directory exists
     if (!fs::exists(output_file_path)) {
-        std::cout << "Creating directory: " << output_file_path << std::endl;
+        std::cout << "Creating directory: " << output_file_path << std::endl << std::endl;
         fs::create_directories(output_file_path);
     }
 
     // Create file name
     const std::string file_name = output_file_path + "gen_from_sparql_query_" +
-                                  Helper::getFormattedTimestamp("%H", false, true) + ".json";
+                                  Helper::getFormattedTimestampNow("%H", false, true) + ".json";
 
     // Write the file
     if (!file_handler) {
         file_handler = std::make_shared<FileHandlerImpl>();
     }
     file_handler->writeFile(file_name, json_data.dump(2), false);
-    std::cout << "A JSON SPARQL Output has been generated under: " << file_name << std::endl;
+    std::cout << "A JSON SPARQL Output has been generated under: " << file_name << std::endl
+              << std::endl;
 }

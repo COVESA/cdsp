@@ -19,10 +19,7 @@ target_link_libraries(rdfox_adapter_integration_tests
         GTest::gtest_main 
         rdfox
         test_fixtures
-)
-target_include_directories(rdfox_adapter_integration_tests
-    PRIVATE
-        ${PROJECT_ROOT_DIR}/connector/utils   
+        utils        
 )
 
 # Add unit and integration tests to CTest

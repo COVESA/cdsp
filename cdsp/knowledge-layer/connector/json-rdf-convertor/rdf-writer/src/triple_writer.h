@@ -3,6 +3,7 @@
 
 #include <serd/serd.h>
 
+#include <chrono>
 #include <optional>
 #include <regex>
 #include <string>
@@ -29,12 +30,10 @@ class TripleWriter {
     virtual void addRDFDataToTriple(
         const std::string& prefixes,
         const std::tuple<std::string, std::string, std::string>& rdf_data_values,
-        const std::string& value, const std::string& dataTime,
+        const std::string& value, const std::chrono::system_clock::time_point& dataTime,
         const std::optional<double>& ntmValue = std::nullopt);
 
     virtual std::string generateTripleOutput(const RDFSyntaxType& format);
-
-    virtual void clearLogDefinitions();
 
     ~TripleWriter() = default;
 

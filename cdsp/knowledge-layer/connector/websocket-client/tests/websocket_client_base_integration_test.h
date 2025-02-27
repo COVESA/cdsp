@@ -17,11 +17,17 @@
 
 class WebSocketClientBaseIntegrationTest : public ::testing::Test {
    protected:
+    struct MessageNodeData {
+        std::string name;
+        std::string value;
+        Metadata metadata;
+    };
+
     void SetUp() override;
     void TearDown() override;
     void mockWebSocketBehavior();
-    const std::string createUpdateMessage(const std::string& vin, const std::string& date_time,
-                                          const std::vector<Node>& nodes);
+    const std::string createDataJsonMessage(const std::string& vin,
+                                            const std::vector<MessageNodeData>& nodes);
 
     InitConfig init_config_;
     std::shared_ptr<RDFoxAdapter> rdfox_adapter_;

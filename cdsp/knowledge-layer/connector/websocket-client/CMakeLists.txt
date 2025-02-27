@@ -1,25 +1,31 @@
 # Define the websocket_client library
 add_library(websocket_client
-    websocket_client.cpp
-    real_websocket_connection.cpp
-    ../utils/message_utils.cpp
-    ../utils/model_config_utils.cpp
+    src/websocket_client.cpp
+    src/real_websocket_connection.cpp
+    service/dto_to_bo.cpp
+    service/bo_to_dto.cpp
+    service/message_utils.cpp
+    service/dto_service.cpp
 )
 
 # Include directories
 target_include_directories(websocket_client 
     PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/service
+        ${Boost_INCLUDE_DIRS}
 )
 
 # Link dependencies
 target_link_libraries(websocket_client
-    PUBLIC  
+    PUBLIC 
+        nlohmann_json::nlohmann_json
+        data_objects
         rdf_writer
+    PRIVATE  
         Boost::system
         Boost::filesystem
         Boost::thread
-        nlohmann_json::nlohmann_json
 )
 
 # On Windows link winsock, too

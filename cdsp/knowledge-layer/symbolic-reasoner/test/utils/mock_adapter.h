@@ -13,8 +13,9 @@ class MockAdapter : public RDFoxAdapter {
     MOCK_METHOD(std::unique_ptr<RequestBuilder>, createRequestBuilder, (), (const, override));
     MOCK_METHOD(bool, checkDataStore, (), (override));
     MOCK_METHOD(std::string, queryData,
-                (const std::string& sparql_query, const std::string& accept_type), (override));
-    MOCK_METHOD(bool, loadData, (const std::string& ttl_data, const std::string& content_type),
+                (const std::string& sparql_query, const DataQueryAcceptType& accept_type),
+                (override));
+    MOCK_METHOD(bool, loadData, (const std::string& ttl_data, const RDFSyntaxType& content_type),
                 (override));
 };
 #endif  // MOCK_ADAPTER_H

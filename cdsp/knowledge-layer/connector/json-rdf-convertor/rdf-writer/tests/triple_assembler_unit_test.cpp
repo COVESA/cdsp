@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 
+#include "data_message.h"
 #include "data_types.h"
 #include "mock_adapter.h"
 #include "mock_i_file_handler.h"
@@ -14,20 +15,12 @@
 #include "triple_assembler.h"
 #include "vin_utils.h"
 
-struct TestParamsTransformMessageToRDFTriple {
-    DataMessage message;
-    std::vector<std::string> query_object;
-    std::string query_data;
-    std::vector<std::string> object_triple_result;
-    std::string data_triple_result;
-};
-
 class TripleAssemblerUnitTest : public ::testing::Test {
    protected:
     const std::string VIN = VinUtils::getRandomVinString();
 
-    TripleAssembler* triple_assembler;
-    DataMessage message_feature_;
+    TripleAssembler* triple_assembler_ = nullptr;
+    std::vector<Node> nodes_{};
 
     // Set up mock RDFoxAdapter
     MockAdapter mock_adapter_{"localhost", "8080", "test_auth", "test_ds"};
@@ -39,34 +32,25 @@ class TripleAssemblerUnitTest : public ::testing::Test {
 
     void SetUp() override {
         // Mock functions to be call and expectations
-        triple_assembler = new TripleAssembler(model_config_, mock_adapter_, mock_i_file_handler_,
-                                               mock_triple_writer_);
+        triple_assembler_ = new TripleAssembler(model_config_, mock_adapter_, mock_i_file_handler_,
+                                                mock_triple_writer_);
     }
 
-    void TearDown() override { delete triple_assembler; }
+    void TearDown() override { delete triple_assembler_; }
 
     void setUpModelBase() {
         model_config_.shacl_shapes_files = {"shacl_shape1.ttl", "shacl_shape2.ttl"};
         model_config_.triple_assembler_queries_files = {
-            {"vss", {"data_property.rq", "object_property.rq"}}};
+            {SchemaType::VEHICLE, {"data_property.rq", "object_property.rq"}}};
         model_config_.reasoner_settings.output_format = RDFSyntaxType::TURTLE;
         model_config_.output_file_path = "/outputs/triple_assembler_unit_test/";
     }
 
-    void setUpMessageHeader(const std::string& date_time) {
-        message_feature_.header.id = VIN;
-        message_feature_.header.tree = "VSS";
-        message_feature_.header.date_time = date_time;
-    }
-
     void setUpMessage() {
-        setUpMessageHeader("2021-09-01T12:00:00Z");
+        const std::string data_point =
+            "Vehicle.Powertrain.TractionBattery.StateOfCharge.CurrentEnergy";
 
-        Node node_1;
-        node_1.name = "Vehicle.Powertrain.TractionBattery.StateOfCharge.CurrentEnergy";
-        node_1.value = "98.6";
-
-        message_feature_.nodes.push_back(node_1);
+        nodes_.emplace_back(data_point, "98.6", Metadata(), std::vector<std::string>{data_point});
     }
 
     /**
@@ -120,11 +104,13 @@ SELECT some_data_query)";
             .WillRepeatedly(::testing::Return(query_data));
 
         // Mock querying data using the SHACL queries and returning predefined responses
-        EXPECT_CALL(mock_adapter_, queryData(query_object, ::testing::StrEq("table/csv")))
+        EXPECT_CALL(mock_adapter_,
+                    queryData(query_object, ::testing::Eq(DataQueryAcceptType::TEXT_TSV)))
             .Times(times_executing_object_related_functions)
             .WillRepeatedly(testing::Return(query_object_response));
 
-        EXPECT_CALL(mock_adapter_, queryData(query_data, ::testing::StrEq("table/csv")))
+        EXPECT_CALL(mock_adapter_,
+                    queryData(query_data, ::testing::Eq(DataQueryAcceptType::TEXT_TSV)))
             .Times(times_executing_data_related_functions)
             .WillRepeatedly(testing::Return(query_data_response));
     }
@@ -161,7 +147,7 @@ TEST_F(TripleAssemblerUnitTest, InitializeSuccess) {
         .WillOnce(testing::Return(true));
 
     // Assert that the initialization process does not throw any exceptions
-    EXPECT_NO_THROW(triple_assembler->initialize());
+    EXPECT_NO_THROW(triple_assembler_->initialize());
 }
 
 /**
@@ -176,6 +162,9 @@ TEST_F(TripleAssemblerUnitTest, TransformMessageToRDFTripleSuccess) {
     // Set up the initial message and model base for the test
     setUpMessage();
     setUpModelBase();
+
+    auto message_header = MessageHeader(VIN, SchemaType::VEHICLE);
+    DataMessage message_feature(message_header, nodes_);
 
     // Define mock responses for the SHACL queries
     std::string query_object_response =
@@ -214,8 +203,10 @@ prefix so: <http://www.some.com#>
         .Times(3);
 
     EXPECT_CALL(mock_triple_writer_,
-                addRDFDataToTriple(data_prefixes, data_elements, message_feature_.nodes.at(0).value,
-                                   message_feature_.header.date_time, ntm_coord_value))
+                addRDFDataToTriple(data_prefixes, data_elements,
+                                   message_feature.getNodes().at(0).getValue().value(),
+                                   message_feature.getNodes().at(0).getMetadata().getReceived(),
+                                   ntm_coord_value))
         .Times(1);
 
     // Define a dummy Turtle (TTL) output for the RDF triples
@@ -250,7 +241,7 @@ car:Observation20181116155027O0
         .Times(1);
 
     // Assert that the transformation process does not throw any exceptions
-    EXPECT_NO_THROW(triple_assembler->transformMessageToRDFTriple(message_feature_));
+    EXPECT_NO_THROW(triple_assembler_->transformMessageToRDFTriple(message_feature));
 }
 
 /**
@@ -265,17 +256,18 @@ TEST_F(TripleAssemblerUnitTest,
     setUpMessage();
     setUpModelBase();
 
-    // Add two nodes more to the `message_feature_`
+    // Add two nodes more to the `message_feature`
+    nodes_.emplace_back(
+        "Vehicle.FuelLevel", "75", Metadata(),
+        std::vector<std::string>{"Vehicle.FuelLevel"});  // Add data point as supported, `Node`
+                                                         // validation should not fail for this test
+    nodes_.emplace_back(
+        "InvalidNode", "error_value", Metadata(),
+        std::vector<std::string>{"InvalidNode"});  // Add data point as supported, `Node` validation
+                                                   // should not fail for this test
 
-    Node node_2;
-    node_2.name = "Vehicle.FuelLevel";
-    node_2.value = "75";
-    message_feature_.nodes.push_back(node_2);
-
-    Node node_3;
-    node_3.name = "InvalidNode";  // Simulate an error for this node
-    node_3.value = "error_value";
-    message_feature_.nodes.push_back(node_3);
+    auto message_header = MessageHeader(VIN, SchemaType::VEHICLE);
+    DataMessage message_feature(message_header, nodes_);
 
     // Mock data store has been setup
     EXPECT_CALL(mock_adapter_, checkDataStore()).WillOnce(testing::Return(true));
@@ -329,7 +321,7 @@ TEST_F(TripleAssemblerUnitTest,
         .Times(1);
 
     // Assert
-    EXPECT_NO_THROW(triple_assembler->transformMessageToRDFTriple(message_feature_));
+    EXPECT_NO_THROW(triple_assembler_->transformMessageToRDFTriple(message_feature));
 }
 
 /**
@@ -344,7 +336,7 @@ TEST_F(TripleAssemblerUnitTest, InitializeFailWhenAnyRDFDataStoreIsSet) {
     EXPECT_CALL(mock_i_file_handler_, readFile(testing::_)).Times(0);
 
     // Assert that the initialization process throws a runtime error due to missing data store
-    EXPECT_THROW(triple_assembler->initialize(), std::runtime_error);
+    EXPECT_THROW(triple_assembler_->initialize(), std::runtime_error);
 }
 
 /**
@@ -361,7 +353,7 @@ TEST_F(TripleAssemblerUnitTest, InitializeFailIfShaclShapesAreEmptyInTheModelCon
     EXPECT_CALL(mock_i_file_handler_, readFile(testing::_)).Times(0);
 
     // Attempt to initialize the TripleAssembler and expect a runtime error to be thrown
-    EXPECT_THROW(triple_assembler->initialize(), std::runtime_error);
+    EXPECT_THROW(triple_assembler_->initialize(), std::runtime_error);
 }
 
 /**
@@ -384,7 +376,7 @@ TEST_F(TripleAssemblerUnitTest, InitializeFailIfShaclShapesContentIsEmpty) {
     // Attempt to initialize the TripleAssembler and expect a runtime error
     TripleAssembler assembler(model_config_, mock_adapter_, mock_i_file_handler_,
                               mock_triple_writer_);
-    EXPECT_THROW(triple_assembler->initialize(), std::runtime_error);
+    EXPECT_THROW(triple_assembler_->initialize(), std::runtime_error);
 }
 
 /**
@@ -407,7 +399,7 @@ TEST_F(TripleAssemblerUnitTest, InitializeFailsIfLoadingDataFromShaclShapesGoesW
     // Initialize TripleAssembler and expect a runtime error to be thrown
     TripleAssembler assembler(model_config_, mock_adapter_, mock_i_file_handler_,
                               mock_triple_writer_);
-    EXPECT_THROW(triple_assembler->initialize(), std::runtime_error);
+    EXPECT_THROW(triple_assembler_->initialize(), std::runtime_error);
 }
 
 /**
@@ -417,6 +409,8 @@ TEST_F(TripleAssemblerUnitTest, InitializeFailsIfLoadingDataFromShaclShapesGoesW
 TEST_F(TripleAssemblerUnitTest, TransformMessageToRDFTripleFailsWhenAnyRDFDataStoreIsSet) {
     // Set up the initial message for the test
     setUpMessage();
+    auto message_header = MessageHeader(VIN, SchemaType::VEHICLE);
+    DataMessage message_feature(message_header, nodes_);
 
     // Mock the data store check to return false, indicating the data store is not available
     EXPECT_CALL(mock_adapter_, checkDataStore()).WillOnce(testing::Return(false));
@@ -433,7 +427,7 @@ TEST_F(TripleAssemblerUnitTest, TransformMessageToRDFTripleFailsWhenAnyRDFDataSt
     EXPECT_CALL(mock_triple_writer_, generateTripleOutput(::testing::_)).Times(0);
 
     // Assert that the transformation process throws a runtime error due to the missing data store
-    EXPECT_THROW(triple_assembler->transformMessageToRDFTriple(message_feature_),
+    EXPECT_THROW(triple_assembler_->transformMessageToRDFTriple(message_feature),
                  std::runtime_error);
 }
 
@@ -450,18 +444,19 @@ TEST_F(TripleAssemblerUnitTest, TransformMessageToRDFTripleFailsWhenAnyRDFDataSt
 
 TEST_F(TripleAssemblerUnitTest, TransformMessageToRDFTripleWithCoordinatesSuccess) {
     // Set up the initial message and model base for the test
-    setUpMessageHeader("2021-09-01T12:00:00Z");
     setUpModelBase();
 
-    Node node_1;
-    node_1.name = "Vehicle.CurrentLocation.Latitude";
-    node_1.value = "40.0";
-    message_feature_.nodes.push_back(node_1);
+    std::vector<std::string> supported_data_points = {"Vehicle.CurrentLocation.Latitude",
+                                                      "Vehicle.CurrentLocation.Longitude"};
 
-    Node node_2;
-    node_2.name = "Vehicle.CurrentLocation.Longitude";
-    node_2.value = "50.0";
-    message_feature_.nodes.push_back(node_2);
+    // Set up the message with coordinates
+    nodes_.emplace_back("Vehicle.CurrentLocation.Latitude", "40.0", Metadata(),
+                        supported_data_points);
+    nodes_.emplace_back("Vehicle.CurrentLocation.Longitude", "50.0", Metadata(),
+                        supported_data_points);
+
+    auto message_header = MessageHeader(VIN, SchemaType::VEHICLE);
+    DataMessage message_feature(message_header, nodes_);
 
     // Set up the initial expectations for the test
     initialSetupExpectations(1, 2, 2);
@@ -492,7 +487,7 @@ TEST_F(TripleAssemblerUnitTest, TransformMessageToRDFTripleWithCoordinatesSucces
         .Times(1);
 
     // Assert that the transformation process does not throw any exceptions
-    EXPECT_NO_THROW(triple_assembler->transformMessageToRDFTriple(message_feature_));
+    EXPECT_NO_THROW(triple_assembler_->transformMessageToRDFTriple(message_feature));
 }
 
 /**
@@ -504,16 +499,17 @@ TEST_F(TripleAssemblerUnitTest, TransformMessageToRDFTripleFailsWhenCoordinatesA
     setUpMessage();
     setUpModelBase();
 
-    // Add two nodes more to the `message_feature_` with a wrong coordinate
-    Node node_2;
-    node_2.name = "Vehicle.CurrentLocation.Latitude";
-    node_2.value = "";  // Invalid value, it produces null option when converting to NTM
-    message_feature_.nodes.push_back(node_2);
+    std::vector<std::string> supported_data_points = {"Vehicle.CurrentLocation.Latitude",
+                                                      "Vehicle.CurrentLocation.Longitude"};
 
-    Node node_3;
-    node_3.name = "Vehicle.CurrentLocation.Longitude";
-    node_3.value = "50.0";
-    message_feature_.nodes.push_back(node_3);
+    // Add two nodes more to the `message_feature_` with a wrong coordinate
+    nodes_.emplace_back("Vehicle.CurrentLocation.Latitude", "", Metadata(),
+                        supported_data_points);  // Invalid value
+    nodes_.emplace_back("Vehicle.CurrentLocation.Longitude", "50.0", Metadata(),
+                        supported_data_points);
+
+    auto message_header = MessageHeader(VIN, SchemaType::VEHICLE);
+    DataMessage message_feature(message_header, nodes_);
 
     // Set up the initial expectations for the test (only first node, the coordinates nodes are
     // excluded, since latitude do not generate a valid NTM value)
@@ -541,5 +537,5 @@ TEST_F(TripleAssemblerUnitTest, TransformMessageToRDFTripleFailsWhenCoordinatesA
         .Times(1);
 
     // Assert
-    EXPECT_NO_THROW(triple_assembler->transformMessageToRDFTriple(message_feature_));
+    EXPECT_NO_THROW(triple_assembler_->transformMessageToRDFTriple(message_feature));
 }

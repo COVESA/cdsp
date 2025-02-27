@@ -50,32 +50,100 @@ void WebSocketClientBaseIntegrationTest::mockWebSocketBehavior() {
     client_->run();
 }
 
-const std::string WebSocketClientBaseIntegrationTest::createUpdateMessage(
-    const std::string& vin, const std::string& date_time, const std::vector<Node>& nodes) {
+/**
+ * @brief Creates a JSON message containing data and metadata for a WebSocket client.
+ *
+ * This function constructs a JSON message string that includes data from a list of nodes
+ * and associated metadata. The message is structured to include the type, instance, schema,
+ * and metadata with timestamps for each node.
+ *
+ * @param vin The vehicle identification number (VIN) associated with the data.
+ * @param nodes A vector of Node objects, each containing data and metadata.
+ * @return A JSON-formatted string representing the data and metadata.
+ */
+const std::string WebSocketClientBaseIntegrationTest::createDataJsonMessage(
+    const std::string& vin, const std::vector<MessageNodeData>& nodes) {
     std::ostringstream message;
     message << R"({
-        "type": "update",
-        "tree": "VSS",
-        "id": ")"
-            << vin << R"(",
-        "dateTime": ")"
-            << date_time << R"(",
-        "uuid": "test",
-        "nodes": [)";
+        "type": "data",
+        "data": {)";
 
     for (size_t i = 0; i < nodes.size(); ++i) {
         const auto& node = nodes[i];
-        message << R"({
-            "name": ")"
-                << node.name << R"(",
-            "value": )"
-                << node.value << R"(})";
+        message << R"(")" << node.name << R"(": )" << node.value;
 
         if (i < nodes.size() - 1) {
             message << ",";
         }
     }
 
-    message << R"(]})";
+    message << R"(},
+        "instance": ")"
+            << vin << R"(",
+        "schema": "Vehicle",
+        "metadata": {)";
+
+    bool first_metadata = true;
+    for (const auto& node : nodes) {
+        bool has_generated = node.metadata.getGenerated().has_value();
+        bool has_received = node.metadata.getReceived().time_since_epoch().count() > 0;
+
+        if (has_generated || has_received) {
+            if (!first_metadata) {
+                message << ",";
+            }
+            first_metadata = false;
+
+            message << R"(")" << node.name << R"(": {
+            "timestamps": {)";
+
+            bool first_timestamp = true;
+
+            if (has_generated) {
+                if (!first_timestamp) {
+                    message << ",";
+                }
+                first_timestamp = false;
+
+                auto generated_time = node.metadata.getGenerated().value();
+                message << R"("generated": {
+                "seconds": )"
+                        << std::chrono::duration_cast<std::chrono::seconds>(
+                               generated_time.time_since_epoch())
+                               .count()
+                        << R"(,
+                "nanoseconds": )"
+                        << std::chrono::duration_cast<std::chrono::nanoseconds>(
+                               generated_time.time_since_epoch())
+                                   .count() %
+                               1000000000
+                        << R"(})";
+            }
+
+            if (has_received) {
+                if (!first_timestamp) {
+                    message << ",";
+                }
+
+                auto received_time = node.metadata.getReceived();
+                message << R"("received": {
+                "seconds": )"
+                        << std::chrono::duration_cast<std::chrono::seconds>(
+                               received_time.time_since_epoch())
+                               .count()
+                        << R"(,
+                "nanoseconds": )"
+                        << std::chrono::duration_cast<std::chrono::nanoseconds>(
+                               received_time.time_since_epoch())
+                                   .count() %
+                               1000000000
+                        << R"(})";
+            }
+
+            message << R"(}})";
+        }
+    }
+
+    message << R"(}})";
     return message.str();
 }

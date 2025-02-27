@@ -107,8 +107,8 @@ TEST_F(RDFoxAdapterTest, InitializationWithExistingDatastore) {
  */
 TEST_F(RDFoxAdapterTest, LoadDataSuccess) {
     const std::string target = "/datastores/" + DATASTORE + "/content";
-    std::string ttl_data = "@prefix : <http://example.org/> . :test a :Entity .";
-    const std::string content_type = "text/turtle";
+    const std::string ttl_data = "@prefix : <http://example.org/> . :test a :Entity .";
+    const RDFSyntaxType content_type = RDFSyntaxType::TURTLE;
 
     // Create a mock RequestBuilder
     MockRequestBuilder* mock_request_builder_ptr = mock_request_builder_.get();
@@ -122,7 +122,7 @@ TEST_F(RDFoxAdapterTest, LoadDataSuccess) {
         .WillOnce(testing::ReturnRef(*mock_request_builder_ptr));
     EXPECT_CALL(*mock_request_builder_ptr, setTarget(target))
         .WillOnce(testing::ReturnRef(*mock_request_builder_ptr));
-    EXPECT_CALL(*mock_request_builder_ptr, setContentType(content_type))
+    EXPECT_CALL(*mock_request_builder_ptr, setContentType(RDFSyntaxTypeToContentType(content_type)))
         .WillOnce(testing::ReturnRef(*mock_request_builder_ptr));
     EXPECT_CALL(*mock_request_builder_ptr, setBody(ttl_data))
         .WillOnce(testing::ReturnRef(*mock_request_builder_ptr));
@@ -138,8 +138,8 @@ TEST_F(RDFoxAdapterTest, LoadDataSuccess) {
  */
 TEST_F(RDFoxAdapterTest, QueryDataSuccess) {
     const std::string target = "/datastores/" + DATASTORE + "/sparql";
-    std::string sparql_query = "SELECT ?s WHERE { ?s ?p ?o . }";
-    std::string mock_response = "<http://example.org/test>";
+    const std::string sparql_query = "SELECT ?s WHERE { ?s ?p ?o . }";
+    const std::string mock_response = "<http://example.org/test>";
 
     // Create a mock RequestBuilder
     MockRequestBuilder* mock_request_builder_ptr = mock_request_builder_.get();
@@ -157,11 +157,16 @@ TEST_F(RDFoxAdapterTest, QueryDataSuccess) {
         .WillOnce(testing::ReturnRef(*mock_request_builder_ptr));
     EXPECT_CALL(*mock_request_builder_ptr, setBody(sparql_query))
         .WillOnce(testing::ReturnRef(*mock_request_builder_ptr));
+    EXPECT_CALL(*mock_request_builder_ptr,
+                setAcceptType(queryAcceptTypeToString(DataQueryAcceptType::TEXT_TSV)))
+        .WillOnce(testing::ReturnRef(*mock_request_builder_ptr));
     EXPECT_CALL(*mock_request_builder_ptr, sendRequest(nullptr, testing::NotNull()))
         .WillOnce(testing::DoAll(testing::SetArgPointee<1>(mock_response), testing::Return(true)));
 
     // Expect the response to match the mock response
-    EXPECT_EQ(mock_rdfox_adapter_->RDFoxAdapter::queryData(sparql_query), mock_response);
+    EXPECT_EQ(
+        mock_rdfox_adapter_->RDFoxAdapter::queryData(sparql_query, DataQueryAcceptType::TEXT_TSV),
+        mock_response);
 }
 
 /**
@@ -220,7 +225,7 @@ TEST_F(RDFoxAdapterTest, CreateConnectionSuccess) {
     const std::string random_connection_id =
         std::to_string(RandomUtils::generateRandomInt(0, 1000));
     const std::string random_auth = RandomUtils::generateRandomString(8);
-    std::map<std::string, std::string> response_headers = {
+    const std::map<std::string, std::string> response_headers = {
         {"Location", "/datastores/datastore/connections/" + random_connection_id},
         {"RDFox-Authentication-Token", random_auth}};
 
@@ -264,7 +269,7 @@ TEST_F(RDFoxAdapterTest, CreateCursorSuccess) {
         "/datastores/" + DATASTORE + "/connections/" + connection_id + "/cursors/" + cursor_id;
 
     // Mock the headers for the request
-    std::map<std::string, std::string> response_headers = {{"Location", location_header}};
+    const std::map<std::string, std::string> response_headers = {{"Location", location_header}};
 
     // Get the raw pointer to the mock_request_builder_
     MockRequestBuilder* mock_request_builder_ptr = mock_request_builder_.get();
@@ -304,15 +309,16 @@ TEST_F(RDFoxAdapterTest, AdvanceCursorSuccess) {
     const std::string connection_id = RandomUtils::generateRandomString(8);
     const std::string auth_token = RandomUtils::generateRandomString(8);
     const std::string cursor_id = RandomUtils::generateRandomString(8);
-    const std::string accept_type = "application/sparql-results+json";
-    std::string response_body = RandomUtils::generateRandomString(20);
+    const DataQueryAcceptType accept_type = DataQueryAcceptType::SPARQL_JSON;
+    const std::string response_body = RandomUtils::generateRandomString(20);
     const std::pair<std::string, std::string> valid_operations = {"open", "advance"};
-    std::string operation = RandomUtils::generateRandomInt(0, 1) == 0 ? valid_operations.first
-                                                                      : valid_operations.second;
+    const std::string operation = RandomUtils::generateRandomInt(0, 1) == 0
+                                      ? valid_operations.first
+                                      : valid_operations.second;
     const int limit = RandomUtils::generateRandomInt(1, 100);
-    std::string target = "/datastores/" + DATASTORE + "/connections/" + connection_id +
-                         "/cursors/" + cursor_id + "?operation=" + operation +
-                         "&limit=" + std::to_string(limit);
+    const std::string target = "/datastores/" + DATASTORE + "/connections/" + connection_id +
+                               "/cursors/" + cursor_id + "?operation=" + operation +
+                               "&limit=" + std::to_string(limit);
 
     // Create a mock RequestBuilder
     MockRequestBuilder* mock_request_builder_ptr = mock_request_builder_.get();
@@ -328,7 +334,7 @@ TEST_F(RDFoxAdapterTest, AdvanceCursorSuccess) {
         .WillOnce(testing::ReturnRef(*mock_request_builder_ptr));
     EXPECT_CALL(*mock_request_builder_ptr, setTarget(target))
         .WillOnce(testing::ReturnRef(*mock_request_builder_ptr));
-    EXPECT_CALL(*mock_request_builder_ptr, setAcceptType(accept_type))
+    EXPECT_CALL(*mock_request_builder_ptr, setAcceptType(queryAcceptTypeToString(accept_type)))
         .WillOnce(testing::ReturnRef(*mock_request_builder_ptr));
     EXPECT_CALL(*mock_request_builder_ptr, sendRequest(::testing::IsNull(), ::testing::NotNull()))
         .WillOnce(testing::DoAll(testing::SetArgPointee<1>(response_body), testing::Return(true)));
@@ -411,8 +417,8 @@ TEST_F(RDFoxAdapterTest, FailedToCreateDataStore) {
  */
 TEST_F(RDFoxAdapterTest, LoadDataFailure) {
     const std::string target = "/datastores/" + DATASTORE + "/content";
-    std::string ttl_data = "@prefix : <http://example.org/> . :test a :Entity .";
-    const std::string content_type = "text/turtle";
+    const std::string ttl_data = "@prefix : <http://example.org/> . :test a :Entity .";
+    const RDFSyntaxType content_type = RDFSyntaxType::TURTLE;
 
     // Create a mock RequestBuilder
     MockRequestBuilder* mock_request_builder_ptr = mock_request_builder_.get();
@@ -426,7 +432,7 @@ TEST_F(RDFoxAdapterTest, LoadDataFailure) {
         .WillOnce(testing::ReturnRef(*mock_request_builder_ptr));
     EXPECT_CALL(*mock_request_builder_ptr, setTarget(target))
         .WillOnce(testing::ReturnRef(*mock_request_builder_ptr));
-    EXPECT_CALL(*mock_request_builder_ptr, setContentType(content_type))
+    EXPECT_CALL(*mock_request_builder_ptr, setContentType(RDFSyntaxTypeToContentType(content_type)))
         .WillOnce(testing::ReturnRef(*mock_request_builder_ptr));
     EXPECT_CALL(*mock_request_builder_ptr, setBody(ttl_data))
         .WillOnce(testing::ReturnRef(*mock_request_builder_ptr));
@@ -442,7 +448,8 @@ TEST_F(RDFoxAdapterTest, LoadDataFailure) {
  */
 TEST_F(RDFoxAdapterTest, QueryDataFailure) {
     const std::string target = "/datastores/" + DATASTORE + "/sparql";
-    std::string sparql_query = "SELECT ?s WHERE { ?s ?p ?o . }";
+    const std::string sparql_query = "SELECT ?s WHERE { ?s ?p ?o . }";
+    const DataQueryAcceptType accept_type = DataQueryAcceptType::TEXT_TSV;
 
     // Create a mock RequestBuilder
     MockRequestBuilder* mock_request_builder_ptr = mock_request_builder_.get();
@@ -460,11 +467,13 @@ TEST_F(RDFoxAdapterTest, QueryDataFailure) {
         .WillOnce(testing::ReturnRef(*mock_request_builder_ptr));
     EXPECT_CALL(*mock_request_builder_ptr, setBody(sparql_query))
         .WillOnce(testing::ReturnRef(*mock_request_builder_ptr));
+    EXPECT_CALL(*mock_request_builder_ptr, setAcceptType(queryAcceptTypeToString(accept_type)))
+        .WillOnce(testing::ReturnRef(*mock_request_builder_ptr));
     EXPECT_CALL(*mock_request_builder_ptr, sendRequest(nullptr, testing::NotNull()))
         .WillOnce(testing::Return(false));
 
     // Expect the empty response to match the mock response
-    EXPECT_EQ(mock_rdfox_adapter_->RDFoxAdapter::queryData(sparql_query), "");
+    EXPECT_EQ(mock_rdfox_adapter_->RDFoxAdapter::queryData(sparql_query, accept_type), "");
 }
 
 /**
@@ -538,9 +547,9 @@ TEST_F(RDFoxAdapterTest, CreateConnectionMissingHeader) {
     const std::string random_header_value = RandomUtils::generateRandomString(8);
     const std::pair<std::string, std::string> valid_headers = {"Location",
                                                                "RDFox-Authentication-Token"};
-    std::string header =
+    const std::string header =
         RandomUtils::generateRandomInt(0, 1) == 0 ? valid_headers.first : valid_headers.second;
-    std::map<std::string, std::string> invalid_response_headers = {
+    const std::map<std::string, std::string> invalid_response_headers = {
         {header, random_header_value}};  // Missing header required values
 
     // Get the raw pointer to the mock_request_builder_
@@ -574,7 +583,7 @@ TEST_F(RDFoxAdapterTest, CreateConnectionMissingHeader) {
 TEST_F(RDFoxAdapterTest, CreateConnectionWrongLocationHeaderFormat) {
     const std::string target = "/datastores/" + DATASTORE + "/connections";
     const std::string random_auth = RandomUtils::generateRandomString(8);
-    std::map<std::string, std::string> response_headers = {
+    const std::map<std::string, std::string> response_headers = {
         {"Location", "wrong_format_without_slashes"}, {"RDFox-Authentication-Token", random_auth}};
 
     // Get the raw pointer to the mock_request_builder_
@@ -726,15 +735,15 @@ TEST_F(RDFoxAdapterTest, AdvanceCursorFailure) {
     const std::string connection_id = RandomUtils::generateRandomString(8);
     const std::string auth_token = RandomUtils::generateRandomString(8);
     const std::string cursor_id = RandomUtils::generateRandomString(8);
-    const std::string accept_type = "application/sparql-results+json";
-    std::string response_body = RandomUtils::generateRandomString(20);
+    const DataQueryAcceptType accept_type = DataQueryAcceptType::SPARQL_JSON;
     const std::pair<std::string, std::string> valid_operations = {"open", "advance"};
-    std::string operation = RandomUtils::generateRandomInt(0, 1) == 0 ? valid_operations.first
-                                                                      : valid_operations.second;
+    const std::string operation = RandomUtils::generateRandomInt(0, 1) == 0
+                                      ? valid_operations.first
+                                      : valid_operations.second;
     const int limit = RandomUtils::generateRandomInt(1, 100);
-    std::string target = "/datastores/" + DATASTORE + "/connections/" + connection_id +
-                         "/cursors/" + cursor_id + "?operation=" + operation +
-                         "&limit=" + std::to_string(limit);
+    const std::string target = "/datastores/" + DATASTORE + "/connections/" + connection_id +
+                               "/cursors/" + cursor_id + "?operation=" + operation +
+                               "&limit=" + std::to_string(limit);
 
     // Create a mock RequestBuilder
     MockRequestBuilder* mock_request_builder_ptr = mock_request_builder_.get();
@@ -750,7 +759,7 @@ TEST_F(RDFoxAdapterTest, AdvanceCursorFailure) {
         .WillOnce(testing::ReturnRef(*mock_request_builder_ptr));
     EXPECT_CALL(*mock_request_builder_ptr, setTarget(target))
         .WillOnce(testing::ReturnRef(*mock_request_builder_ptr));
-    EXPECT_CALL(*mock_request_builder_ptr, setAcceptType(accept_type))
+    EXPECT_CALL(*mock_request_builder_ptr, setAcceptType(queryAcceptTypeToString(accept_type)))
         .WillOnce(testing::ReturnRef(*mock_request_builder_ptr));
     EXPECT_CALL(*mock_request_builder_ptr, sendRequest(::testing::IsNull(), ::testing::NotNull()))
         .WillOnce(testing::DoAll(testing::Return(false)));
@@ -770,11 +779,11 @@ TEST_F(RDFoxAdapterTest, AdvanceCursorInvalidOperation) {
     const std::string connection_id = RandomUtils::generateRandomString(8);
     const std::string auth_token = RandomUtils::generateRandomString(8);
     const std::string cursor_id = RandomUtils::generateRandomString(8);
-    const std::string accept_type = "application/sparql-results+json";
-    std::string operation = "invalid_operation";
+    const DataQueryAcceptType accept_type = DataQueryAcceptType::SPARQL_JSON;
+    const std::string operation = "invalid_operation";
 
-    std::string target = "/datastores/" + DATASTORE + "/connections/" + connection_id +
-                         "/cursors/" + cursor_id + "?operation=" + operation;
+    const std::string target = "/datastores/" + DATASTORE + "/connections/" + connection_id +
+                               "/cursors/" + cursor_id + "?operation=" + operation;
 
     // Ensure that any request to create the datastore is not made.
     EXPECT_CALL(*mock_rdfox_adapter_, createRequestBuilder()).Times(0);

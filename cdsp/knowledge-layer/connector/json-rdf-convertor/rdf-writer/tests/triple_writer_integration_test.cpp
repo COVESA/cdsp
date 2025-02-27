@@ -16,9 +16,10 @@ class TripleWriterIntegrationTest : public ::testing::Test {
     std::string prefixes_fixture_;
     const std::string VIN = VinUtils::getRandomVinString();
     const std::string OBSERVATION_VALUE = std::to_string(RandomUtils::generateRandomFloat(0, 300));
-    const std::string DATE_TIME = UtcDateUtils::generateRandomUtcDate();
+    const std::chrono::system_clock::time_point TIMESTAMP = RandomUtils::generateRandomTimestamp();
+    const std::string DATA_TIME = UtcDateUtils::formatCustomTimestampAsIso8601(TIMESTAMP);
     const std::string OBSERVATION_IDENTIFIER =
-        "Observation" + ObservationIdentifier::createObservationIdentifier(DATE_TIME, 0);
+        "Observation" + ObservationIdentifier::createObservationIdentifier(TIMESTAMP, 0);
     const double NTM_VALUE = RandomUtils::generateRandomDouble(-100, 100);
 
     void SetUp() override {
@@ -60,7 +61,7 @@ class TripleWriterIntegrationTest : public ::testing::Test {
             std::make_tuple("<http://example.ontology.com/car#StateOfCharge>",
                             "<http://example.ontology.com/car#CurrentEnergy>",
                             "<http://www.w3.org/2001/XMLSchema#float>"),
-            OBSERVATION_VALUE, DATE_TIME);
+            OBSERVATION_VALUE, TIMESTAMP);
     }
 };
 
@@ -101,7 +102,7 @@ car:)" + OBSERVATION_IDENTIFIER + R"(
 	sosa:hasSimpleResult ")" + OBSERVATION_VALUE +
                                       R"("^^xsd:float ;
 	sosa:observedProperty car:CurrentEnergy ;
-	sosa:phenomenonTime ")" + DATE_TIME +
+	sosa:phenomenonTime ")" + DATA_TIME +
                                       R"("^^xsd:dateTime .)";
 
     // Run and Assert
@@ -155,7 +156,7 @@ TEST_F(TripleWriterIntegrationTest, WriteRDFTripleInNTriplesFormat) {
         OBSERVATION_IDENTIFIER +
         R"(> <http://www.w3.org/ns/sosa/observedProperty> <http://example.ontology.com/car#CurrentEnergy> .
 <http://example.ontology.com/car#)" +
-        OBSERVATION_IDENTIFIER + R"(> <http://www.w3.org/ns/sosa/phenomenonTime> ")" + DATE_TIME +
+        OBSERVATION_IDENTIFIER + R"(> <http://www.w3.org/ns/sosa/phenomenonTime> ")" + DATA_TIME +
         R"("^^<http://www.w3.org/2001/XMLSchema#dateTime> .)";
 
     // Run and Assert
@@ -209,7 +210,7 @@ TEST_F(TripleWriterIntegrationTest, WriteRDFTripleInNQuatdsFormat) {
         OBSERVATION_IDENTIFIER +
         R"(> <http://www.w3.org/ns/sosa/observedProperty> <http://example.ontology.com/car#CurrentEnergy> .
 <http://example.ontology.com/car#)" +
-        OBSERVATION_IDENTIFIER + R"(> <http://www.w3.org/ns/sosa/phenomenonTime> ")" + DATE_TIME +
+        OBSERVATION_IDENTIFIER + R"(> <http://www.w3.org/ns/sosa/phenomenonTime> ")" + DATA_TIME +
         R"("^^<http://www.w3.org/2001/XMLSchema#dateTime> .)";
 
     // Run and Assert
@@ -254,7 +255,7 @@ car:)" + OBSERVATION_IDENTIFIER + R"(
 	sosa:hasSimpleResult ")" + OBSERVATION_VALUE +
                                       R"("^^xsd:float ;
 	sosa:observedProperty car:CurrentEnergy ;
-	sosa:phenomenonTime ")" + DATE_TIME +
+	sosa:phenomenonTime ")" + DATA_TIME +
                                       R"("^^xsd:dateTime .)";
     // Run and Assert
     std::string result_triple_writer = triple_writer->generateTripleOutput(RDFSyntaxType::TRIG);
@@ -316,7 +317,7 @@ TEST_F(TripleWriterIntegrationTest, FailAddingRDFDataToTripleSendingWrongDataCom
                         "<http://www.w3.org/2001/XMLSchema#float>");
 
     EXPECT_THROW(triple_writer->addRDFDataToTriple(prefixes_fixture_, data_components,
-                                                   OBSERVATION_VALUE, DATE_TIME),
+                                                   OBSERVATION_VALUE, TIMESTAMP),
                  std::runtime_error);
 }
 /**
@@ -331,6 +332,6 @@ TEST_F(TripleWriterIntegrationTest, FailAddingRDFDataToTripleSendingWrongDataVal
                                                  "<http://www.w3.org/2001/XMLSchema#float>");
 
     EXPECT_THROW(
-        triple_writer->addRDFDataToTriple(prefixes_fixture_, data_components, "", DATE_TIME),
+        triple_writer->addRDFDataToTriple(prefixes_fixture_, data_components, "", TIMESTAMP),
         std::runtime_error);
 }

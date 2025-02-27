@@ -102,19 +102,21 @@ enable_testing()
 
 # Add subdirectories for project modules and tests
 add_subdirectory(connector/json-rdf-convertor/json-writer)
-add_subdirectory(connector/json-rdf-convertor/rdf-writer)
-add_subdirectory(connector/websocket-client)
-add_subdirectory(connector/websocket-client/tests)
 add_subdirectory(connector/json-rdf-convertor/json-writer/tests)
+add_subdirectory(connector/json-rdf-convertor/rdf-writer)
 add_subdirectory(connector/json-rdf-convertor/rdf-writer/tests)
 add_subdirectory(connector/json-rdf-convertor/rdf-writer/tests/serd_library_tests)
+add_subdirectory(connector/data-objects)
+add_subdirectory(connector/utils)
+add_subdirectory(connector/websocket-client)
+add_subdirectory(connector/websocket-client/tests)
 add_subdirectory(symbolic-reasoner/rdfox)
 add_subdirectory(symbolic-reasoner/rdfox/tests)
 add_subdirectory(symbolic-reasoner/rdfox/tests/rdfox-service-test)
-add_subdirectory(tests)
+add_subdirectory(common-test-resources)
 
 # Define the main executable target
-add_executable(reasoner_client connector/websocket-client/main.cpp)
+add_executable(reasoner_client connector/websocket-client/src/main.cpp)
 
 # Link the websocket_client library to main
 target_link_libraries(reasoner_client

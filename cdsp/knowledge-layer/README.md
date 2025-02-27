@@ -153,3 +153,28 @@ To display a list of available environment variables and their default values, r
 The WebSocket client integrates with the [TripleAssembler](./connector/json-rdf-convertor/rdf-writer/README.md) component, which utilizes the[RDFox API](/docker/README.md#rdfox-restful-api) to process incoming data into RDF triples. The triples are then stored in RDFox for reasoning and querying.
 
 This integration allows the Reasoner client to interpret data, create RDF triples, and store them in a semantic knowledge graph, enabling rich queries and reasoning capabilities.
+
+# Running Tests in C++
+
+This module includes a suite of tests to ensure functionality. You can run all tests using **CTest** or execute specific test binaries directly from the `./build/bin/tests/` directory.
+
+## Running All Tests with CTest
+From the build directory, run:
+```sh
+ctest
+```
+or 
+```sh
+ctest --output-on-failure
+```
+This executes all registered tests and displays failures in detail.
+
+## Running a Specific Test
+To execute a specific test binary, navigate to the `./build/bin/tests/` directory and run:
+```sh
+./build/bin/tests/<test_executable>
+```
+For example:
+```sh
+./build/bin/tests/websocket_client_integration_test
+```

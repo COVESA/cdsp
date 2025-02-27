@@ -9,95 +9,66 @@
 
 #include "coordinate_transform.h"
 
-// Define the private namespace for internal helper functions
-namespace {
-std::tm getCurrentTime(bool use_utc) {
+// Define the static constant
+const Wgs84Coord Helper::ZONE_ORIGIN{11.579144, 48.137416, 0.0};
+
+/**
+ * @brief Retrieves the current timestamp formatted as a string.
+ *
+ * This function returns the current date and time formatted according to the specified format.
+ * It can optionally include nanoseconds and use UTC time.
+ *
+ * @param format The format string to use for formatting the timestamp.
+ *               This should be a valid format string for strftime.
+ * @param include_nanoseconds A boolean flag indicating whether to include nanoseconds in the
+ * output.
+ * @param use_utc A boolean flag indicating whether to use UTC time instead of local time.
+ * @return A formatted timestamp string representing the current date and time.
+ */
+std::string Helper::getFormattedTimestampNow(const std::string& format, bool include_nanoseconds,
+                                             bool use_utc) {
     auto now = std::chrono::system_clock::now();
     auto now_time_t = std::chrono::system_clock::to_time_t(now);
-    return use_utc ? *std::gmtime(&now_time_t) : *std::localtime(&now_time_t);
-}
 
-int getCurrentMilliseconds() {
-    auto now = std::chrono::system_clock::now();
-    return (std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000)
-        .count();
-}
-
-std::string formatTime(const std::tm& time, const std::string& format) {
-    std::ostringstream oss;
-    oss << std::put_time(&time, format.c_str());
-    return oss.str();
-}
-
-std::string addMilliseconds(const std::string& formatted_time, int milliseconds) {
-    std::ostringstream oss;
-    oss << formatted_time << '.' << std::setw(3) << std::setfill('0') << milliseconds;
-    return oss.str();
-}
-}  // namespace
-
-// Public functions
-namespace Helper {
-/**
- * @brief Generates a formatted timestamp string.
- *
- * This function creates a formatted timestamp string based on the provided format.
- * It can include milliseconds and use UTC time if specified. Optionally, a custom
- * time and milliseconds can be provided; otherwise, the current time is used.
- *
- * @param format The format string for the timestamp.
- * @param include_milliseconds Boolean flag to include milliseconds in the output.
- * @param use_utc Boolean flag to use UTC time instead of local time.
- * @param custom_time Optional custom time to use instead of the current time.
- * @param custom_milliseconds Optional custom milliseconds to use instead of the current
- * milliseconds.
- * @return std::string The formatted timestamp string.
- */
-std::string getFormattedTimestamp(const std::string& format, bool include_milliseconds,
-                                  bool use_utc, const std::optional<std::tm>& custom_time,
-                                  const std::optional<int>& custom_milliseconds) {
-    std::tm time = custom_time.has_value() ? custom_time.value() : getCurrentTime(use_utc);
-    int milliseconds = custom_milliseconds.has_value()
-                           ? custom_milliseconds.value()
-                           : (include_milliseconds ? getCurrentMilliseconds() : 0);
-
-    std::string formatted_time = formatTime(time, format);
-
-    if (include_milliseconds) {
-        formatted_time = addMilliseconds(formatted_time, milliseconds);
+    std::optional<int> nanoseconds = std::nullopt;
+    if (include_nanoseconds) {
+        auto now_ns =
+            std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
+        nanoseconds = now_ns % 1000000000;
     }
-
-    if (use_utc && format.find("T") != std::string::npos) {
-        formatted_time += 'Z';
-    }
-
-    return formatted_time;
+    return formatTimeT(use_utc, now_time_t, format, nanoseconds);
 }
 
 /**
- * @brief Converts latitude and longitude strings to NTM coordinates.
+ * @brief Generates a formatted timestamp string based on the provided format and options.
  *
- * This function takes latitude and longitude as strings, converts them to
- * a WGS84 coordinate, and then transforms it into NTM coordinates using
- * the `CoordinateTransform::ntmPoseFromWgs84` function. If either input
- * string is empty, it returns an empty optional.
+ * This function converts a given time point into a formatted string representation.
+ * The format of the output string is determined by the provided format string.
+ * The function can optionally include nanoseconds and use UTC time.
  *
- * @param latitude The latitude as a string.
- * @param longitude The longitude as a string.
- * @return std::optional<NtmCoord> The converted NTM coordinates wrapped in
- *         an optional. If the conversion fails or inputs are empty, returns
- *         an empty optional.
+ * @param format The format string to specify the output format of the timestamp.
+ *               This should be a valid format string for strftime.
+ * @param timestamp The time point to be formatted. This is a time point from
+ *                  the system clock.
+ * @param include_nanoseconds A boolean flag indicating whether to include
+ *                             nanoseconds in the formatted output.
+ * @param use_utc A boolean flag indicating whether to use UTC time instead of local time.
+ * @return A formatted timestamp string based on the provided format and options.
  */
-std::optional<NtmCoord> getCoordInNtm(const std::string& latitude, const std::string& longitude) {
-    if (latitude.empty() || longitude.empty()) {
-        return std::nullopt;
+std::string Helper::getFormattedTimestampCustom(
+    const std::string& format, const std::chrono::system_clock::time_point& timestamp,
+    bool include_nanoseconds, bool use_utc) {
+    std::time_t time_t = std::chrono::system_clock::to_time_t(timestamp);
+
+    std::optional<int> nanoseconds = std::nullopt;
+    if (include_nanoseconds) {
+        auto nanoseconds_count =
+            std::chrono::duration_cast<std::chrono::nanoseconds>(timestamp.time_since_epoch())
+                .count();
+        nanoseconds = nanoseconds_count % 1000000000;
     }
 
-    Wgs84Coord coord_to_convert;
-    coord_to_convert.latitude = std::stod(latitude);
-    coord_to_convert.longitude = std::stod(longitude);
-
-    return CoordinateTransform::ntmPoseFromWgs84(Helper::ZONE_ORIGIN, coord_to_convert);
+    return formatTimeT(use_utc, time_t, format, nanoseconds);
 }
 
 /**
@@ -117,7 +88,7 @@ std::optional<NtmCoord> getCoordInNtm(const std::string& latitude, const std::st
  *         - `std::optional<int>`: The milliseconds as an integer, if available. If no
  *           milliseconds are present in the string, this will be `std::nullopt`.
  */
-std::tuple<std::optional<std::tm>, std::optional<int>> parseISO8601ToTime(
+std::tuple<std::optional<std::tm>, std::optional<int>> Helper::parseISO8601ToTime(
     const std::string& iso_string) {
     std::tm tm = {};
     std::optional<int> milliseconds = std::nullopt;
@@ -140,31 +111,44 @@ std::tuple<std::optional<std::tm>, std::optional<int>> parseISO8601ToTime(
 }
 
 /**
- * @brief Converts an ISO 8601 formatted string to the duration in milliseconds since the epoch.
+ * @brief Converts a `std::chrono::system_clock::time_point` to nanoseconds since the epoch.
  *
- * This function takes an ISO 8601 formatted date-time string and calculates the duration in
- * milliseconds since the Unix epoch (January 1, 1970). It uses a helper function
- * `parseISO8601ToTime` to parse the string into a `tm` structure and milliseconds.
+ * This function takes a `std::chrono::system_clock::time_point` and converts it to nanoseconds
+ * since the epoch. The result is returned as a `std::chrono::nanoseconds` object.
  *
- * @param iso_string The ISO 8601 formatted date-time string to be converted.
- * @return std::chrono::duration<double, std::milli> The duration in milliseconds since the epoch.
- *         If the input string cannot be parsed, returns a duration of 0 milliseconds.
+ * @param timestamp The time point to convert to nanoseconds since the epoch.
+ * @return std::chrono::nanoseconds The number of nanoseconds since the epoch for the given time.
  */
-std::chrono::duration<double, std::milli> getMillisecondsSinceEpoch(const std::string& iso_string) {
-    auto [tm, milliseconds] = parseISO8601ToTime(iso_string);
-    if (!tm.has_value()) {
-        return std::chrono::milliseconds(0);
-    }
-    if (!milliseconds.has_value()) {
-        milliseconds = 0;
+std::chrono::nanoseconds Helper::getNanosecondsSinceEpoch(
+    const std::chrono::system_clock::time_point& timestamp) {
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(timestamp.time_since_epoch());
+}
+
+/**
+ * @brief Converts latitude and longitude strings to NTM coordinates.
+ *
+ * This function takes latitude and longitude as strings, converts them to
+ * a WGS84 coordinate, and then transforms it into NTM coordinates using
+ * the `CoordinateTransform::ntmPoseFromWgs84` function. If either input
+ * string is empty, it returns an empty optional.
+ *
+ * @param latitude The latitude as a string.
+ * @param longitude The longitude as a string.
+ * @return std::optional<NtmCoord> The converted NTM coordinates wrapped in
+ *         an optional. If the conversion fails or inputs are empty, returns
+ *         an empty optional.
+ */
+std::optional<NtmCoord> Helper::getCoordInNtm(const std::string& latitude,
+                                              const std::string& longitude) {
+    if (latitude.empty() || longitude.empty()) {
+        return std::nullopt;
     }
 
-    auto tp = std::chrono::system_clock::from_time_t(std::mktime(&tm.value())) +
-              std::chrono::milliseconds(milliseconds.value());
+    Wgs84Coord coord_to_convert;
+    coord_to_convert.latitude = std::stod(latitude);
+    coord_to_convert.longitude = std::stod(longitude);
 
-    auto duration = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(
-        tp.time_since_epoch());
-    return duration;
+    return CoordinateTransform::ntmPoseFromWgs84(ZONE_ORIGIN, coord_to_convert);
 }
 
 /**
@@ -175,7 +159,7 @@ std::chrono::duration<double, std::milli> getMillisecondsSinceEpoch(const std::s
  * @param input The input string to be converted.
  * @return A new string with all characters in lowercase.
  */
-std::string toLowerCase(const std::string& input) {
+std::string Helper::toLowerCase(const std::string& input) {
     std::string result = input;
     std::transform(result.begin(), result.end(), result.begin(),
                    [](unsigned char c) { return std::tolower(c); });
@@ -190,7 +174,7 @@ std::string toLowerCase(const std::string& input) {
  * @param input The input string to be converted.
  * @return A new string with all characters in uppercase.
  */
-std::string toUppercase(const std::string& input) {
+std::string Helper::toUppercase(const std::string& input) {
     std::string result = input;
     std::transform(result.begin(), result.end(), result.begin(),
                    [](unsigned char c) { return std::toupper(c); });
@@ -207,7 +191,7 @@ std::string toUppercase(const std::string& input) {
  * @param str The input string from which trailing newlines are to be removed.
  * @return A new string with trailing newline characters removed.
  */
-std::string trimTrailingNewlines(const std::string& str) {
+std::string Helper::trimTrailingNewlines(const std::string& str) {
     std::string trimmed = str;
     while (!trimmed.empty() && trimmed.back() == '\n') {
         trimmed.pop_back();
@@ -225,7 +209,7 @@ std::string trimTrailingNewlines(const std::string& str) {
  * @param value The string value to detect the type of.
  * @return nlohmann::json The detected type of the value.
  */
-nlohmann::json detectType(const std::string& value) {
+nlohmann::json Helper::detectType(const std::string& value) {
     if (value.empty()) {
         return "";  // Keep empty values as empty strings
     }
@@ -251,4 +235,86 @@ nlohmann::json detectType(const std::string& value) {
     // Default to string
     return value;
 }
-}  // namespace Helper
+std::vector<std::string> Helper::splitString(const std::string& str, char delimiter) {
+    std::vector<std::string> tokens;
+    std::string token;
+    std::istringstream tokenStream(str);
+    while (std::getline(tokenStream, token, delimiter)) {
+        tokens.push_back(token);
+    }
+    return tokens;
+}
+
+/**
+ * @brief Converts a JSON value to its string representation.
+ *
+ * This function takes a JSON value and converts it to a string representation
+ * based on its type. Supported types include string, float, integer, unsigned integer,
+ * and boolean. If the JSON value is of an unsupported type, a runtime error is thrown.
+ *
+ * @param json_value The JSON value to be converted to a string.
+ * @return std::string The string representation of the JSON value.
+ * @throws std::runtime_error If the JSON value is of an unsupported type.
+ */
+std::string Helper::jsonToString(const nlohmann::json& json_value) {
+    if (json_value.is_string()) {
+        return json_value.get<std::string>();
+    } else if (json_value.is_number_float()) {
+        return std::to_string(json_value.get<double>());
+    } else if (json_value.is_number_integer()) {
+        return std::to_string(json_value.get<int>());
+    } else if (json_value.is_number_unsigned()) {
+        return std::to_string(json_value.get<unsigned>());
+    } else if (json_value.is_boolean()) {
+        return json_value.get<bool>() ? "true" : "false";
+    }
+    throw std::runtime_error("The message contains a node with an unsupported value.");
+}
+
+std::chrono::system_clock::time_point Helper::convertToTimestamp(int64_t seconds, int64_t nanos) {
+    try {
+        return std::chrono::system_clock::time_point(
+            std::chrono::duration_cast<std::chrono::system_clock::duration>(
+                std::chrono::seconds(seconds) + std::chrono::nanoseconds(nanos)));
+    } catch (const std::exception& e) {
+        throw std::invalid_argument("Failed to convert timestamp: " + std::string(e.what()));
+    }
+}
+
+/**
+ * @brief Formats a given time as a string according to the specified format.
+ *
+ * This function converts a `std::time_t` value into a formatted string representation.
+ * The format of the output string is determined by the provided format string.
+ * The function can optionally include nanoseconds and use UTC time.
+ *
+ * @param use_utc A boolean flag indicating whether to use UTC time for the
+ *                formatted output. If false, local time is used.
+ * @param time_t A reference to the `std::time_t` value representing the time to be formatted.
+ * @param format The format string to specify the output format of the time.
+ *               This string should be compatible with the formatting options
+ *               used by the underlying time formatting functions.
+ * @param nanoseconds An optional integer representing the nanoseconds to append
+ *                    to the formatted time. If not provided, nanoseconds are not included.
+ * @return A formatted time string based on the provided format and options.
+ */
+std::string Helper::formatTimeT(bool use_utc, std::time_t& time_t, const std::string& format,
+                                std::optional<int> nanoseconds) {
+    // Convert time_t to tm (local or UTC)
+    auto tm = use_utc ? *std::gmtime(&time_t) : *std::localtime(&time_t);
+
+    // Format the time according to the provided format string
+    std::ostringstream oss;
+    oss << std::put_time(&tm, format.c_str());
+
+    if (nanoseconds.has_value()) {
+        oss << '.' << std::setw(9) << std::setfill('0') << nanoseconds.value();
+    }
+
+    std::string formatted_time = oss.str();
+    if (use_utc && format.find("T") != std::string::npos) {
+        formatted_time += 'Z';
+    }
+
+    return formatted_time;
+}

@@ -14,7 +14,8 @@ class MockTripleWriter : public TripleWriter {
 
     MOCK_METHOD(void, addRDFDataToTriple,
                 ((const std::string&), (const std::tuple<std::string, std::string, std::string>&),
-                 (const std::string&), (const std::string&), (const std::optional<double>&) ),
+                 (const std::string&), (const std::chrono::system_clock::time_point&),
+                 (const std::optional<double>&) ),
                 (override));
     MOCK_METHOD(std::string, generateTripleOutput, (const RDFSyntaxType&), (override));
 };

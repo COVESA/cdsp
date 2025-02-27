@@ -5,6 +5,7 @@
 #include <nlohmann/json.hpp>
 #include <sstream>
 
+#include "data_message.h"
 #include "helper.h"
 
 using json = nlohmann::json;
@@ -54,33 +55,39 @@ void TripleAssembler::transformMessageToRDFTriple(const DataMessage& message) {
         throw std::runtime_error("Failed to call datastore. The triples cannot be generated.");
     }
 
+    MessageHeader header = message.getHeader();
+    std::vector<Node> nodes = message.getNodes();
+
     // Add the identifier to the triples that will be generated
-    triple_writer_.initiateTriple(message.header.id);
-    std::string msg_tree = Helper::toLowerCase(message.header.tree);
-    if (message.nodes.empty()) {
+    triple_writer_.initiateTriple(header.getId());
+
+    if (nodes.empty()) {
         std::cout << "No nodes found in the message\n\n";
         return;
     }
 
     std::optional<CoordinateNodes> valid_coordinates = std::nullopt;
 
-    for (const auto node : message.nodes) {
-        if (node.name == "Vehicle.CurrentLocation.Latitude" ||
-            node.name == "Vehicle.CurrentLocation.Longitude") {
-            const auto epochMilliseconds =
-                Helper::getMillisecondsSinceEpoch(message.header.date_time);
-            const auto found_key = timestamp_coordinates_messages_map_.find(epochMilliseconds);
+    for (const auto node : nodes) {
+        if (node.getName() == "Vehicle.CurrentLocation.Latitude" ||
+            node.getName() == "Vehicle.CurrentLocation.Longitude") {
+            const auto node_timestamp = getTimestampFromNode(node);
+            const auto nanosecondsSinceEpoch = Helper::getNanosecondsSinceEpoch(node_timestamp);
+
+            const auto found_key = timestamp_coordinates_messages_map_.find(nanosecondsSinceEpoch);
             if (found_key != timestamp_coordinates_messages_map_.end()) {
-                found_key->second.insert({node.name, node});
+                found_key->second.insert({node.getName(), node});
             } else {
                 timestamp_coordinates_messages_map_.emplace(
-                    epochMilliseconds, std::unordered_map<std::string, Node>{{node.name, node}});
+                    nanosecondsSinceEpoch,
+                    std::unordered_map<std::string, Node>{{node.getName(), node}});
             }
+
             valid_coordinates = getValidCoordinatesPair();
 
         } else {
             try {
-                generateTriplesFromNode(node, msg_tree, message.header.date_time);
+                generateTriplesFromNode(node, header.getSchemaType());
             } catch (const std::exception& e) {
                 std::cerr << "An error occurred creating the TTL triples: " << e.what()
                           << std::endl;
@@ -89,7 +96,7 @@ void TripleAssembler::transformMessageToRDFTriple(const DataMessage& message) {
     }
 
     if (valid_coordinates.has_value())
-        generateTriplesFromCoordinates(valid_coordinates, msg_tree, message);
+        generateTriplesFromCoordinates(valid_coordinates, header.getSchemaType(), message);
 
     // Get the document of the generated triples
     std::string generated_triples =
@@ -98,7 +105,7 @@ void TripleAssembler::transformMessageToRDFTriple(const DataMessage& message) {
     if (!generated_triples.empty()) {
         storeTripleOutput(generated_triples);
     } else {
-        std::cout << "Any triples have been generated for the update message\n\n";
+        std::cout << "No triples have been generated for the update message\n\n";
     }
 }
 
@@ -114,11 +121,11 @@ void TripleAssembler::transformMessageToRDFTriple(const DataMessage& message) {
  * if no valid pair exists.
  */
 std::optional<CoordinateNodes> TripleAssembler::getValidCoordinatesPair() {
-    chrono_time_mili last_timestamp_to_delete(0.0);
+    chrono_time_nanoseconds last_timestamp_to_delete(0);
     const Node* latitude = nullptr;
-    chrono_time_mili latitude_time;
+    chrono_time_nanoseconds latitude_time;
     const Node* longitude = nullptr;
-    chrono_time_mili longitude_time;
+    chrono_time_nanoseconds longitude_time;
 
     for (const auto& [time, nodes] : timestamp_coordinates_messages_map_) {
         // Check if latitude exists
@@ -138,10 +145,10 @@ std::optional<CoordinateNodes> TripleAssembler::getValidCoordinatesPair() {
 
     if (latitude && longitude) {
         // Ensure that the locations happen within a period of 2 seconds
-        const auto two_seconds_in_millisec = std::chrono::duration<double, std::milli>(2000.0);
+        const auto two_seconds_in_nanoseconds = std::chrono::nanoseconds(2'000'000'000);
         auto difference = latitude_time - longitude_time;
 
-        if (std::abs(difference.count()) <= two_seconds_in_millisec.count()) {
+        if (std::abs(difference.count()) <= two_seconds_in_nanoseconds.count()) {
             // Update the last timestamp for valid coordinates
             coordinates_last_time_stamp_ = std::max(latitude_time, longitude_time);
             return CoordinateNodes{*latitude, *longitude};
@@ -179,30 +186,35 @@ void TripleAssembler::cleanupOldTimestamps() {
  * related to vehicle location by preparing additional RDF data if necessary.
  *
  * @param node The node containing the name and value to be transformed into RDF triples.
- * @param msg_tree The message tree structure used for querying RDF data.
- * @param msg_date_time The date and time associated with the message.
+ * @param msg_schema_type The message schema type used for querying RDF data.
+ * @param node_timestamp The timestamp associated with the node.
  * @param ntm_coord_value An optional coordinate value for NTM data.
  */
-void TripleAssembler::generateTriplesFromNode(const Node& node, const std::string& msg_tree,
-                                              const std::string& msg_date_time,
+void TripleAssembler::generateTriplesFromNode(const Node& node, const SchemaType& msg_schema_type,
                                               const std::optional<double>& ntm_coord_value) {
-    // Split node data point into object and data elements
-    const auto [object_elements, data_element] = extractObjectsAndDataElements(node.name);
+    try {
+        // Split node data point into object and data elements
+        const auto [object_elements, data_element] = extractObjectsAndDataElements(node.getName());
 
-    // Query and add RDF Objects
-    for (std::size_t i = 1; i < object_elements.size(); ++i) {
-        const auto [prefixes, rdf_object_values] =
-            getQueryPrefixesAndData(msg_tree, "object", object_elements[i - 1], object_elements[i]);
+        // Query and add RDF Objects
+        for (std::size_t i = 1; i < object_elements.size(); ++i) {
+            const auto [prefixes, rdf_object_values] = getQueryPrefixesAndData(
+                msg_schema_type, "object", object_elements[i - 1], object_elements[i]);
 
-        triple_writer_.addRDFObjectToTriple(prefixes, rdf_object_values);
+            triple_writer_.addRDFObjectToTriple(prefixes, rdf_object_values);
+        }
+
+        // Query and add RDF Data
+        const auto [prefixes, rdf_data_values] = getQueryPrefixesAndData(
+            msg_schema_type, "data", object_elements[object_elements.size() - 1], data_element);
+
+        const auto node_timestamp = getTimestampFromNode(node);
+
+        triple_writer_.addRDFDataToTriple(prefixes, rdf_data_values, node.getValue().value(),
+                                          node_timestamp, ntm_coord_value);
+    } catch (const std::exception& e) {
+        std::cerr << "An error occurred creating the TTL triples: " << e.what() << std::endl;
     }
-
-    // Query and add RDF Data
-    const auto [prefixes, rdf_data_values] = getQueryPrefixesAndData(
-        msg_tree, "data", object_elements[object_elements.size() - 1], data_element);
-
-    triple_writer_.addRDFDataToTriple(prefixes, rdf_data_values, node.value, msg_date_time,
-                                      ntm_coord_value);
 }
 
 /**
@@ -213,24 +225,29 @@ void TripleAssembler::generateTriplesFromNode(const Node& node, const std::strin
  * and ensures they are recorded within a 2-second interval. If valid, it updates
  * the `coordinates_last_time_stamp_` and returns the coordinate nodes.
  *
+ * @param valid_coordinates The optional containing the latitude and longitude nodes.
+ * @param msg_schema_type The message schema type used for querying RDF data.
+ * @param message The DataMessage containing nodes and metadata to be transformed into RDF triples.
+ *
  * @return An optional CoordinateNodes object containing the latitude and longitude nodes
  * if both are found and valid; otherwise, std::nullopt.
  */
 void TripleAssembler::generateTriplesFromCoordinates(
-    std::optional<CoordinateNodes>& valid_coordinates, std::string& msg_tree,
+    std::optional<CoordinateNodes>& valid_coordinates, const SchemaType& msg_schema_type,
     const DataMessage& message) {
     {
         try {
-            auto ntm_coord = Helper::getCoordInNtm(valid_coordinates.value().latitude.value,
-                                                   valid_coordinates.value().longitude.value);
+            auto ntm_coord =
+                Helper::getCoordInNtm(valid_coordinates.value().latitude.getValue().value(),
+                                      valid_coordinates.value().longitude.getValue().value());
             if (ntm_coord == std::nullopt) {
                 throw std::runtime_error("Failed to convert coordinates to NTM");
             }
 
-            generateTriplesFromNode(valid_coordinates.value().latitude, msg_tree,
-                                    message.header.date_time, ntm_coord.value().northing);
-            generateTriplesFromNode(valid_coordinates.value().longitude, msg_tree,
-                                    message.header.date_time, ntm_coord.value().easting);
+            generateTriplesFromNode(valid_coordinates.value().latitude, msg_schema_type,
+                                    ntm_coord.value().northing);
+            generateTriplesFromNode(valid_coordinates.value().longitude, msg_schema_type,
+                                    ntm_coord.value().easting);
         } catch (const std::exception& e) {
             std::cerr << "An error occurred creating the TTL triples: " << e.what() << std::endl;
         }
@@ -238,6 +255,28 @@ void TripleAssembler::generateTriplesFromCoordinates(
         // Manual cleanup of old timestamps
         cleanupOldTimestamps();
     }
+}
+
+/**
+ * Retrieves the timestamp from a given node.
+ *
+ * This function extracts the timestamp from the node's metadata. It first checks if the
+ * 'generated' timestamp is available and returns it if present. If the 'generated' timestamp
+ * is not available, it falls back to returning the 'received' timestamp.
+ *
+ * @param node The node from which to retrieve the timestamp.
+ * @return The timestamp as a std::chrono::system_clock::time_point.
+ */
+const std::chrono::system_clock::time_point TripleAssembler::getTimestampFromNode(
+    const Node& node) {
+    std::chrono::system_clock::time_point node_timestamp;
+
+    if (node.getMetadata().getGenerated().has_value()) {
+        node_timestamp = node.getMetadata().getGenerated().value();
+    } else {
+        node_timestamp = node.getMetadata().getReceived();
+    }
+    return node_timestamp;
 }
 
 /**
@@ -252,14 +291,7 @@ void TripleAssembler::generateTriplesFromCoordinates(
  */
 std::pair<std::vector<std::string>, std::string> TripleAssembler::extractObjectsAndDataElements(
     const std::string& node_name) {
-    std::vector<std::string> elements;
-    std::stringstream ss(node_name);
-    std::string token;
-
-    // Split the node name by dots
-    while (std::getline(ss, token, '.')) {
-        elements.push_back(token);
-    }
+    std::vector<std::string> elements = Helper::splitString(node_name, '.');
 
     // At least two elements are required to create a triple
     if (elements.size() < 2) {
@@ -276,11 +308,11 @@ std::pair<std::vector<std::string>, std::string> TripleAssembler::extractObjects
 /**
  * @brief Retrieves SPARQL query prefixes and data elements for RDF triple generation.
  *
- * This method constructs a SPARQL query based on the provided message tree and property type.
- * It attempts to retrieve the query from a specified file path. If the query is not found,
- * it defaults to a query from a "default" path.
+ * This method constructs a SPARQL query based on the provided message schema type and
+ * property type. It attempts to retrieve the query from a specified file path. If the query is not
+ * found, it defaults to a query from a "default" path.
  *
- * @param message_tree The path or identifier for the message tree to query.
+ * @param msg_schema_type The path or identifier for the message schema type to query.
  * @param property_type The type of property ("object" or "data") to query.
  * @param subject_class The class name of the subject in the RDF triple.
  * @param object_class The class name of the object in the RDF triple.
@@ -291,14 +323,14 @@ std::pair<std::vector<std::string>, std::string> TripleAssembler::extractObjects
  * @throws std::runtime_error If the SPARQL query cannot be retrieved or executed.
  */
 std::pair<std::string, std::tuple<std::string, std::string, std::string>>
-TripleAssembler::getQueryPrefixesAndData(const std::string& message_tree,
+TripleAssembler::getQueryPrefixesAndData(const SchemaType& msg_schema_type,
                                          const std::string& property_type,
                                          const std::string& subject_class,
                                          const std::string& object_class) {
-    std::string sparql_query = getQueryFromFilePath(message_tree, property_type);
+    std::string sparql_query = getQueryFromFilePath(msg_schema_type, property_type);
 
     if (sparql_query.empty()) {
-        sparql_query = getQueryFromFilePath("default", property_type);
+        sparql_query = getQueryFromFilePath(SchemaType::DEFAULT, property_type);
     }
 
     if (sparql_query.empty()) {
@@ -317,16 +349,18 @@ TripleAssembler::getQueryPrefixesAndData(const std::string& message_tree,
 }
 
 /**
- * @brief Retrieves a SPARQL query from a file based on the specified tree and property type.
+ * @brief Retrieves a SPARQL query from a file based on the specified schema_type and property
+ * type.
  *
- * @param tree The identifier for the message tree to search for query files.
+ * @param schema_type The identifier for the message schema_type to search for query
+ * files.
  * @param property_type The type of property for which the query is needed.
  * @return A string containing the SPARQL query if found, or an empty string if no matching file is
  * found.
  */
-std::string TripleAssembler::getQueryFromFilePath(const std::string& tree,
+std::string TripleAssembler::getQueryFromFilePath(const SchemaType& schema_type,
                                                   const std::string& property_type) {
-    auto it = model_config_.triple_assembler_queries_files.find(tree);
+    auto it = model_config_.triple_assembler_queries_files.find(schema_type);
     if (it != model_config_.triple_assembler_queries_files.end()) {
         const std::vector<std::string>& files = it->second;
         for (const auto& file : files) {
@@ -419,18 +453,18 @@ void TripleAssembler::storeTripleOutput(const std::string& triple_output) {
 
     // create file name
     const std::string file_name = model_config_.output_file_path + "gen_rdf_triple_" +
-                                  Helper::getFormattedTimestamp("%H", false, true) +
+                                  Helper::getFormattedTimestampNow("%H", false, true) +
                                   getFileExtension();
 
     // Add the current time to the log
     std::ostringstream output;
-    output << "# Output from " << Helper::getFormattedTimestamp("%Y-%m-%dT%H:%M:%S", true, true)
+    output << "# Output from " << Helper::getFormattedTimestampNow("%Y-%m-%dT%H:%M:%S", true, true)
            << "\n\n"
            << triple_output << "\n\n";
 
     // Write the file
     file_handler_.writeFile(file_name, output.str(), true);
-    std::cout << "A triple has been generated under: " << file_name << std::endl;
+    std::cout << "A triple has been generated under: " << file_name << std::endl << std::endl;
 }
 
 /**

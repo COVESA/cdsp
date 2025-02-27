@@ -10,12 +10,14 @@
 #include <vector>
 
 #include "coordinates_types.h"
+#include "data_message.h"
 #include "data_types.h"
 #include "i_file_handler.h"
+#include "node.h"
 #include "rdfox_adapter.h"
 #include "triple_writer.h"
 
-using chrono_time_mili = std::chrono::duration<double, std::milli>;
+using chrono_time_nanoseconds = std::chrono::nanoseconds;
 
 struct CoordinateNodes {
     Node latitude;
@@ -34,12 +36,12 @@ class TripleAssembler {
     ~TripleAssembler() = default;
 
    protected:
-    void generateTriplesFromNode(const Node& node, const std::string& msg_tree,
-                                 const std::string& msg_date_time,
+    void generateTriplesFromNode(const Node& node, const SchemaType& msg_schema_type,
                                  const std::optional<double>& ntm_coord_value = std::nullopt);
 
     void generateTriplesFromCoordinates(std::optional<CoordinateNodes>& valid_coordinates,
-                                        std::string& msg_tree, const DataMessage& message);
+                                        const SchemaType& msg_schema_type,
+                                        const DataMessage& message);
 
     void storeTripleOutput(const std::string& triple_output);
 
@@ -48,9 +50,9 @@ class TripleAssembler {
     IFileHandler& file_handler_;
     TripleWriter& triple_writer_;
 
-    chrono_time_mili coordinates_last_time_stamp_{chrono_time_mili(0.0)};
+    chrono_time_nanoseconds coordinates_last_time_stamp_{chrono_time_nanoseconds(0)};
 
-    std::map<chrono_time_mili, std::unordered_map<std::string, Node>>
+    std::map<chrono_time_nanoseconds, std::unordered_map<std::string, Node>>
         timestamp_coordinates_messages_map_{};
 
     const ModelConfig& model_config_;
@@ -65,11 +67,10 @@ class TripleAssembler {
     void cleanupOldTimestamps();
 
     std::pair<std::string, std::tuple<std::string, std::string, std::string>>
-    getQueryPrefixesAndData(const std::string& message_tree, const std::string& property_type,
+    getQueryPrefixesAndData(const SchemaType& msg_schema_type, const std::string& property_type,
                             const std::string& subject_class, const std::string& object_class);
 
-    std::string getQueryFromFilePath(const std::string& query_key,
-                                     const std::string& property_type);
+    std::string getQueryFromFilePath(const SchemaType& query_key, const std::string& property_type);
 
     void replaceAllSparqlVariables(std::string& query, const std::string& from,
                                    const std::string& to);
@@ -80,6 +81,8 @@ class TripleAssembler {
     std::string extractPrefixesFromQuery(const std::string& query);
 
     std::string getFileExtension();
+
+    const std::chrono::system_clock::time_point getTimestampFromNode(const Node& node);
 };
 
 #endif  // TRIPLE_ASSEMBLER_H

@@ -63,9 +63,9 @@ void validateJsonFields(const json& config_json) {
         throw std::runtime_error(generic_error_message +
                                  " in 'reasoner_settings': 'output_format'");
     }
-    if (!reasoner_settings.contains("supported_tree_types")) {
+    if (!reasoner_settings.contains("supported_schema_collections")) {
         throw std::runtime_error(generic_error_message +
-                                 " in 'reasoner_settings': 'supported_tree_types'");
+                                 " in 'reasoner_settings': 'supported_schema_collections'");
     }
 }
 
@@ -125,43 +125,44 @@ void loadModelConfig(const std::string& config_file, ModelConfig& model_config) 
     // Validate the structure of the JSON
     validateJsonFields(config_json);
 
-    if (config_json["reasoner_settings"]["supported_tree_types"].size() > 0) {
+    if (config_json["reasoner_settings"]["supported_schema_collections"].size() > 0) {
         const std::string generic_error_message =
             "Error in the model_config.json file. Missing required field";
 
-        for (const auto& tree_type : config_json["reasoner_settings"]["supported_tree_types"]) {
-            std::string lc_tree_type = Helper::toLowerCase(tree_type.get<std::string>());
+        for (const auto& supported_schema :
+             config_json["reasoner_settings"]["supported_schema_collections"]) {
+            const SchemaType schema_type = stringToSchemaType(supported_schema.get<std::string>());
+            const std::string schema_type_str = SchemaTypeToString(schema_type);
 
-            // Read supported tree types
-            model_config.reasoner_settings.supported_tree_types.push_back(
-                Helper::toUppercase(tree_type.get<std::string>()));
+            // Read supported schema type
+            model_config.reasoner_settings.supported_schema_collections.push_back(schema_type);
 
-            // Read system data points for a tree type
-            if (!config_json["inputs"].contains(lc_tree_type + "_data")) {
-                throw std::runtime_error(generic_error_message + " in 'inputs': '" + lc_tree_type +
-                                         "_data'");
+            // Read system data points for a schema type
+            if (!config_json["inputs"].contains(schema_type_str + "_data")) {
+                throw std::runtime_error(generic_error_message + " in 'inputs': '" +
+                                         schema_type_str + "_data'");
             }
-            model_config.system_data_points[lc_tree_type] = getClientRequiredDataPoints(
-                config_json["inputs"][lc_tree_type + "_data"].get<std::string>());
+            model_config.system_data_points[schema_type] = getClientRequiredDataPoints(
+                config_json["inputs"][schema_type_str + "_data"].get<std::string>());
 
-            // Read tree type specific triple assembler helpers
-            if (config_json["queries"]["triple_assembler_helper"].contains(lc_tree_type)) {
+            // Read schema specific triple assembler helpers
+            if (config_json["queries"]["triple_assembler_helper"].contains(schema_type_str)) {
                 std::vector<std::string> query_list;
                 for (const auto& query :
-                     config_json["queries"]["triple_assembler_helper"][lc_tree_type]) {
+                     config_json["queries"]["triple_assembler_helper"][schema_type_str]) {
                     query_list.push_back(createConfigPath(query.get<std::string>()));
                 }
-                model_config.triple_assembler_queries_files[lc_tree_type] = query_list;
+                model_config.triple_assembler_queries_files[schema_type] = query_list;
             } else {
-                std::cout
-                    << (" ** INFO: There is any triple assembler helper for the tree type: '" +
-                        lc_tree_type + "' configured in the model_config.json")
-                    << std::endl
-                    << std::endl;
+                std::cout << (" ** INFO: There are no triple assembler helpers for the schema "
+                              "definition: '" +
+                              schema_type_str + "' configured in the model_config.json")
+                          << std::endl
+                          << std::endl;
             }
         }
     } else {
-        throw std::runtime_error("You need to add some supported tree types in " + config_file);
+        throw std::runtime_error("You need to add some supported schema types in " + config_file);
     }
 
     // Read output file path
@@ -182,7 +183,7 @@ void loadModelConfig(const std::string& config_file, ModelConfig& model_config) 
     for (const auto& query : config_json["queries"]["triple_assembler_helper"]["default"]) {
         query_list.push_back(createConfigPath(query.get<std::string>()));
     }
-    model_config.triple_assembler_queries_files["default"] = query_list;
+    model_config.triple_assembler_queries_files[SchemaType::DEFAULT] = query_list;
 
     // Read rules paths
     for (const auto& rule : config_json["rules"]) {

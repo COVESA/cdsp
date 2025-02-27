@@ -103,18 +103,19 @@ void TripleWriter::addRDFObjectToTriple(
  *                        - The second element is the data property identifier.
  *                        - The third element is the data type identifier.
  * @param value A string representing the value to be used in the RDF triple.
- * @param dataTime A string representing the date and time in ISO 8601 format.
+ * @param timestamp A time_point object representing the timestamp for the RDF data.
  * @param ntmValue An optional double representing the NTM value, required for specific cases.
  *
- * @throws std::runtime_error If the value or dataTime is empty, or if the NTM value is required
+ * @throws std::runtime_error If the value is empty, or if the NTM value is required
  *                            but not provided.
  */
 void TripleWriter::addRDFDataToTriple(
     const std::string& prefixes,
     const std::tuple<std::string, std::string, std::string>& rdf_data_values,
-    const std::string& value, const std::string& dataTime, const std::optional<double>& ntmValue) {
-    if (value.empty() || dataTime.empty()) {
-        throw std::runtime_error("Triple value or dataTime cannot be empty");
+    const std::string& value, const std::chrono::system_clock::time_point& timestamp,
+    const std::optional<double>& ntmValue) {
+    if (value.empty()) {
+        throw std::runtime_error("Triple value cannot be empty");
     }
     // Add all prefixes in the system list
     addSuportedPrefixes(prefixes);
@@ -134,12 +135,17 @@ void TripleWriter::addRDFDataToTriple(
     TripleNodes triple_nodes;
 
     // Create identifiers instances for each class
-    const auto [dateTime, _] = Helper::parseISO8601ToTime(dataTime);
-    const std::string nowDataTime =
-        Helper::getFormattedTimestamp("%Y%m%d%H%M%S", false, false, dateTime);
+    const std::string data_time = Helper::getFormattedTimestampCustom("%Y%m%d%H%M%S", timestamp);
+
+    const std::string date_time_with_nano =
+        Helper::getFormattedTimestampCustom("%Y-%m-%dT%H:%M:%S", timestamp, true);
+
+    auto milliseconds_since_epoch =
+        std::chrono::duration_cast<std::chrono::milliseconds>(timestamp.time_since_epoch()).count();
+
     const std::string class_1_instance_uri = createInstanceUri(class_1_prefix, class_1_identifier);
     std::stringstream observation_instance_uri;
-    observation_instance_uri << class_1_prefix << ":" << "Observation" << nowDataTime << "O"
+    observation_instance_uri << class_1_prefix << ":" << "Observation" << data_time << "O"
                              << observation_counter_++;
 
     // Create triples
@@ -170,7 +176,7 @@ void TripleWriter::addRDFDataToTriple(
     rdf_triples_definitions_.push_back(triple_nodes);
 
     triple_nodes.predicate = std::make_pair(SERD_CURIE, "sosa:phenomenonTime");
-    triple_nodes.object = std::make_pair(SERD_LITERAL, dataTime);
+    triple_nodes.object = std::make_pair(SERD_LITERAL, date_time_with_nano);
     triple_nodes.datatype = std::make_pair(SERD_CURIE, "xsd:dateTime");
     rdf_triples_definitions_.push_back(triple_nodes);
 
@@ -244,12 +250,6 @@ std::string TripleWriter::generateTripleOutput(const RDFSyntaxType& format) {
     serd_env_free(serd_env);
 
     return Helper::trimTrailingNewlines(serd_output);
-}
-
-// TODO: this function is not used in the current implementation
-void TripleWriter::clearLogDefinitions() {
-    rdf_triples_definitions_.clear();
-    unique_rdf_prefix_definitions_.clear();
 }
 
 /**

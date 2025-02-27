@@ -37,7 +37,7 @@ class RDFoxAdapterIntegrationTest : public ::testing::Test {
 
 class RDFoxAdapterDataLoadTest
     : public RDFoxAdapterIntegrationTest,
-      public ::testing::WithParamInterface<std::pair<std::string, std::string>> {
+      public ::testing::WithParamInterface<std::pair<RDFSyntaxType, std::string>> {
    protected:
     void SetUp() override {
         // Call the base class setup
@@ -52,11 +52,11 @@ class RDFoxAdapterDataLoadTest
 
 INSTANTIATE_TEST_SUITE_P(
     DataLoadFormats, RDFoxAdapterDataLoadTest,
-    ::testing::Values(std::make_pair("text/turtle", "text_turtle_format"),
-                      std::make_pair("application/trig", "application_trig_format"),
-                      std::make_pair("application/n-triples", "application_n_triples_format"),
-                      std::make_pair("application/n-quads", "application_n_quads_format")),
-    [](const ::testing::TestParamInfo<std::pair<std::string, std::string>>& info) {
+    ::testing::Values(std::make_pair(RDFSyntaxType::TURTLE, "text_turtle_format"),
+                      std::make_pair(RDFSyntaxType::TRIG, "application_trig_format"),
+                      std::make_pair(RDFSyntaxType::NTRIPLES, "application_n_triples_format"),
+                      std::make_pair(RDFSyntaxType::NQUADS, "application_n_quads_format")),
+    [](const ::testing::TestParamInfo<std::pair<RDFSyntaxType, std::string>>& info) {
         return info.param.second;  // Test name
     });
 
@@ -67,28 +67,28 @@ INSTANTIATE_TEST_SUITE_P(
  * @param object The object of the triple.
  * @return A map of data formats and their corresponding data.
  */
-std::map<std::string, std::string> generateDataFormats(const std::string& subject,
-                                                       const std::string& object) {
-    std::map<std::string, std::string> data_formats;
+std::map<RDFSyntaxType, std::string> generateDataFormats(const std::string& subject,
+                                                         const std::string& object) {
+    std::map<RDFSyntaxType, std::string> data_formats;
 
     // Turtle format
-    data_formats["text/turtle"] = R"(
+    data_formats[RDFSyntaxType::TURTLE] = R"(
         @prefix car: <http://example.com/car#> .
-        car:)" + subject + R"( a car:)" +
-                                  object + R"( .
+        car:)" + subject + R"( a car:)" + object +
+                                          R"( .
     )";
 
     // TriG format
-    data_formats["application/trig"] = R"(
+    data_formats[RDFSyntaxType::TRIG] = R"(
         @prefix car: <http://example.com/car#> .
         {
             car:)" + subject + R"( a car:)" +
-                                       object + R"( .
+                                        object + R"( .
         }
     )";
 
     // N-Triples format
-    data_formats["application/n-triples"] =
+    data_formats[RDFSyntaxType::NTRIPLES] =
         R"(
         <http://example.com/car#)" +
         subject +
@@ -97,7 +97,7 @@ std::map<std::string, std::string> generateDataFormats(const std::string& subjec
     )";
 
     // N-Quads format
-    data_formats["application/n-quads"] =
+    data_formats[RDFSyntaxType::NQUADS] =
         R"(
     <http://example.com/car#)" +
         subject +
@@ -123,19 +123,17 @@ TEST_F(RDFoxAdapterIntegrationTest, DataStoreInitializationTest) { SUCCEED(); }
  */
 TEST_P(RDFoxAdapterDataLoadTest, LoadAndQueryDataConsistency) {
     // Get the data format and content type from the test parameters
-    const std::string& data_format = GetParam().first;
+    const RDFSyntaxType& data_format = GetParam().first;
 
-    std::cout << "Data format: " << data_format << std::endl;
+    std::cout << "Data format: " << RDFSyntaxTypeToContentType(data_format) << std::endl;
 
     // Generate data for the format
     auto data_formats = generateDataFormats(triple_subject_, triple_object_);
-    ASSERT_TRUE(data_formats.count(data_format)) << "Data format not supported: " << data_format;
-
     std::string data_to_load = data_formats[data_format];
 
     // Load the data into the data store
     ASSERT_TRUE(adapter_->loadData(data_to_load, data_format))
-        << "Failed to load data in format: " << data_format;
+        << "Failed to load data in format: " << RDFSyntaxTypeToContentType(data_format);
 
     // Define a SPARQL query to select all triples in the data store
     std::string sparql = "SELECT ?s ?p ?o WHERE { ?s ?p ?o }";
@@ -244,8 +242,8 @@ TEST_F(RDFoxAdapterIntegrationTest, CreateConnectionTest) {
 
     // Advance the cursor to retrieve the results
     // Pagination 1
-    ASSERT_TRUE(adapter_->advanceCursor(connection_id, auth_token, cursor, "text/csv", "open",
-                                        limit, &response));
+    ASSERT_TRUE(adapter_->advanceCursor(connection_id, auth_token, cursor,
+                                        DataQueryAcceptType::TEXT_CSV, "open", limit, &response));
     std::string expected_response = "s,p,o\r\nhttp://example.org/" + subject_1 +
                                     ",http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
                                     ",http://xmlns.com/foaf/0.1/Person\r\nhttp://example.org/" +
@@ -256,7 +254,7 @@ TEST_F(RDFoxAdapterIntegrationTest, CreateConnectionTest) {
 
     // Pagination 2
     ASSERT_TRUE(adapter_->advanceCursor(connection_id, auth_token, cursor,
-                                        "application/sparql-results+json", "advance", limit,
+                                        DataQueryAcceptType::SPARQL_JSON, "advance", limit,
                                         &response));
     expected_response =
         "{ \"head\": { \"vars\": [ \"s\", \"p\", \"o\" ] },\n  \"results\": { \"bindings\": [\n    "
@@ -277,7 +275,8 @@ TEST_F(RDFoxAdapterIntegrationTest, CreateConnectionTest) {
     ASSERT_EQ(response, expected_response);
     // Pagination 3
     ASSERT_TRUE(adapter_->advanceCursor(connection_id, auth_token, cursor,
-                                        "text/tab-separated-values", "advance", limit, &response));
+                                        DataQueryAcceptType::TEXT_TSV, "advance", limit,
+                                        &response));
     expected_response = "?s\t?p\t?o\n<http://example.org/" + subject_2 +
                         ">\t<http://xmlns.com/foaf/0.1/"
                         "name>\t\"" +
@@ -290,7 +289,7 @@ TEST_F(RDFoxAdapterIntegrationTest, CreateConnectionTest) {
 
     // Pagination 4
     ASSERT_TRUE(adapter_->advanceCursor(connection_id, auth_token, cursor,
-                                        "application/sparql-results+xml", "advance", limit,
+                                        DataQueryAcceptType::SPARQL_XML, "advance", limit,
                                         &response));
     expected_response =
         "<?xml version=\"1.0\"?>\n<sparql "
@@ -306,7 +305,6 @@ TEST_F(RDFoxAdapterIntegrationTest, CreateConnectionTest) {
  * @brief Test case loading data with an unsupported format.
  */
 TEST_F(RDFoxAdapterIntegrationTest, LoadDataUnsupportedFormat) {
-    std::string invalid_format = "application/json";
     std::string invalid_data = R"(
         {
             "subject": "test",
@@ -316,6 +314,7 @@ TEST_F(RDFoxAdapterIntegrationTest, LoadDataUnsupportedFormat) {
     )";
 
     // Attempt to load the data into the data store
-    ASSERT_FALSE(adapter_->loadData(invalid_data, invalid_format))
-        << "Data loaded successfully with an unsupported format.";
+    ASSERT_THROW(adapter_->loadData(invalid_data, static_cast<RDFSyntaxType>(999)),
+                 std::invalid_argument)
+        << "Failed to throw an exception for an unsupported data format.";
 }

@@ -22,10 +22,10 @@ The `model_config.json` is structured to provide:
 #### Inputs
 ```json
 "inputs": {
-  "vss_data": "inputs/vss_data_required.txt"
+  "vehicle_data": "inputs/vehicle_data_required.txt"
 }
 ```
-- **vss_data**: The field must be called `<tree_type>_data`, in the example we use the VSS tree type (`vss_data`). This field specifies the path to the input data file that contains vehicle signals or data points. This file lists the signals that the reasoner application will work with. It supports a TXT format for defining the data points.
+- **vehicle_data**: The field must be called `<schema_type>_data`, in the example we use the vehicle schema type (`vehicle_data`). This field specifies the path to the input data file that contains vehicle signals or data points. This file lists the signals that the reasoner application will work with. It supports a TXT format for defining the data points.
 
 #### Ontologies
 ```json
@@ -45,9 +45,9 @@ The `model_config.json` is structured to provide:
 ```json
 "queries": {
   "triple_assembler_helper": {
-    "vss": [
-      "queries/triple_assembler_helper/vss/data_property.rq",
-      "queries/triple_assembler_helper/vss/object_property.rq"
+    "vehicle": [
+      "queries/triple_assembler_helper/vehicle/data_property.rq",
+      "queries/triple_assembler_helper/vehicle/object_property.rq"
     ],
     "default": [
         "queries/triple_assembler_helper/default/data_property.rq",
@@ -59,7 +59,7 @@ The `model_config.json` is structured to provide:
 ```
 - **queries**: This section includes SPARQL queries that will be used during the reasoning process to assemble triples or extract results from the reasoned data.
   - **triple_assembler_helper**: 
-    Queries specifically designed to assemble data points related to an specific data tree (in this case Vehicle Signal Specification (VSS)) or other specifications used by default, if the tree is not defined, including queries for data and object properties.
+    Queries specifically designed to assemble data points related to an specific schema collection (in this case Vehicle Signal Specification (vehicle)) or other specifications used by default, if the collection is not defined, including queries for data and object properties.
   - **output**: Queries to retrieve the final inference results after the reasoning process. The queries in this section will typically extract insights from the generated triples.
 
 #### Rules
@@ -71,7 +71,7 @@ The `model_config.json` is structured to provide:
 #### SHACL Validation
 ```json
 "shacl": [
-  "shacl/vss_shacl.ttl",
+  "shacl/vehicle_shacl.ttl",
   "shacl/observation_shacl.ttl"
 ]
 ```
@@ -82,7 +82,7 @@ The `model_config.json` is structured to provide:
 "reasoner_settings": {
   "inference_engine": "RDFox",
   "output_format": "turtle",
-  "supported_tree_types": ["VSS"]
+  "supported_schema_collections": ["vehicle"]
 }
 ```
 - **reasoner_settings**: Configuration options for the reasoning engine.
@@ -94,9 +94,9 @@ The `model_config.json` is structured to provide:
     > [!NOTE] Supported formats in this repository
     > - `turtle` for .ttl files
 
-  - **supported_tree_types**: This field defines the types of data trees that the reasoner application can handle. For the communication with the WebSocket server and definition of the input data, it is required to specify how the tree type will be represented. This tree type will be sent as part of the message header during data transfer and is crucial for reading, interpreting the [input data](#inputs) for the reasoner model, and if exist, specific [triple assembler helpers](#queries). With this tree type definition, the reasoner can ensure compatibility with the input data and properly interpret the data points being processed.
-    > [!NOTE] Supported tree types this repository
-    > - `VSS` (Vehicle Signal Specification)
+  - **supported_schema_collections**: This field defines the types of schema collections that the reasoner application can handle. For the communication with the WebSocket server and definition of the input data, it is required to specify how the schema type will be represented. This schema type will be sent as part of the message header during data transfer and is crucial for reading, interpreting the [input data](#inputs) for the reasoner model, and if exist, specific [triple assembler helpers](#queries). With this schema type definition, the reasoner can ensure compatibility with the input data and properly interpret the data points being processed.
+    > [!NOTE] Supported schema types this repository
+    > - `vehicle` (Vehicle Signal Specification)
 
 ### Example Usage
 
