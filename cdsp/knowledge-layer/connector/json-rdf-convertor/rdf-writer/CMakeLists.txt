@@ -18,11 +18,11 @@ target_link_libraries(rdf_writer
     PUBLIC
         utils
         data_objects
+        reasoner        
         ${SERD_LIBRARIES} 
-        rdfox        
     PRIVATE
         nlohmann_json::nlohmann_json
         geographiclib
 )
 
-add_dependencies(rdf_writer rdfox utils data_objects)
+add_dependencies(rdf_writer reasoner utils data_objects)

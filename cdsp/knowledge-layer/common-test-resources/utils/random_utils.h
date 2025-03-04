@@ -2,6 +2,7 @@
 #define RANDOM_UTILS_H
 
 #include <chrono>
+#include <optional>
 #include <string>
 #include <variant>
 
@@ -13,7 +14,7 @@ class RandomUtils {
     static float generateRandomFloat(float min, float max);
     static int generateRandomInt(int min, int max);
     static int64_t generateRandomInt64(int64_t min, int64_t max);
-    static std::string generateRandomString(size_t length);
+    static std::string generateRandomString(std::optional<size_t> length = std::nullopt);
     static double generateRandomDouble(double min, double max);
     static std::variant<std::string, int, double, float, bool> generateRandomValue();
     static bool generateRandomBool();

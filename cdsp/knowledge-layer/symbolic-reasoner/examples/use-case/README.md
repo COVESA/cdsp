@@ -35,7 +35,7 @@ The `model_config.json` is structured to provide:
 
 #### Output
 ```json
-"output": "output/generated_triples.ttl"
+"output": "output/"
 ```
 - **output**: Defines the path to the file where the reasoner will store the results of the inference process. The output will be generated in the format defined in the [reasoner settings](#reasoner-settings) (in this case a turtle `.ttl`).
   > [!IMPORTANT] Do not add the generated files to the repository
@@ -64,9 +64,9 @@ The `model_config.json` is structured to provide:
 
 #### Rules
 ```json
-"rules": ["rules/insight_rules.ttl"]
+"rules": ["rules/insight_rules.dlog"]
 ```
-- **rules**: A list of rule files in Turtle format. These rules define additional logic for the reasoner to apply during inference. The rules may include custom inferences or insights that the reasoner should derive based on the input data.
+- **rules**: A list of rule files in Data Log format. These rules define additional logic for the reasoner to apply during inference. The rules may include custom inferences or insights that the reasoner should derive based on the input data.
 
 #### SHACL Validation
 ```json

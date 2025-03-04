@@ -14,7 +14,7 @@
     },
     "output": "queries/output/"
   },
-  "rules": ["rules/insight_rules.ttl"],
+  "rules": ["rules/driving_style_inference_rules.dlog"],
   "shacl": ["shacl/vehicle_shacl.ttl", "shacl/observation_shacl.ttl"],
   "reasoner_settings": {
     "inference_engine": "RDFox",

@@ -6,41 +6,7 @@ This directory contains third-party libraries that are used in the project. Thes
 
 GeographicLib is a library for performing geographic calculations. The necessary files from GeographicLib have been included in this directory to provide functionality for calculating Norwegian Transverse Mercator (NTM) coordinates.
 
-### Included Files
 
-#### Header Files
-- `include/GeographicLib/Config.h`
-- `include/GeographicLib/Constants.hpp`
-- `include/GeographicLib/EllipticFunction.hpp`
-- `include/GeographicLib/Math.hpp`
-- `include/GeographicLib/TransverseMercator.hpp`
-- `include/GeographicLib/TransverseMercatorExact.hpp`
-
-#### Source Files
-- `src/EllipticFunction.cpp`
-- `src/Math.cpp`
-- `src/TransverseMercator.cpp`
-- `src/TransverseMercatorExact.cpp`
-
-### Directory Structure
-
-```plaintext
-third_party/
-└── GeographicLib/
-    ├── include/
-    │   └── GeographicLib/
-    │       ├── Config.h
-    │       ├── Constants.hpp
-    │       ├── EllipticFunction.hpp
-    │       ├── Math.hpp
-    │       ├── TransverseMercator.hpp
-    │       └── TransverseMercatorExact.hpp
-    └── src/
-        ├── EllipticFunction.cpp
-        ├── Math.cpp
-        ├── TransverseMercator.cpp
-        └── TransverseMercatorExact.cpp
-```
 ### Usage
 To use the GeographicLib in your code, include the necessary header files:
 
@@ -48,23 +14,8 @@ To use the GeographicLib in your code, include the necessary header files:
 #include <GeographicLib/TransverseMercator.hpp>
 ```
 
-Ensure that the `geographiclib` target is linked in your project's `CMakeLists.txt`:
+Ensure that the `geographiclib` target is linked in your project's [`CMakeLists.txt`](/cdsp/knowledge-layer/CMakeLists.txt). The `geographiclib` target can be linked in your sub CMakeLists.txt as follows:
 
-#### Main CMakeLists.txt
-```cmake
-# Include directories for third-party libraries
-include_directories(${CMAKE_SOURCE_DIR}/third_party/GeographicLib/include)
-
-# Add the GeographicLib source files to the project
-add_library(geographiclib STATIC
-    ${CMAKE_SOURCE_DIR}/third_party/GeographicLib/src/TransverseMercator.cpp
-    ${CMAKE_SOURCE_DIR}/third_party/GeographicLib/src/TransverseMercatorExact.cpp
-    ${CMAKE_SOURCE_DIR}/third_party/GeographicLib/src/EllipticFunction.cpp
-    ${CMAKE_SOURCE_DIR}/third_party/GeographicLib/src/Math.cpp
-)
-```
-
-And that the geographiclib target is linked in your sub CMakeLists.txt:
 ```cmake
 target_link_libraries(your_target_name
     PRIVATE 

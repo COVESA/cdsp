@@ -7,7 +7,7 @@
 /**
  * @brief Data Transfer Object for Websocket Status Messages
  */
-struct StatusMessageDto {
+struct StatusMessageDTO {
     int code;
     std::string message;
     std::optional<std::string> requestId;
@@ -17,8 +17,8 @@ struct StatusMessageDto {
     } timestamp;
 
     // Overload the << operator to print the DTO
-    friend std::ostream& operator<<(std::ostream& os, const StatusMessageDto& dto) {
-        os << "StatusMessageDto {\n"
+    friend std::ostream& operator<<(std::ostream& os, const StatusMessageDTO& dto) {
+        os << "StatusMessageDTO {\n"
            << "  code: " << dto.code << "\n"
            << "  message: " << dto.message << "\n"
            << "  requestId: " << (dto.requestId ? *dto.requestId : "null") << "\n"

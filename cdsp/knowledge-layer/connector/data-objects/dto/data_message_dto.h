@@ -9,18 +9,18 @@
 /**
  * @brief Data Transfer Object for Websocket Messages
  */
-struct DataMessageDto {
+struct DataMessageDTO {
     std::string type;
     std::string schema;
     std::string instance;
     std::optional<std::string> path;
     nlohmann::json data;
-    std::optional<MetadataDto> metadata;
+    std::optional<MetadataDTO> metadata;
     std::optional<std::string> requestId;
 
     // Overload the << operator to print the DTO
-    friend std::ostream& operator<<(std::ostream& os, const DataMessageDto& dto) {
-        os << "DataMessageDto {\n"
+    friend std::ostream& operator<<(std::ostream& os, const DataMessageDTO& dto) {
+        os << "DataMessageDTO {\n"
            << "  type: " << dto.type << "\n"
            << "  schema: " << dto.schema << "\n"
            << "  instance: " << dto.instance << "\n"

@@ -16,8 +16,7 @@ class RDFoxAdapterIntegrationTest : public ::testing::Test {
     const std::string triple_object_ = RandomUtils::generateRandomString(6);
 
     void SetUp() override {
-        adapter_ = new RDFoxAdapter(rdfox_server_.host, rdfox_server_.port,
-                                    rdfox_server_.auth_base64, rdfox_server_.data_store.value());
+        adapter_ = new RDFoxAdapter(rdfox_server_);
         adapter_->initialize();
 
         // Initial load to ensure datastore is accessible
@@ -37,7 +36,7 @@ class RDFoxAdapterIntegrationTest : public ::testing::Test {
 
 class RDFoxAdapterDataLoadTest
     : public RDFoxAdapterIntegrationTest,
-      public ::testing::WithParamInterface<std::pair<RDFSyntaxType, std::string>> {
+      public ::testing::WithParamInterface<std::pair<ReasonerSyntaxType, std::string>> {
    protected:
     void SetUp() override {
         // Call the base class setup
@@ -52,11 +51,11 @@ class RDFoxAdapterDataLoadTest
 
 INSTANTIATE_TEST_SUITE_P(
     DataLoadFormats, RDFoxAdapterDataLoadTest,
-    ::testing::Values(std::make_pair(RDFSyntaxType::TURTLE, "text_turtle_format"),
-                      std::make_pair(RDFSyntaxType::TRIG, "application_trig_format"),
-                      std::make_pair(RDFSyntaxType::NTRIPLES, "application_n_triples_format"),
-                      std::make_pair(RDFSyntaxType::NQUADS, "application_n_quads_format")),
-    [](const ::testing::TestParamInfo<std::pair<RDFSyntaxType, std::string>>& info) {
+    ::testing::Values(std::make_pair(ReasonerSyntaxType::TURTLE, "text_turtle_format"),
+                      std::make_pair(ReasonerSyntaxType::TRIG, "application_trig_format"),
+                      std::make_pair(ReasonerSyntaxType::NTRIPLES, "application_n_triples_format"),
+                      std::make_pair(ReasonerSyntaxType::NQUADS, "application_n_quads_format")),
+    [](const ::testing::TestParamInfo<std::pair<ReasonerSyntaxType, std::string>>& info) {
         return info.param.second;  // Test name
     });
 
@@ -67,28 +66,28 @@ INSTANTIATE_TEST_SUITE_P(
  * @param object The object of the triple.
  * @return A map of data formats and their corresponding data.
  */
-std::map<RDFSyntaxType, std::string> generateDataFormats(const std::string& subject,
-                                                         const std::string& object) {
-    std::map<RDFSyntaxType, std::string> data_formats;
+std::map<ReasonerSyntaxType, std::string> generateDataFormats(const std::string& subject,
+                                                              const std::string& object) {
+    std::map<ReasonerSyntaxType, std::string> data_formats;
 
     // Turtle format
-    data_formats[RDFSyntaxType::TURTLE] = R"(
+    data_formats[ReasonerSyntaxType::TURTLE] = R"(
         @prefix car: <http://example.com/car#> .
         car:)" + subject + R"( a car:)" + object +
-                                          R"( .
+                                               R"( .
     )";
 
     // TriG format
-    data_formats[RDFSyntaxType::TRIG] = R"(
+    data_formats[ReasonerSyntaxType::TRIG] = R"(
         @prefix car: <http://example.com/car#> .
         {
-            car:)" + subject + R"( a car:)" +
-                                        object + R"( .
+            car:)" + subject + R"( a car:)" + object +
+                                             R"( .
         }
     )";
 
     // N-Triples format
-    data_formats[RDFSyntaxType::NTRIPLES] =
+    data_formats[ReasonerSyntaxType::NTRIPLES] =
         R"(
         <http://example.com/car#)" +
         subject +
@@ -97,7 +96,7 @@ std::map<RDFSyntaxType, std::string> generateDataFormats(const std::string& subj
     )";
 
     // N-Quads format
-    data_formats[RDFSyntaxType::NQUADS] =
+    data_formats[ReasonerSyntaxType::NQUADS] =
         R"(
     <http://example.com/car#)" +
         subject +
@@ -123,17 +122,18 @@ TEST_F(RDFoxAdapterIntegrationTest, DataStoreInitializationTest) { SUCCEED(); }
  */
 TEST_P(RDFoxAdapterDataLoadTest, LoadAndQueryDataConsistency) {
     // Get the data format and content type from the test parameters
-    const RDFSyntaxType& data_format = GetParam().first;
+    const ReasonerSyntaxType& data_format = GetParam().first;
+    const std::string& content_type_str = reasonerSyntaxTypeToContentType(data_format);
 
-    std::cout << "Data format: " << RDFSyntaxTypeToContentType(data_format) << std::endl;
+    std::cout << "Data format: " << content_type_str << std::endl;
 
     // Generate data for the format
     auto data_formats = generateDataFormats(triple_subject_, triple_object_);
     std::string data_to_load = data_formats[data_format];
 
     // Load the data into the data store
-    ASSERT_TRUE(adapter_->loadData(data_to_load, data_format))
-        << "Failed to load data in format: " << RDFSyntaxTypeToContentType(data_format);
+    ASSERT_TRUE(adapter_->loadData(data_to_load, content_type_str))
+        << "Failed to load data in format: " << content_type_str;
 
     // Define a SPARQL query to select all triples in the data store
     std::string sparql = "SELECT ?s ?p ?o WHERE { ?s ?p ?o }";
@@ -314,7 +314,6 @@ TEST_F(RDFoxAdapterIntegrationTest, LoadDataUnsupportedFormat) {
     )";
 
     // Attempt to load the data into the data store
-    ASSERT_THROW(adapter_->loadData(invalid_data, static_cast<RDFSyntaxType>(999)),
-                 std::invalid_argument)
-        << "Failed to throw an exception for an unsupported data format.";
+    ASSERT_FALSE(adapter_->loadData(invalid_data, "invalid_format"))
+        << "Unexpected: Data was loaded with an unsupported format.";
 }

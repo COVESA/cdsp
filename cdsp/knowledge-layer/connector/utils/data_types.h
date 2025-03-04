@@ -11,6 +11,13 @@
 #include "helper.h"
 
 /**
+ * @brief Enum class for the supported inference engine types
+ */
+enum class InferenceEngineType {
+    RDFOX,
+};
+
+/**
  * @brief Enum class for the message types
  */
 enum class MessageType {
@@ -30,13 +37,27 @@ enum class SchemaType {
 };
 
 /**
- * @brief Enum class for the RDF syntax types
+ * @brief Enum class for the reasoner syntax types
  */
-enum class RDFSyntaxType {
+enum class ReasonerSyntaxType {
     TURTLE,    ///< Terse triples http://www.w3.org/TR/turtle
     NTRIPLES,  ///< Line-based triples http://www.w3.org/TR/n-triples/
     NQUADS,    ///< Line-based quads http://www.w3.org/TR/n-quads/
     TRIG,      ///< Terse quads http://www.w3.org/TR/trig/
+};
+
+/**
+ * @brief Enum class for the reasoning query language types
+ */
+enum class QueryLanguageType {
+    SPARQL,
+};
+
+/**
+ * @brief Enum class for the reasoning rule language types
+ */
+enum class RuleLanguageType {
+    DATALOG,
 };
 
 /**
@@ -59,57 +80,22 @@ enum class MessageStructureFormat {
 };
 
 /**
- * @brief Configuration structure for the reasoner settings
- */
-struct ReasonerSettings {
-    std::string inference_engine;
-    RDFSyntaxType output_format;
-    std::vector<SchemaType> supported_schema_collections;
-};
-
-/**
- * @brief Configuration structure for the use-case model
- */
-struct ModelConfig {
-    std::map<SchemaType, std::vector<std::string>> system_data_points;
-    std::string output_file_path;
-    std::vector<std::string> ontology_files;
-    std::vector<std::string> shacl_shapes_files;
-    std::map<SchemaType, std::vector<std::string>> triple_assembler_queries_files;
-    std::string output_queries_path;
-    std::vector<std::string> rules_files;
-    ReasonerSettings reasoner_settings;
-};
-
-/**
  * @brief Configuration structure for the servers
  */
 struct ServerData {
     std::string host;
     std::string port;
     std::string auth_base64;
-    std::optional<std::string> data_store;
+    std::optional<std::string> data_store_name;
 };
 
 /**
  * @brief Configuration structure for the WebSocket client
  */
-struct InitConfig {
+struct SystemConfig {
     std::string uuid;
     ServerData websocket_server;
-    ServerData rdfox_server;
-    std::map<SchemaType, std::string> oid;
-    ModelConfig model_config;
-};
-
-/**
- * @brief InternalErrorMessage structure for the error message
- */
-
-struct InternalErrorMessage {
-    std::string type;
-    int errorCode;
-    std::string message;
+    ServerData reasoner_server;
 };
 
 /**
@@ -123,30 +109,103 @@ struct InternalErrorMessage {
 std::string messageTypeToString(const MessageType& type);
 
 /**
- * @brief Converts a reasoner output format string to an RDFSyntaxType.
+ * @brief Converts a reasoner output format string to an ReasonerSyntaxType.
  *
  * This function takes a string representing a reasoner output format and
- * converts it to the corresponding RDFSyntaxType. The input string should
+ * converts it to the corresponding ReasonerSyntaxType. The input string should
  * match one of the predefined reasoner output formats.
  *
  * @param type A string representing the reasoner output format.
- * @return The corresponding RDFSyntaxType for the given reasoner output format.
+ * @return The corresponding ReasonerSyntaxType for the given reasoner output format.
  *
  * @throws std::runtime_error if the input reasoner output format is not supported.
  */
-RDFSyntaxType reasonerOutputFormatToRDFSyntaxType(const std::string& type);
+ReasonerSyntaxType reasonerOutputFormatToReasonerSyntaxType(const std::string& type);
+
+/**
+ * @brief Converts a string file extension to an ReasonerSyntaxType.
+ *
+ * This function takes a string representing a file extension and converts it to the corresponding
+ * ReasonerSyntaxType. The input string should match one of the predefined RDF syntax extensions.
+ *
+ * @param extension A string representing the file extension.
+ * @return The corresponding ReasonerSyntaxType for the given file extension.
+ *
+ * @throws std::runtime_error if the input file extension is not supported.
+ */
+ReasonerSyntaxType fileExtensionToReasonerSyntaxType(const std::string& extension);
+
+/**
+ * @brief Converts a ReasonerSyntaxType to its corresponding file extension.
+ *
+ * This function takes a ReasonerSyntaxType enumeration value and returns the
+ * corresponding file extension as a string. This is useful for determining the
+ * file extension associated with a particular RDF syntax.
+ *
+ * @param type The ReasonerSyntaxType to be converted.
+ * @return A string representing the file extension associated with the given RDF syntax type.
+ */
+std::string reasonerSyntaxTypeToFileExtension(const ReasonerSyntaxType& type);
 
 /**
  * @brief Converts an RDF syntax type to its corresponding content type string.
  *
- * This function takes an RDFSyntaxType enumeration value and returns the
+ * This function takes an ReasonerSyntaxType enumeration value and returns the
  * corresponding content type for the REST API as a string. This is useful for determining
  * the MIME type associated with a particular RDF syntax.
  *
  * @param type The RDF syntax type to be converted.
  * @return A string representing the content type associated with the given RDF syntax type.
  */
-std::string RDFSyntaxTypeToContentType(const RDFSyntaxType& type);
+std::string reasonerSyntaxTypeToContentType(const ReasonerSyntaxType& type);
+
+/**
+ * @brief Converts a file extension to its corresponding QueryLanguageType.
+ *
+ * This function takes a string representing a file extension and maps it to
+ * the appropriate QueryLanguageType. This is useful for determining the query
+ * language associated with a particular file type based on its extension.
+ *
+ * @param extension A string representing the file extension.
+ * @return The corresponding QueryLanguageType for the given file extension.
+ */
+QueryLanguageType fileExtensionToQueryLanguageType(const std::string& extension);
+
+/**
+ * @brief Converts a QueryLanguageType to its corresponding content type string.
+ *
+ * This function takes a QueryLanguageType enumeration value and returns the
+ * corresponding content type as a string. This is useful for determining
+ * the MIME type associated with a particular query language.
+ *
+ * @param type The QueryLanguageType to be converted.
+ * @return A string representing the content type associated with the given QueryLanguageType.
+ */
+std::string queryLanguageTypeToContentType(const QueryLanguageType& type);
+
+/**
+ * @brief Converts a file extension to its corresponding RuleLanguageType.
+ *
+ * This function takes a file extension as input and returns the associated
+ * RuleLanguageType. It is used to map file extensions to their respective
+ * rule language types for processing.
+ *
+ * @param extension The file extension as a string.
+ * @return RuleLanguageType The corresponding RuleLanguageType for the given extension.
+ */
+RuleLanguageType fileExtensionToRuleLanguageType(const std::string& extension);
+
+/**
+ * @brief Converts a RuleLanguageType to its corresponding content type string.
+ *
+ * This function takes a RuleLanguageType enumeration value and returns the
+ * corresponding content type as a std::string. The mapping between the
+ * RuleLanguageType and the content type string is predefined within the function.
+ *
+ * @param type The RuleLanguageType enumeration value to be converted.
+ * @return A std::string representing the content type corresponding to the given RuleLanguageType.
+ */
+std::string ruleLanguageTypeToContentType(const RuleLanguageType& type);
 
 /**
  * @brief Converts a QueryAcceptType enum to its corresponding string representation.
@@ -170,7 +229,7 @@ std::string queryAcceptTypeToString(const DataQueryAcceptType& type);
  *
  * @throws std::runtime_error if the input SchemaType is not supported.
  */
-std::string SchemaTypeToString(const SchemaType& type, bool capitalizeFirstLetter = false);
+std::string schemaTypeToString(const SchemaType& type, bool capitalizeFirstLetter = false);
 
 /**
  * @brief Converts a string to a SchemaType enum value.
@@ -186,6 +245,30 @@ std::string SchemaTypeToString(const SchemaType& type, bool capitalizeFirstLette
  * definitions.
  */
 SchemaType stringToSchemaType(const std::string& type);
+
+/**
+ * @brief Converts a InferenceEngineType enum value to its corresponding string representation.
+ *
+ * This function takes a InferenceEngineType enum value as input and returns a string that
+ * represents the name of the InferenceEngineType.
+ *
+ * @param type The InferenceEngineType enum value to be converted.
+ * @return A std::string representing the name of the InferenceEngineType.
+ */
+InferenceEngineType stringToInferenceEngineType(const std::string& type);
+
+/**
+ * @brief Converts a InferenceEngineType enum value to string.
+ *
+ * This function takes an InferenceEngineType enum value as input and returns a string that
+ * represents the name of the InferenceEngineType.
+ *
+ * @param type The InferenceEngineType enum value to be converted.
+ * @return A std::string representing the name of the InferenceEngineType.
+ *
+ * @throws std::runtime_error if the input InferenceEngineType is not supported.
+ */
+std::string inferenceEngineTypeToString(const InferenceEngineType& type);
 
 /**
  * @brief Converts a structure message format enum to its corresponding string representation.
@@ -214,33 +297,99 @@ inline std::string messageTypeToString(const MessageType& type) {
     }
 };
 
-inline RDFSyntaxType reasonerOutputFormatToRDFSyntaxType(const std::string& type) {
+inline ReasonerSyntaxType reasonerOutputFormatToReasonerSyntaxType(const std::string& type) {
     std::string lowerCaseType = Helper::toLowerCase(type);
     if (lowerCaseType == "turtle") {
-        return RDFSyntaxType::TURTLE;
+        return ReasonerSyntaxType::TURTLE;
     } else if (lowerCaseType == "ntriples") {
-        return RDFSyntaxType::NTRIPLES;
+        return ReasonerSyntaxType::NTRIPLES;
     } else if (lowerCaseType == "nquads") {
-        return RDFSyntaxType::NQUADS;
+        return ReasonerSyntaxType::NQUADS;
     } else if (lowerCaseType == "trig") {
-        return RDFSyntaxType::TRIG;
+        return ReasonerSyntaxType::TRIG;
     } else {
-        throw std::invalid_argument("Unsupported RDF output format");
+        throw std::invalid_argument("Unsupported output format: " + type);
     }
 }
 
-inline std::string RDFSyntaxTypeToContentType(const RDFSyntaxType& type) {
+inline ReasonerSyntaxType fileExtensionToReasonerSyntaxType(const std::string& extension) {
+    std::string lowerCaseExtension = Helper::toLowerCase(extension);
+    if (lowerCaseExtension == ".ttl") {
+        return ReasonerSyntaxType::TURTLE;
+    } else if (lowerCaseExtension == ".nq") {
+        return ReasonerSyntaxType::NQUADS;
+    } else if (lowerCaseExtension == ".nt") {
+        return ReasonerSyntaxType::NTRIPLES;
+    } else if (lowerCaseExtension == ".trig") {
+        return ReasonerSyntaxType::TRIG;
+    } else {
+        throw std::invalid_argument("Unsupported syntax type file extension: " + extension);
+    }
+}
+
+inline std::string reasonerSyntaxTypeToFileExtension(const ReasonerSyntaxType& type) {
     switch (type) {
-        case RDFSyntaxType::TURTLE:
+        case ReasonerSyntaxType::TURTLE:
+            return ".ttl";
+        case ReasonerSyntaxType::NQUADS:
+            return ".nq";
+        case ReasonerSyntaxType::NTRIPLES:
+            return ".nt";
+        case ReasonerSyntaxType::TRIG:
+            return ".trig";
+        default:
+            throw std::invalid_argument("Unsupported syntax type");
+    }
+}
+
+inline std::string reasonerSyntaxTypeToContentType(const ReasonerSyntaxType& type) {
+    switch (type) {
+        case ReasonerSyntaxType::TURTLE:
             return "text/turtle";
-        case RDFSyntaxType::NTRIPLES:
+        case ReasonerSyntaxType::NTRIPLES:
             return "application/n-triples";
-        case RDFSyntaxType::NQUADS:
+        case ReasonerSyntaxType::NQUADS:
             return "application/n-quads";
-        case RDFSyntaxType::TRIG:
+        case ReasonerSyntaxType::TRIG:
             return "application/trig";
         default:
             throw std::invalid_argument("Unsupported RDF syntax type");
+    }
+}
+
+inline QueryLanguageType fileExtensionToQueryLanguageType(const std::string& extension) {
+    std::string lowerCaseExtension = Helper::toLowerCase(extension);
+    if (lowerCaseExtension == ".rq") {
+        return QueryLanguageType::SPARQL;
+    } else {
+        throw std::invalid_argument("Unsupported query file extension: " + extension);
+    }
+}
+
+inline std::string queryLanguageTypeToContentType(const QueryLanguageType& type) {
+    switch (type) {
+        case QueryLanguageType::SPARQL:
+            return "application/sparql-query";
+        default:
+            throw std::invalid_argument("Unsupported query language type");
+    }
+}
+
+inline RuleLanguageType fileExtensionToRuleLanguageType(const std::string& extension) {
+    std::string lowerCaseExtension = Helper::toLowerCase(extension);
+    if (lowerCaseExtension == ".dlog") {
+        return RuleLanguageType::DATALOG;
+    } else {
+        throw std::invalid_argument("Unsupported rule file extension: " + extension);
+    }
+}
+
+inline std::string ruleLanguageTypeToContentType(const RuleLanguageType& type) {
+    switch (type) {
+        case RuleLanguageType::DATALOG:
+            return "application/x.datalog";
+        default:
+            throw std::invalid_argument("Unsupported rule language type");
     }
 }
 
@@ -259,7 +408,7 @@ inline std::string queryAcceptTypeToString(const DataQueryAcceptType& type) {
     }
 };
 
-inline std::string SchemaTypeToString(const SchemaType& type, bool capitalizeFirstLetter) {
+inline std::string schemaTypeToString(const SchemaType& type, bool capitalizeFirstLetter) {
     std::string schema;
     switch (type) {
         case SchemaType::VEHICLE:
@@ -279,7 +428,7 @@ inline SchemaType stringToSchemaType(const std::string& type) {
     if (lowerCaseType == "vehicle") {
         return SchemaType::VEHICLE;
     } else {
-        throw std::invalid_argument("Unsupported schema type");
+        throw std::invalid_argument("Unsupported schema type: " + type);
     }
 }
 
@@ -293,6 +442,24 @@ inline std::string stringToMessageStructureFormat(const MessageStructureFormat& 
             return "leaf";
         default:
             throw std::invalid_argument("Unsupported message structure format");
+    }
+}
+
+inline InferenceEngineType stringToInferenceEngineType(const std::string& type) {
+    std::string lowerCaseType = Helper::toLowerCase(type);
+    if (lowerCaseType == "rdfox") {
+        return InferenceEngineType::RDFOX;
+    } else {
+        throw std::invalid_argument("Unsupported inference engine string type: " + type);
+    }
+}
+
+inline std::string inferenceEngineTypeToString(const InferenceEngineType& type) {
+    switch (type) {
+        case InferenceEngineType::RDFOX:
+            return "RDFox";
+        default:
+            throw std::invalid_argument("Unsupported inference engine type");
     }
 }
 

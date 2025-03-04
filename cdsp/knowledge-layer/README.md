@@ -2,6 +2,14 @@
 
 This project contains a WebSocket client built in C++17, which communicates with a WebSocket server. The client can send and receive JSON messages using Boost libraries.
 
+## Project Structure
+
+- **[Connector Module](./connector/):** manages communication between the WebSocket client and external systems.
+- **[Symbolic Reasoner](./symbolic-reasoner/):** is designed as a flexible reasoning framework that can integrate with various semantic reasoning engines.
+- **[Numeric Analyzer](./numeric-analyzer/):**
+- **[Common Test Resources](./common-test-resources/):** provides utility classes and helpers to streamline testing across all modules. This includes mock objects, test data generators, and reusable test fixtures.
+- **[Third Party](./third_party/):** contains external dependencies and libraries that are not part of the standard C++ libraries or are not available via package managers.
+
 ## Prerequisites
 
 Before setting up the project, make sure you have the following installed:
@@ -108,7 +116,7 @@ The project requires certain environment variables to work with the WebSocket se
 
 - **HOST_WEBSOCKET_SERVER:** Specifies the hostname of the WebSocket server. The default is `127.0.0.1`.
 - **PORT_WEBSOCKET_SERVER:** Specifies the port for connecting to the WebSocket server. The default is `8080`.
-- **OBJECT_ID:** The object id is required to subscribe and retrieve information for a specific object (e.g. VIN (Vehicle Identification Number) for VSS (Vehicle Signal Specification) data). Use the object id (in this case VIN) configured in the [`information-layer`](../information-layer/README.md).
+- **[SCHEMA]_OBJECT_ID:** The Object ID environment variable is required to subscribe and retrieve information for a specific object, such as a VIN (Vehicle Identification Number) when working with Vehicle Signal Specification (VSS) data. [SCHEMA] represents the schema type being used, such as VEHICLE. For example, if you are working with Vehicle data under the VSS schema, the environment variable should be set as: `VEHICLE_OBJECT_ID`. Use the Object ID configured in the [`information-layer`](../information-layer/README.md).
 - **HOST_RDFOX_SERVER:** Hostname of the RDFox server. The default is `127.0.0.1`.
 - **PORT_RDFOX_SERVER:** Port for RDFox server. The default is `12110`.
 - **AUTH_RDFOX_SERVER_BASE64:** Base64-encoded credentials for RDFox authentication. The default is `cm9vdDphZG1pbg==` (For `root:admin` encoded in base64).
@@ -123,7 +131,7 @@ You can customize the WebSocket server configuration by adding the following env
 
 HOST_WEBSOCKET_SERVER="your_custom_host"
 PORT_WEBSOCKET_SERVER="your_custom_port"
-OBJECT_ID="OBJECT_ID_TO_SUBSCRIBE"
+VEHICLE_OBJECT_ID="vin_to_subscribe"
 
 ##################################
 # RDFox CONFIGURATION            #
@@ -139,7 +147,7 @@ RDFOX_DATASTORE="your_custom_rdfox_server_data_store"
 After successfully building the client, you can run it with the following command (VIN is required, if any docker for the knowledge layer is running):
 
 ```bash
-OBJECT_ID=<VIN_TO_SUBSCRIBE> ./build/bin/reasoner_client
+VEHICLE_OBJECT_ID="vin_to_subscribe" ./build/bin/reasoner_client
 ```
 
 To display a list of available environment variables and their default values, run the application with the `--help` flag:

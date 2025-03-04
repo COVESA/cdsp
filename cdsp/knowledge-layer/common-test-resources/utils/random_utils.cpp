@@ -31,15 +31,18 @@ int64_t RandomUtils::generateRandomInt64(int64_t min, int64_t max) {
 /**
  * @brief Generates a random string of a specified length.
  */
-std::string RandomUtils::generateRandomString(size_t length) {
+std::string RandomUtils::generateRandomString(std::optional<size_t> length) {
+    if (!length.has_value()) {
+        length = generateRandomInt(1, 10);
+    }
     const char charset[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<> dis(0, sizeof(charset) - 2);
 
     std::string result;
-    result.reserve(length);
-    for (size_t i = 0; i < length; ++i) {
+    result.reserve(length.value());
+    for (size_t i = 0; i < result.capacity(); ++i) {
         result += charset[dis(gen)];
     }
     return result;

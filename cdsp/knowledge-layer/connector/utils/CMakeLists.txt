@@ -3,7 +3,6 @@ add_library(utils
     helper.cpp
     file_handler_impl.cpp
     coordinate_transform.cpp
-    model_config_utils.cpp
 )
 
 # Link dependencies

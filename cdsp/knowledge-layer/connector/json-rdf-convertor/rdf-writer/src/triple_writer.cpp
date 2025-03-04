@@ -57,7 +57,7 @@ void TripleWriter::initiateTriple(const std::string& identifier) {
  *                          - The second element is the object property RDF element.
  *                          - The third element is the class 2 RDF element.
  */
-void TripleWriter::addRDFObjectToTriple(
+void TripleWriter::addElementObjectToTriple(
     const std::string& prefixes,
     const std::tuple<std::string, std::string, std::string>& rdf_object_values) {
     // Add all prefixes in the system list
@@ -109,7 +109,7 @@ void TripleWriter::addRDFObjectToTriple(
  * @throws std::runtime_error If the value is empty, or if the NTM value is required
  *                            but not provided.
  */
-void TripleWriter::addRDFDataToTriple(
+void TripleWriter::addElementDataToTriple(
     const std::string& prefixes,
     const std::tuple<std::string, std::string, std::string>& rdf_data_values,
     const std::string& value, const std::chrono::system_clock::time_point& timestamp,
@@ -205,7 +205,7 @@ void TripleWriter::addRDFDataToTriple(
  * @param format The RDF syntax type to use for serialization.
  * @return A string containing the serialized RDF triples.
  */
-std::string TripleWriter::generateTripleOutput(const RDFSyntaxType& format) {
+std::string TripleWriter::generateTripleOutput(const ReasonerSyntaxType& format) {
     serd_output.clear();
 
     SerdEnv* serd_env = serd_env_new(nullptr);
@@ -259,18 +259,18 @@ std::string TripleWriter::generateTripleOutput(const RDFSyntaxType& format) {
  * @return The corresponding Serd syntax type.
  * @throws std::runtime_error if the RDF syntax type is unsupported.
  */
-SerdSyntax TripleWriter::getSerdSyntax(const RDFSyntaxType& format) {
+SerdSyntax TripleWriter::getSerdSyntax(const ReasonerSyntaxType& format) {
     switch (format) {
-        case RDFSyntaxType::TURTLE:
+        case ReasonerSyntaxType::TURTLE:
             return SerdSyntax::SERD_TURTLE;
             break;
-        case RDFSyntaxType::NQUADS:
+        case ReasonerSyntaxType::NQUADS:
             return SerdSyntax::SERD_NQUADS;
             break;
-        case RDFSyntaxType::NTRIPLES:
+        case ReasonerSyntaxType::NTRIPLES:
             return SerdSyntax::SERD_NTRIPLES;
             break;
-        case RDFSyntaxType::TRIG:
+        case ReasonerSyntaxType::TRIG:
             return SerdSyntax::SERD_TRIG;
             break;
         default:

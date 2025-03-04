@@ -7,6 +7,9 @@ add_library(data_objects
     bo/status_message.cpp
     bo/subscribe_message.cpp
     bo/metadata.cpp
+    bo/model_config.cpp
+    bo/reasoner_settings.cpp
+    bo/triple_assembler_helper.cpp
 )
 
 # Include directories

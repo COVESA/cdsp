@@ -51,7 +51,7 @@ std::vector<Node> DataMessage::getNodes() const { return nodes_; }
 std::ostream& operator<<(std::ostream& os, const DataMessage& message) {
     os << "DataMessage {\n";
     os << "  ID: " << message.getHeader().getId() << "\n";
-    os << "  Schema Type: " << SchemaTypeToString(message.getHeader().getSchemaType()) << "\n";
+    os << "  Schema Type: " << schemaTypeToString(message.getHeader().getSchemaType()) << "\n";
     os << "  Nodes: [\n";
 
     for (const auto& node : message.getNodes()) {

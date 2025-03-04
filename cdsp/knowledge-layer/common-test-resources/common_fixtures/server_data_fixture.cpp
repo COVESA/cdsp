@@ -6,7 +6,7 @@ ServerData ServerDataFixture::getValidWebsocketServerData() {
     data.host = "127.0.0.1";
     data.port = "8080";
     data.auth_base64 = "";
-    data.data_store = std::nullopt;
+    data.data_store_name = std::nullopt;
     return data;
 }
 
@@ -16,6 +16,6 @@ ServerData ServerDataFixture::getValidRDFoxServerData() {
     data.host = "127.0.0.1";
     data.port = "12110";
     data.auth_base64 = "cm9vdDphZG1pbg==";  // Base64 encoded authorization string
-    data.data_store = "test_ds";
+    data.data_store_name = "test_ds";
     return data;
 }

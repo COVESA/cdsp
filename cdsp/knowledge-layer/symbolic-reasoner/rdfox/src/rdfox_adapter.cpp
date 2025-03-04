@@ -2,12 +2,16 @@
 
 #include <iostream>
 
-RDFoxAdapter::RDFoxAdapter(const std::string& host, const std::string& port,
-                           const std::string& auth_base64, const std::string& data_store)
-    : host_(host),
-      port_(port),
-      auth_header_base64_("Basic " + auth_base64),
-      data_store_(data_store) {}
+RDFoxAdapter::RDFoxAdapter(const ServerData& server_data)
+    : host_(server_data.host),
+      port_(server_data.port),
+      auth_header_base64_("Basic " + server_data.auth_base64) {
+    if (server_data.data_store_name.has_value()) {
+        data_store_ = server_data.data_store_name.value();
+    } else {
+        throw std::runtime_error("Data store name must be provided.");
+    }
+}
 
 std::unique_ptr<RequestBuilder> RDFoxAdapter::createRequestBuilder() const {
     return std::make_unique<RequestBuilder>(host_, port_, auth_header_base64_);
@@ -75,13 +79,13 @@ bool RDFoxAdapter::checkDataStore() {
  * @param content_type The content type of the data to be loaded. Default is "text/turtle".
  * @return true if the data is successfully loaded; false otherwise.
  */
-bool RDFoxAdapter::loadData(const std::string& data, const RDFSyntaxType& content_type) {
+bool RDFoxAdapter::loadData(const std::string& data, const std::string& content_type) {
     std::string target = "/datastores/" + data_store_ + "/content";
 
     return createRequestBuilder()
         ->setMethod(http::verb::post)
         .setTarget(target)
-        .setContentType(RDFSyntaxTypeToContentType(content_type))
+        .setContentType(content_type)
         .setBody(data)
         .sendRequest();
 };
@@ -92,17 +96,19 @@ bool RDFoxAdapter::loadData(const std::string& data, const RDFSyntaxType& conten
  * This method sends a POST request to query data from the RDFox datastore.
  *
  * @param sparql_query The SPARQL query to be executed.
+ * @param query_language_type The query language type. Default is "SPARQL".
  * @param accept_type The accept type of the response. Default is "table/csv".
  * @return The response body of the query.
  */
 std::string RDFoxAdapter::queryData(const std::string& sparql_query,
+                                    const QueryLanguageType& query_language_type,
                                     const DataQueryAcceptType& accept_type) {
     std::string target = "/datastores/" + data_store_ + "/sparql";
     std::string response_body;
     return createRequestBuilder()
                    ->setMethod(http::verb::post)
                    .setTarget(target)
-                   .setContentType("application/sparql-query")
+                   .setContentType(queryLanguageTypeToContentType(query_language_type))
                    .setBody(sparql_query)
                    .setAcceptType(queryAcceptTypeToString(accept_type))
                    .sendRequest(nullptr, &response_body)

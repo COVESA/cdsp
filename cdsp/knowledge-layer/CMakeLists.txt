@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.25)
-project(knowledge-layer)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON) 
+project(knowledge-layer VERSION 1.0 LANGUAGES CXX)
+
 
 # C++ standard
 set(CMAKE_CXX_STANDARD 17)
@@ -109,10 +111,12 @@ add_subdirectory(connector/json-rdf-convertor/rdf-writer/tests/serd_library_test
 add_subdirectory(connector/data-objects)
 add_subdirectory(connector/utils)
 add_subdirectory(connector/websocket-client)
-add_subdirectory(connector/websocket-client/tests)
-add_subdirectory(symbolic-reasoner/rdfox)
+add_subdirectory(connector/websocket-client/src/tests)
+add_subdirectory(connector/websocket-client/services/tests)
+add_subdirectory(symbolic-reasoner)
 add_subdirectory(symbolic-reasoner/rdfox/tests)
 add_subdirectory(symbolic-reasoner/rdfox/tests/rdfox-service-test)
+add_subdirectory(symbolic-reasoner/services/tests)
 add_subdirectory(common-test-resources)
 
 # Define the main executable target

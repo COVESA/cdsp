@@ -24,16 +24,16 @@ struct TripleNodes {
 class TripleWriter {
    public:
     virtual void initiateTriple(const std::string& identifier);
-    virtual void addRDFObjectToTriple(
+    virtual void addElementObjectToTriple(
         const std::string& prefixes,
         const std::tuple<std::string, std::string, std::string>& rdf_object_values);
-    virtual void addRDFDataToTriple(
+    virtual void addElementDataToTriple(
         const std::string& prefixes,
         const std::tuple<std::string, std::string, std::string>& rdf_data_values,
         const std::string& value, const std::chrono::system_clock::time_point& dataTime,
         const std::optional<double>& ntmValue = std::nullopt);
 
-    virtual std::string generateTripleOutput(const RDFSyntaxType& format);
+    virtual std::string generateTripleOutput(const ReasonerSyntaxType& format);
 
     ~TripleWriter() = default;
 
@@ -45,7 +45,7 @@ class TripleWriter {
     std::map<std::string, std::string> unique_rdf_prefix_definitions_;
     std::vector<TripleNodes> rdf_triples_definitions_;
 
-    SerdSyntax getSerdSyntax(const RDFSyntaxType& format);
+    SerdSyntax getSerdSyntax(const ReasonerSyntaxType& format);
     void addSuportedPrefixes(const std::string& prefixes);
     void addTriplePrefix(std::string& prefix);
     std::string createInstanceUri(const std::string& prefix, const std::string& name);

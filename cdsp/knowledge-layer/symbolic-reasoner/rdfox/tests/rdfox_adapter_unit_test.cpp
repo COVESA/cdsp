@@ -3,24 +3,23 @@
 
 #include <random>
 
-#include "mock_adapter.h"
+#include "mock_rdfox_adapter.h"
 #include "mock_request_builder.h"
 #include "random_utils.h"
 #include "rdfox_adapter.h"
 
 class RDFoxAdapterTest : public ::testing::Test {
    protected:
-    const std::string HOST = "localhost";
-    const std::string PORT = "8080";
-    const std::string AUTH = "auth";
     const std::string DATASTORE = "ds-test";
+    const ServerData server_data_{"localhost", "8080", "auth", DATASTORE};
 
     void SetUp() override {
-        mock_rdfox_adapter_ = std::make_shared<MockAdapter>(HOST, PORT, AUTH, DATASTORE);
-        mock_request_builder_ = std::make_unique<MockRequestBuilder>(HOST, PORT, AUTH);
+        mock_rdfox_adapter_ = std::make_shared<MockRDFoxAdapter>(server_data_);
+        mock_request_builder_ = std::make_unique<MockRequestBuilder>(
+            server_data_.host, server_data_.port, server_data_.auth_base64);
     }
 
-    std::shared_ptr<MockAdapter> mock_rdfox_adapter_;
+    std::shared_ptr<MockRDFoxAdapter> mock_rdfox_adapter_;
     std::unique_ptr<MockRequestBuilder> mock_request_builder_;
 };
 
@@ -84,7 +83,7 @@ TEST_F(RDFoxAdapterTest, InitializationCreatesDatastore) {
         .WillOnce(testing::Return(true));
 
     // Expect no exception when the adapter initializes
-    EXPECT_NO_THROW(mock_rdfox_adapter_->initialize());
+    EXPECT_NO_THROW(mock_rdfox_adapter_->RDFoxAdapter::initialize());
 }
 
 /**
@@ -99,7 +98,7 @@ TEST_F(RDFoxAdapterTest, InitializationWithExistingDatastore) {
     EXPECT_CALL(*mock_rdfox_adapter_, createRequestBuilder()).Times(0);
 
     // Expect no exception when the adapter initializes
-    EXPECT_NO_THROW(mock_rdfox_adapter_->initialize());
+    EXPECT_NO_THROW(mock_rdfox_adapter_->RDFoxAdapter::initialize());
 }
 
 /**
@@ -108,7 +107,7 @@ TEST_F(RDFoxAdapterTest, InitializationWithExistingDatastore) {
 TEST_F(RDFoxAdapterTest, LoadDataSuccess) {
     const std::string target = "/datastores/" + DATASTORE + "/content";
     const std::string ttl_data = "@prefix : <http://example.org/> . :test a :Entity .";
-    const RDFSyntaxType content_type = RDFSyntaxType::TURTLE;
+    const ReasonerSyntaxType content_type = ReasonerSyntaxType::TURTLE;
 
     // Create a mock RequestBuilder
     MockRequestBuilder* mock_request_builder_ptr = mock_request_builder_.get();
@@ -122,7 +121,8 @@ TEST_F(RDFoxAdapterTest, LoadDataSuccess) {
         .WillOnce(testing::ReturnRef(*mock_request_builder_ptr));
     EXPECT_CALL(*mock_request_builder_ptr, setTarget(target))
         .WillOnce(testing::ReturnRef(*mock_request_builder_ptr));
-    EXPECT_CALL(*mock_request_builder_ptr, setContentType(RDFSyntaxTypeToContentType(content_type)))
+    EXPECT_CALL(*mock_request_builder_ptr,
+                setContentType(reasonerSyntaxTypeToContentType(content_type)))
         .WillOnce(testing::ReturnRef(*mock_request_builder_ptr));
     EXPECT_CALL(*mock_request_builder_ptr, setBody(ttl_data))
         .WillOnce(testing::ReturnRef(*mock_request_builder_ptr));
@@ -130,7 +130,8 @@ TEST_F(RDFoxAdapterTest, LoadDataSuccess) {
         .WillOnce(testing::Return(true));
 
     // Expect the data to be loaded successfully
-    EXPECT_TRUE(mock_rdfox_adapter_->RDFoxAdapter::loadData(ttl_data, content_type));
+    EXPECT_TRUE(mock_rdfox_adapter_->RDFoxAdapter::loadData(
+        ttl_data, reasonerSyntaxTypeToContentType(content_type)));
 }
 
 /**
@@ -164,9 +165,9 @@ TEST_F(RDFoxAdapterTest, QueryDataSuccess) {
         .WillOnce(testing::DoAll(testing::SetArgPointee<1>(mock_response), testing::Return(true)));
 
     // Expect the response to match the mock response
-    EXPECT_EQ(
-        mock_rdfox_adapter_->RDFoxAdapter::queryData(sparql_query, DataQueryAcceptType::TEXT_TSV),
-        mock_response);
+    EXPECT_EQ(mock_rdfox_adapter_->RDFoxAdapter::queryData(sparql_query, QueryLanguageType::SPARQL,
+                                                           DataQueryAcceptType::TEXT_TSV),
+              mock_response);
 }
 
 /**
@@ -409,7 +410,7 @@ TEST_F(RDFoxAdapterTest, FailedToCreateDataStore) {
         .WillOnce(testing::Return(false));
 
     // Expect exception when the adapter initializes
-    EXPECT_THROW(mock_rdfox_adapter_->initialize(), std::runtime_error);
+    EXPECT_THROW(mock_rdfox_adapter_->RDFoxAdapter::initialize(), std::runtime_error);
 }
 
 /**
@@ -418,7 +419,7 @@ TEST_F(RDFoxAdapterTest, FailedToCreateDataStore) {
 TEST_F(RDFoxAdapterTest, LoadDataFailure) {
     const std::string target = "/datastores/" + DATASTORE + "/content";
     const std::string ttl_data = "@prefix : <http://example.org/> . :test a :Entity .";
-    const RDFSyntaxType content_type = RDFSyntaxType::TURTLE;
+    const ReasonerSyntaxType content_type = ReasonerSyntaxType::TURTLE;
 
     // Create a mock RequestBuilder
     MockRequestBuilder* mock_request_builder_ptr = mock_request_builder_.get();
@@ -432,7 +433,8 @@ TEST_F(RDFoxAdapterTest, LoadDataFailure) {
         .WillOnce(testing::ReturnRef(*mock_request_builder_ptr));
     EXPECT_CALL(*mock_request_builder_ptr, setTarget(target))
         .WillOnce(testing::ReturnRef(*mock_request_builder_ptr));
-    EXPECT_CALL(*mock_request_builder_ptr, setContentType(RDFSyntaxTypeToContentType(content_type)))
+    EXPECT_CALL(*mock_request_builder_ptr,
+                setContentType(reasonerSyntaxTypeToContentType(content_type)))
         .WillOnce(testing::ReturnRef(*mock_request_builder_ptr));
     EXPECT_CALL(*mock_request_builder_ptr, setBody(ttl_data))
         .WillOnce(testing::ReturnRef(*mock_request_builder_ptr));
@@ -440,7 +442,8 @@ TEST_F(RDFoxAdapterTest, LoadDataFailure) {
         .WillOnce(testing::Return(false));
 
     // Expect false dating data
-    EXPECT_FALSE(mock_rdfox_adapter_->RDFoxAdapter::loadData(ttl_data, content_type));
+    EXPECT_FALSE(mock_rdfox_adapter_->RDFoxAdapter::loadData(
+        ttl_data, reasonerSyntaxTypeToContentType(content_type)));
 }
 
 /**
@@ -473,7 +476,9 @@ TEST_F(RDFoxAdapterTest, QueryDataFailure) {
         .WillOnce(testing::Return(false));
 
     // Expect the empty response to match the mock response
-    EXPECT_EQ(mock_rdfox_adapter_->RDFoxAdapter::queryData(sparql_query, accept_type), "");
+    EXPECT_EQ(mock_rdfox_adapter_->RDFoxAdapter::queryData(sparql_query, QueryLanguageType::SPARQL,
+                                                           accept_type),
+              "");
 }
 
 /**

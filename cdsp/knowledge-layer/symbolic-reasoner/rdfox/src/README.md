@@ -57,7 +57,7 @@ std::string turtle_data = R"(
     @prefix ex: <http://example.com/> .
     ex:subject a ex:Object .
 )";
-adapter.loadData(turtle_data, RDFSyntaxType::TURTLE);
+adapter.loadData(turtle_data, ReasonerSyntaxType::TURTLE);
 ```
 
 **Querying Data**

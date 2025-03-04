@@ -10,48 +10,57 @@
 
 using json = nlohmann::json;
 
-TripleAssembler::TripleAssembler(const ModelConfig& model_config, RDFoxAdapter& adapter,
-                                 IFileHandler& file_reader, TripleWriter& triple_writer)
+TripleAssembler::TripleAssembler(std::shared_ptr<ModelConfig> model_config,
+                                 ReasonerService& reasoner_service, IFileHandler& file_reader,
+                                 TripleWriter& triple_writer)
     : model_config_(model_config),
-      rdfox_adapter_(adapter),
+      reasoner_service_(reasoner_service),
       file_handler_(file_reader),
       triple_writer_(triple_writer) {}
 
 /**
- * @brief Initializes the TripleAssembler by checking the data store and loading SHACL shapes.
+ * @brief Initializes the TripleAssembler by checking the data store and loading validation shapes.
  *
- * @throws std::runtime_error If the data store is unavailable or if SHACL shapes cannot be loaded.
+ * This function first checks if the data store is available using the reasoner service. If the data
+ * store is not available, it throws a runtime error. It then attempts to load validation shapes
+ * from the model configuration. If no validation shapes are found or if loading fails, it throws a
+ * runtime error.
+ *
+ * @throws std::runtime_error If the data store is unavailable or if validation shapes cannot be
+ * loaded.
  */
 void TripleAssembler::initialize() {
-    if (!rdfox_adapter_.checkDataStore()) {
+    if (!reasoner_service_.checkDataStore()) {
         throw std::runtime_error("Initialization failed: Unable to generate triples.");
     }
-    if (!model_config_.shacl_shapes_files.empty()) {
-        for (const auto& file : model_config_.shacl_shapes_files) {
-            const std::string data = file_handler_.readFile(file);
-            if (data.empty() || !rdfox_adapter_.loadData(data)) {
+    const auto validation_shapes = model_config_->getValidationShapes();
+    if (!validation_shapes.empty()) {
+        for (const auto& [reasoner_syntax_type, data] : validation_shapes) {
+            if (data.empty() || !reasoner_service_.loadData(data, reasoner_syntax_type)) {
                 throw std::runtime_error(
-                    "No SHACL shapes could be loaded. The triples cannot be generated.");
+                    "No validation shapes could be loaded. The triples cannot be generated.");
             }
         }
     } else {
         throw std::runtime_error(
-            "No SHACL shapes were found to load. The triples cannot be generated.");
+            "No validation shapes were found to load. The triples cannot be generated.");
     }
 }
 
 /**
- * Transforms a DataMessage into RDF triples and stores them.
+ * Transforms a DataMessage into reasoning triples and stores the output.
  *
- * This function checks the availability of the RDFox datastore and, if available,
- * processes each node in the DataMessage to generate RDF triples. The generated
- * triples are then stored using the triple writer.
+ * This function processes a given DataMessage by extracting its header and nodes,
+ * and then generates reasoning triples based on the nodes' data. It checks the data store
+ * availability before proceeding and handles both coordinate and non-coordinate nodes
+ * differently. If valid coordinates are found, it generates triples specifically for them.
+ * Finally, it outputs the generated triples in the specified format.
  *
- * @param message The DataMessage containing nodes and metadata to be transformed into RDF triples.
- * @throws std::runtime_error If the datastore is not available.
+ * @param message The DataMessage containing the header and nodes to be transformed into triples.
+ * @throws std::runtime_error If the data store check fails.
  */
-void TripleAssembler::transformMessageToRDFTriple(const DataMessage& message) {
-    if (!rdfox_adapter_.checkDataStore()) {
+void TripleAssembler::transformMessageToTriple(const DataMessage& message) {
+    if (!reasoner_service_.checkDataStore()) {
         throw std::runtime_error("Failed to call datastore. The triples cannot be generated.");
     }
 
@@ -89,8 +98,7 @@ void TripleAssembler::transformMessageToRDFTriple(const DataMessage& message) {
             try {
                 generateTriplesFromNode(node, header.getSchemaType());
             } catch (const std::exception& e) {
-                std::cerr << "An error occurred creating the TTL triples: " << e.what()
-                          << std::endl;
+                std::cerr << "An error occurred creating the triples: " << e.what() << std::endl;
             }
         }
     }
@@ -100,7 +108,7 @@ void TripleAssembler::transformMessageToRDFTriple(const DataMessage& message) {
 
     // Get the document of the generated triples
     std::string generated_triples =
-        triple_writer_.generateTripleOutput(model_config_.reasoner_settings.output_format);
+        triple_writer_.generateTripleOutput(model_config_->getReasonerSettings().getOutputFormat());
 
     if (!generated_triples.empty()) {
         storeTripleOutput(generated_triples);
@@ -178,15 +186,15 @@ void TripleAssembler::cleanupOldTimestamps() {
 }
 
 /**
- * @brief Generates RDF triples from a given node.
+ * @brief Generates reasoning triples from a given node.
  *
  * This function processes a node by extracting its object and data elements,
- * querying necessary prefixes and values, and then adding these as RDF objects
+ * querying necessary prefixes and values, and then adding these as objects
  * and data to the triple writer. It handles specific node names
- * related to vehicle location by preparing additional RDF data if necessary.
+ * related to vehicle location by preparing additional data if necessary.
  *
- * @param node The node containing the name and value to be transformed into RDF triples.
- * @param msg_schema_type The message schema type used for querying RDF data.
+ * @param node The node containing the name and value to be transformed into reasoning triples.
+ * @param msg_schema_type The message schema type used for querying data.
  * @param node_timestamp The timestamp associated with the node.
  * @param ntm_coord_value An optional coordinate value for NTM data.
  */
@@ -196,24 +204,34 @@ void TripleAssembler::generateTriplesFromNode(const Node& node, const SchemaType
         // Split node data point into object and data elements
         const auto [object_elements, data_element] = extractObjectsAndDataElements(node.getName());
 
-        // Query and add RDF Objects
-        for (std::size_t i = 1; i < object_elements.size(); ++i) {
-            const auto [prefixes, rdf_object_values] = getQueryPrefixesAndData(
-                msg_schema_type, "object", object_elements[i - 1], object_elements[i]);
-
-            triple_writer_.addRDFObjectToTriple(prefixes, rdf_object_values);
+        const auto queries = model_config_->getQueriesConfig().getQueries();
+        TripleAssemblerHelper::QueryPair query_pair;
+        if (queries.find(msg_schema_type) != queries.end()) {
+            query_pair = queries.at(msg_schema_type);
+        } else {
+            query_pair = queries.at(SchemaType::DEFAULT);
         }
 
-        // Query and add RDF Data
-        const auto [prefixes, rdf_data_values] = getQueryPrefixesAndData(
-            msg_schema_type, "data", object_elements[object_elements.size() - 1], data_element);
+        // Query and add Object Elements
+        for (std::size_t i = 1; i < object_elements.size(); ++i) {
+            const auto [prefixes, object_values] = getQueryPrefixesAndData(
+                query_pair.object_property, object_elements[i - 1], object_elements[i]);
+
+            triple_writer_.addElementObjectToTriple(prefixes, object_values);
+        }
+
+        // Query and add Data Element
+        const auto [prefixes, data_values] = getQueryPrefixesAndData(
+            query_pair.data_property, object_elements[object_elements.size() - 1], data_element);
 
         const auto node_timestamp = getTimestampFromNode(node);
 
-        triple_writer_.addRDFDataToTriple(prefixes, rdf_data_values, node.getValue().value(),
-                                          node_timestamp, ntm_coord_value);
+        triple_writer_.addElementDataToTriple(prefixes, data_values, node.getValue().value(),
+                                              node_timestamp, ntm_coord_value);
     } catch (const std::exception& e) {
-        std::cerr << "An error occurred creating the TTL triples: " << e.what() << std::endl;
+        std::cerr << "An error occurred while creating the reasoning triples: " << e.what()
+                  << std::endl;
+        throw;
     }
 }
 
@@ -226,8 +244,8 @@ void TripleAssembler::generateTriplesFromNode(const Node& node, const SchemaType
  * the `coordinates_last_time_stamp_` and returns the coordinate nodes.
  *
  * @param valid_coordinates The optional containing the latitude and longitude nodes.
- * @param msg_schema_type The message schema type used for querying RDF data.
- * @param message The DataMessage containing nodes and metadata to be transformed into RDF triples.
+ * @param msg_schema_type The message schema type used for querying data.
+ * @param message The DataMessage containing nodes and metadata to be transformed into triples.
  *
  * @return An optional CoordinateNodes object containing the latitude and longitude nodes
  * if both are found and valid; otherwise, std::nullopt.
@@ -306,81 +324,47 @@ std::pair<std::vector<std::string>, std::string> TripleAssembler::extractObjects
 }
 
 /**
- * @brief Retrieves SPARQL query prefixes and data elements for RDF triple generation.
+ * Retrieves prefixes and data values from a given query.
  *
- * This method constructs a SPARQL query based on the provided message schema type and
- * property type. It attempts to retrieve the query from a specified file path. If the query is not
- * found, it defaults to a query from a "default" path.
+ * This function processes a query by replacing placeholders with the provided
+ * schema types and object classes. It then queries the reasoner service to retrieve
+ * the prefixes and data values from the formatted query.
  *
- * @param msg_schema_type The path or identifier for the message schema type to query.
- * @param property_type The type of property ("object" or "data") to query.
- * @param subject_class The class name of the subject in the RDF triple.
- * @param object_class The class name of the object in the RDF triple.
- * @return A pair consisting of:
- *         - A string containing the extracted prefixes from the SPARQL query.
- *         - A tuple containing the extracted three elements from the query result.
- *
- * @throws std::runtime_error If the SPARQL query cannot be retrieved or executed.
+ * @param query The query to be processed and language type.
+ * @param subject_class The subject class to be used in the query.
+ * @param object_class The object class to be used in the query.
+ * @return A pair where the first element is a string representing the prefixes,
+ *         and the second element is a tuple containing the subject, predicate, and object values.
+ * @throws std::runtime_error if no data is returned for the formatted query.
  */
 std::pair<std::string, std::tuple<std::string, std::string, std::string>>
-TripleAssembler::getQueryPrefixesAndData(const SchemaType& msg_schema_type,
-                                         const std::string& property_type,
+TripleAssembler::getQueryPrefixesAndData(const std::pair<QueryLanguageType, std::string>& query,
                                          const std::string& subject_class,
                                          const std::string& object_class) {
-    std::string sparql_query = getQueryFromFilePath(msg_schema_type, property_type);
+    std::string formattedQuery = query.second;
 
-    if (sparql_query.empty()) {
-        sparql_query = getQueryFromFilePath(SchemaType::DEFAULT, property_type);
+    replaceAllQueryVariables(formattedQuery, "%A%", subject_class);
+    replaceAllQueryVariables(formattedQuery, "%B%", object_class);
+
+    const std::string query_result = reasoner_service_.queryData(formattedQuery, query.first);
+    if (query_result.empty()) {
+        throw std::runtime_error("No data returned for the formatted query.");
     }
 
-    if (sparql_query.empty()) {
-        throw std::runtime_error("Failed to querying " + property_type +
-                                 " properties in the model config. The triples cannot be "
-                                 "generated.");
-    }
-
-    replaceAllSparqlVariables(sparql_query, "%A%", subject_class);
-    replaceAllSparqlVariables(sparql_query, "%B%", object_class);
-
-    const std::string query_result = rdfox_adapter_.queryData(sparql_query);
     const auto element_values = extractElementValuesFromQuery(query_result);
-    const std::string prefixes = extractPrefixesFromQuery(sparql_query);
+    const std::string prefixes = extractPrefixesFromQuery(formattedQuery);
     return std::make_pair(prefixes, element_values);
 }
 
 /**
- * @brief Retrieves a SPARQL query from a file based on the specified schema_type and property
- * type.
+ * @brief Replaces all occurrences of a substring in a query string.
  *
- * @param schema_type The identifier for the message schema_type to search for query
- * files.
- * @param property_type The type of property for which the query is needed.
- * @return A string containing the SPARQL query if found, or an empty string if no matching file is
- * found.
+ * This function replaces all occurrences of a substring in a query string with a new substring.
+ * It iterates through the query string and replaces all instances of the 'from' substring with
+ * the 'to' substring.
  */
-std::string TripleAssembler::getQueryFromFilePath(const SchemaType& schema_type,
-                                                  const std::string& property_type) {
-    auto it = model_config_.triple_assembler_queries_files.find(schema_type);
-    if (it != model_config_.triple_assembler_queries_files.end()) {
-        const std::vector<std::string>& files = it->second;
-        for (const auto& file : files) {
-            if (file.find(property_type + "_property") != std::string::npos) {
-                return file_handler_.readFile(file);
-            }
-        }
-    }
-    return "";
-}
-
-/**
- * @brief Replaces all occurrences of a specified variable in a SPARQL query string.
- *
- * @param query The SPARQL query string in which the variable replacement will occur.
- * @param from The variable name to be replaced in the query string.
- * @param to The new value that will replace the specified variable in the query string.
- */
-void TripleAssembler::replaceAllSparqlVariables(std::string& query, const std::string& from,
-                                                const std::string& to) {
+void TripleAssembler::replaceAllQueryVariables(std::string& query, const std::string& from,
+                                               const std::string& to) {
     size_t start_pos = 0;
     while ((start_pos = query.find(from, start_pos)) != std::string::npos) {
         query.replace(start_pos, from.length(), to);
@@ -414,9 +398,9 @@ std::tuple<std::string, std::string, std::string> TripleAssembler::extractElemen
 }
 
 /**
- * @brief Extracts prefix declarations from a SPARQL query string.
+ * @brief Extracts prefix declarations from a query string.
  *
- * @param query The input SPARQL query string from which to extract prefix declarations.
+ * @param query The input query string from which to extract prefix declarations.
  * @return A string containing all prefix declarations found in the query, each on a new line.
  */
 std::string TripleAssembler::extractPrefixesFromQuery(const std::string& query) {
@@ -447,14 +431,15 @@ std::string TripleAssembler::extractPrefixesFromQuery(const std::string& query) 
  * @param triple_output The string containing the triple output to be stored.
  */
 void TripleAssembler::storeTripleOutput(const std::string& triple_output) {
-    if (!rdfox_adapter_.loadData(triple_output)) {
-        std::cerr << "It was a problem loading triple data to RDF-Server" << std::endl;
+    const ReasonerSyntaxType output_format = model_config_->getReasonerSettings().getOutputFormat();
+    if (!reasoner_service_.loadData(triple_output, output_format)) {
+        std::cerr << "It was a problem loading triple data to Reasoner-Server" << std::endl;
     }
 
-    // create file name
-    const std::string file_name = model_config_.output_file_path + "gen_rdf_triple_" +
+    // Create file name
+    const std::string file_name = model_config_->getOutput() + "gen_triple_" +
                                   Helper::getFormattedTimestampNow("%H", false, true) +
-                                  getFileExtension();
+                                  reasonerSyntaxTypeToFileExtension(output_format);
 
     // Add the current time to the log
     std::ostringstream output;
@@ -465,29 +450,4 @@ void TripleAssembler::storeTripleOutput(const std::string& triple_output) {
     // Write the file
     file_handler_.writeFile(file_name, output.str(), true);
     std::cout << "A triple has been generated under: " << file_name << std::endl << std::endl;
-}
-
-/**
- * @brief Determines the file extension based on the configured RDF output format.
- *
- * This function retrieves the appropriate file extension for the RDF output format
- * specified in the model configuration. It supports various RDF serialization formats
- * such as Turtle, N-Quads, N-Triples, and TriG.
- *
- * @return A string representing the file extension for the current RDF syntax type.
- * @throws std::runtime_error If the RDF syntax type is unsupported.
- */
-std::string TripleAssembler::getFileExtension() {
-    switch (model_config_.reasoner_settings.output_format) {
-        case RDFSyntaxType::TURTLE:
-            return ".ttl";
-        case RDFSyntaxType::NQUADS:
-            return ".nq";
-        case RDFSyntaxType::NTRIPLES:
-            return ".nt";
-        case RDFSyntaxType::TRIG:
-            return ".trig";
-        default:
-            throw std::runtime_error("Unsupported Serd syntax format");
-    }
 }

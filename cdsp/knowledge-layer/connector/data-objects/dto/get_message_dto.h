@@ -8,7 +8,7 @@
 /**
  * @brief Data Transfer Object for GetMessage.
  */
-struct GetMessageDto {
+struct GetMessageDTO {
     std::string type;
     std::string schema;
     std::string instance;
@@ -21,14 +21,14 @@ struct GetMessageDto {
 /**
  * @brief Define the `to_json` function for `nlohmann::json`
  *
- * This function converts a GetMessageDto object into a JSON representation.
+ * This function converts a GetMessageDTO object into a JSON representation.
  * It includes mandatory fields such as type, schema, and instance, and conditionally
  * includes optional fields if they are present.
  *
- * @param j The JSON object to which the GetMessageDto will be serialized.
- * @param dto The GetMessageDto object containing the data to be serialized.
+ * @param j The JSON object to which the GetMessageDTO will be serialized.
+ * @param dto The GetMessageDTO object containing the data to be serialized.
  */
-inline void to_json(nlohmann::json& j, const GetMessageDto& dto) {
+inline void to_json(nlohmann::json& j, const GetMessageDTO& dto) {
     j = nlohmann::json{{"type", dto.type}, {"schema", dto.schema}, {"instance", dto.instance}};
     if (dto.path)
         j["path"] = *dto.path;

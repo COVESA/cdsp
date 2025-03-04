@@ -16,10 +16,10 @@ Contains the core service components responsible for DTO-to-BO and BO-to-DTO con
 
 Example conversion flow:
 
-1. **Receiving Data**: External data is received as a DTO (e.g., `DataMessageDto`).
+1. **Receiving Data**: External data is received as a DTO (e.g., `DataMessageDTO`).
 2. **DTO to BO Conversion**: The DTO is converted into a `DataMessage` BO for internal processing.
 3. **Processing Logic**: The `DataMessage` BO executes the required business logic.
-4. **BO to DTO Conversion**: The processed BO is converted back into a `DataMessageDto` for communication.
+4. **BO to DTO Conversion**: The processed BO is converted back into a `DataMessageDTO` for communication.
 5. **Sending Data**: The DTO is serialized and sent to the intended recipient (e.g., API response, WebSocket message)
 
 ## Design Principles

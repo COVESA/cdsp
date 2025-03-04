@@ -2,17 +2,23 @@
 add_library(websocket_client
     src/websocket_client.cpp
     src/real_websocket_connection.cpp
-    service/dto_to_bo.cpp
-    service/bo_to_dto.cpp
-    service/message_utils.cpp
-    service/dto_service.cpp
+    services/bo_to_dto.cpp
+    services/message_service.cpp
+    services/system_configuration_service.cpp
+    services/dto_service.cpp
+    services/converters/data_message_converter.cpp
+    services/converters/status_message_converter.cpp
+    services/converters/model_config_converter.cpp
+    services/converters/utils/converter_helper.cpp
 )
 
 # Include directories
 target_include_directories(websocket_client 
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/src
-        ${CMAKE_CURRENT_SOURCE_DIR}/service
+        ${CMAKE_CURRENT_SOURCE_DIR}/services
+        ${CMAKE_CURRENT_SOURCE_DIR}/services/converters
+        ${CMAKE_CURRENT_SOURCE_DIR}/services/converters/utils
         ${Boost_INCLUDE_DIRS}
 )
 
@@ -22,6 +28,7 @@ target_link_libraries(websocket_client
         nlohmann_json::nlohmann_json
         data_objects
         rdf_writer
+        reasoner
     PRIVATE  
         Boost::system
         Boost::filesystem

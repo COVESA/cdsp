@@ -12,7 +12,7 @@ class DataPointsUtils {
    public:
     static std::string generateRandomKey(size_t max_segments = 3);
     static std::unordered_map<std::string, std::variant<std::string, int, double, float, bool>>
-    generateDataPoints(size_t num_points = 5);
+    generateDataPointsWithValues(size_t num_points = 5);
 };
 
 #endif  // DATA_POINTS_UTILS_H

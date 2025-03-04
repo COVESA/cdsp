@@ -47,7 +47,7 @@ std::ostream& operator<<(std::ostream& os, const GetMessage& message) {
     os << "GetMessage {" << "\n";
     os << "  Header: \n";
     os << "     Id: " << message.getHeader().getId() << "\n";
-    os << "     Schema Type: " << SchemaTypeToString(message.getHeader().getSchemaType()) << "\n";
+    os << "     Schema Type: " << schemaTypeToString(message.getHeader().getSchemaType()) << "\n";
     if (message.getNodes().empty()) {
         os << "  Nodes: None" << "\n";
     } else {

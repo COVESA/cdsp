@@ -22,7 +22,7 @@ RDF Triple Assembler transforms structured data into RDF triples using the [RDFA
 TripleWriter writer;
 writer.setTripleIdentifier("ExampleID");
 writer.addRDFObjectToTriple("prefix car: <http://example.com/car#>", std::make_tuple("car:Vehicle", "car:hasPart", "car:Engine"));
-std::string rdf_output = writer.generateTripleOutput(RDFSyntaxType::TURTLE);
+std::string rdf_output = writer.generateTripleOutput(ReasonerSyntaxType::TURTLE);
 ```
 
 # Testing

@@ -10,8 +10,6 @@ The module consists of two primary subdirectories:
 
 ### 1. **Common Fixtures** (`common_fixtures/`)
 Fixtures are used to set up and tear down test environments. They ensure that each test starts with a known, consistent state:
-– Manages initialization of configuration settings for tests.
-- Provides setup for Reasoner model-based testing.
 - Handles the initialization of valid test data related to server interactions.
 
 ### 2. **Test Utilities** (`utils/`)

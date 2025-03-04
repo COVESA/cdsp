@@ -1,7 +1,5 @@
 # Define the test_fixtures library
 add_library(test_fixtures
-    common_fixtures/init_config_fixture.cpp
-    common_fixtures/model_config_fixture.cpp
     common_fixtures/server_data_fixture.cpp
     utils/utc_date_utils.cpp
     utils/vin_utils.cpp

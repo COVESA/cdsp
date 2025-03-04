@@ -125,6 +125,24 @@ std::chrono::nanoseconds Helper::getNanosecondsSinceEpoch(
 }
 
 /**
+ * @brief Retrieves the value of an environment variable.
+ *
+ * This function attempts to retrieve the value of a specified environment variable.
+ * If the environment variable is not set, it returns a provided default value.
+ *
+ * @param env_var The name of the environment variable to retrieve.
+ * @param default_value The value to return if the environment variable is not set. Defaults to an
+ * empty string.
+ * @return std::string The value of the environment variable, or the default value if the variable
+ * is not set.
+ */
+std::string Helper::getEnvVariable(const std::string& env_var,
+                                   const std::optional<std::string>& default_value) {
+    const char* value_env = std::getenv(env_var.c_str());
+    return value_env ? std::string(value_env) : default_value.value_or("");
+}
+
+/**
  * @brief Converts latitude and longitude strings to NTM coordinates.
  *
  * This function takes latitude and longitude as strings, converts them to

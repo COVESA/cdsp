@@ -33,18 +33,18 @@ std::string DataPointsUtils::generateRandomKey(size_t max_segments) {
 }
 
 /**
- * @brief Generates a random value of a random type.
+ * @brief Generates a map of data points with random values.
  *
- * This function generates a random value which can be one of the following types:
- * - std::string: A random string of length 8.
- * - int: A random integer between -1000 and 999.
- * - double: A random double between -1000.0 and 1000.0.
- * - bool: A random boolean value (true or false).
+ * This function creates a specified number of data points, each associated with a random key
+ * and a random value. The values can be of various types including std::string, int, double,
+ * float, and bool.
  *
- * @return std::variant<std::string, int, double, bool> A variant containing the random value.
+ * @param num_points The number of data points to generate.
+ * @return A map where each key is a randomly generated string and each value is a randomly
+ * generated variant of types std::string, int, double, float, or bool.
  */
 std::unordered_map<std::string, std::variant<std::string, int, double, float, bool>>
-DataPointsUtils::generateDataPoints(size_t num_points) {
+DataPointsUtils::generateDataPointsWithValues(size_t num_points) {
     std::unordered_map<std::string, std::variant<std::string, int, double, float, bool>>
         data_points;
     for (size_t i = 0; i < num_points; ++i) {

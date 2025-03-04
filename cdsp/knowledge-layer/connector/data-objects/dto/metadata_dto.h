@@ -7,7 +7,7 @@
 /**
  * @brief Data Transfer Object for Metadata
  */
-struct MetadataDto {
+struct MetadataDTO {
     struct Timestamp {
         int64_t seconds = 0;
         int64_t nanoseconds = 0;
@@ -22,8 +22,8 @@ struct MetadataDto {
 
     // Overload the << operator to print the DTO
 
-    friend std::ostream& operator<<(std::ostream& os, const MetadataDto& dto) {
-        os << "MetadataDto: {\n";
+    friend std::ostream& operator<<(std::ostream& os, const MetadataDTO& dto) {
+        os << "MetadataDTO: {\n";
         for (const auto& node : dto.nodes) {
             os << "  " << node.first << ": {\n";
             os << "    received: { Seconds: " << node.second.received.seconds << ", "

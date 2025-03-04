@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 
 #include "json_writer.h"
-#include "model_config_fixture.h"
 #include "random_utils.h"
 
 class JSONWriterIntegrationTest : public ::testing::Test {

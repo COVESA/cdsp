@@ -1,6 +1,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <cstdlib>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -8,10 +9,12 @@
 
 #include "data_message.h"
 #include "data_types.h"
-#include "mock_adapter.h"
 #include "mock_i_file_handler.h"
+#include "mock_model_config.h"
+#include "mock_reasoner_adapter.h"
+#include "mock_reasoner_service.h"
 #include "mock_triple_writer.h"
-#include "rdfox_adapter.h"
+#include "model_config.h"
 #include "triple_assembler.h"
 #include "vin_utils.h"
 
@@ -19,31 +22,34 @@ class TripleAssemblerUnitTest : public ::testing::Test {
    protected:
     const std::string VIN = VinUtils::getRandomVinString();
 
-    TripleAssembler* triple_assembler_ = nullptr;
-    std::vector<Node> nodes_{};
+    std::shared_ptr<TripleAssembler> triple_assembler_;
 
-    // Set up mock RDFoxAdapter
-    MockAdapter mock_adapter_{"localhost", "8080", "test_auth", "test_ds"};
+    // Set up mock ReasonerAdapter
+    std::shared_ptr<MockReasonerAdapter> mock_adapter_;
+    std::shared_ptr<MockModelConfig> mock_model_config_;
+    std::shared_ptr<MockReasonerService> mock_reasoner_service_;
     MockIFileHandler mock_i_file_handler_;
     MockTripleWriter mock_triple_writer_;
-
-    // Create a mock ModelConfig
-    ModelConfig model_config_;
+    std::vector<Node> nodes_{};
 
     void SetUp() override {
-        // Mock functions to be call and expectations
-        triple_assembler_ = new TripleAssembler(model_config_, mock_adapter_, mock_i_file_handler_,
-                                                mock_triple_writer_);
+        // ** Initialize Main Services **
+        setenv("VEHICLE_OBJECT_ID", VinUtils::getRandomVinString().c_str(), 1);
+
+        // Mock functions to be called and expectations
+        mock_model_config_ = std::make_shared<MockModelConfig>();
+        mock_adapter_ = std::make_shared<MockReasonerAdapter>();
+        EXPECT_CALL(*mock_adapter_, initialize()).Times(1);
+        mock_reasoner_service_ = std::make_shared<MockReasonerService>(mock_adapter_);
+
+        // Initialize TripleAssembler
+        triple_assembler_ = std::make_shared<TripleAssembler>(
+            mock_model_config_, *mock_reasoner_service_, mock_i_file_handler_, mock_triple_writer_);
     }
 
-    void TearDown() override { delete triple_assembler_; }
-
-    void setUpModelBase() {
-        model_config_.shacl_shapes_files = {"shacl_shape1.ttl", "shacl_shape2.ttl"};
-        model_config_.triple_assembler_queries_files = {
-            {SchemaType::VEHICLE, {"data_property.rq", "object_property.rq"}}};
-        model_config_.reasoner_settings.output_format = RDFSyntaxType::TURTLE;
-        model_config_.output_file_path = "/outputs/triple_assembler_unit_test/";
+    void TearDown() override {
+        triple_assembler_.reset();
+        mock_reasoner_service_.reset();
     }
 
     void setUpMessage() {
@@ -75,10 +81,10 @@ class TripleAssemblerUnitTest : public ::testing::Test {
     void initialSetupExpectations(const int& times_initiation,
                                   const int& times_executing_object_related_functions,
                                   const int& times_executing_data_related_functions,
-                                  const std::string& query_object_response = "",
-                                  const std::string& query_data_response = "") {
+                                  const std::string& query_object_response = "some_object_query",
+                                  const std::string& query_data_response = "some_data_query") {
         // Mock data store has been setup
-        EXPECT_CALL(mock_adapter_, checkDataStore())
+        EXPECT_CALL(*mock_reasoner_service_, checkDataStore())
             .Times(times_initiation)
             .WillRepeatedly(testing::Return(true));
         EXPECT_CALL(mock_triple_writer_, initiateTriple(VIN)).Times(times_initiation);
@@ -94,23 +100,26 @@ prefix so: <http://www.some.com#>
 
 SELECT some_data_query)";
 
-        // Mock the file reader to extract the SHACL query
-        EXPECT_CALL(mock_i_file_handler_, readFile(::testing::StrEq("object_property.rq")))
-            .Times(times_executing_object_related_functions)
-            .WillRepeatedly(::testing::Return(query_object));
+        // Mock querying data using the queries and returning predefined responses
+        TripleAssemblerHelper::QueryPair query_pair;
+        query_pair.object_property = std::make_pair(QueryLanguageType::SPARQL, query_object);
+        query_pair.data_property = std::make_pair(QueryLanguageType::SPARQL, query_data);
+        TripleAssemblerHelper triple_assembler_helper({{SchemaType::VEHICLE, query_pair}},
+                                                      "output");
 
-        EXPECT_CALL(mock_i_file_handler_, readFile(::testing::StrEq("data_property.rq")))
+        EXPECT_CALL(*mock_model_config_, getQueriesConfig())
             .Times(times_executing_data_related_functions)
-            .WillRepeatedly(::testing::Return(query_data));
+            .WillRepeatedly(testing::Return(triple_assembler_helper));
 
-        // Mock querying data using the SHACL queries and returning predefined responses
-        EXPECT_CALL(mock_adapter_,
-                    queryData(query_object, ::testing::Eq(DataQueryAcceptType::TEXT_TSV)))
+        EXPECT_CALL(*mock_reasoner_service_,
+                    queryData(query_object, QueryLanguageType::SPARQL,
+                              ::testing::Eq(DataQueryAcceptType::TEXT_TSV)))
             .Times(times_executing_object_related_functions)
             .WillRepeatedly(testing::Return(query_object_response));
 
-        EXPECT_CALL(mock_adapter_,
-                    queryData(query_data, ::testing::Eq(DataQueryAcceptType::TEXT_TSV)))
+        EXPECT_CALL(*mock_reasoner_service_,
+                    queryData(query_data, QueryLanguageType::SPARQL,
+                              ::testing::Eq(DataQueryAcceptType::TEXT_TSV)))
             .Times(times_executing_data_related_functions)
             .WillRepeatedly(testing::Return(query_data_response));
     }
@@ -128,22 +137,21 @@ MATCHER(IsOptionalWithValue, "Checks that std::optional contains a value") {
  * initialization completes without throwing exceptions.
  */
 TEST_F(TripleAssemblerUnitTest, InitializeSuccess) {
-    // Set up the model base for the test
-    setUpModelBase();
-
     // Mock the data store check to return true, indicating the data store is available
-    EXPECT_CALL(mock_adapter_, checkDataStore()).WillOnce(testing::Return(true));
+    EXPECT_CALL(*mock_reasoner_service_, checkDataStore()).WillOnce(testing::Return(true));
 
     // Mock reading SHACL shape files and returning predefined data
-    EXPECT_CALL(mock_i_file_handler_, readFile(testing::StrEq("shacl_shape1.ttl")))
-        .WillOnce(testing::Return("data1"));
-    EXPECT_CALL(mock_i_file_handler_, readFile(testing::StrEq("shacl_shape2.ttl")))
-        .WillOnce(testing::Return("data2"));
+    EXPECT_CALL(*mock_model_config_, getValidationShapes())
+        .Times(1)
+        .WillOnce(testing::Return(std::vector<std::pair<ReasonerSyntaxType, std::string>>{
+            {ReasonerSyntaxType::TURTLE, "data1"}, {ReasonerSyntaxType::NQUADS, "data2"}}));
 
-    // Mock loading data into the adapter and returning success
-    EXPECT_CALL(mock_adapter_, loadData(testing::StrEq("data1"), ::testing::_))
+    // Mock loading data into the reasoner service and returning success
+    EXPECT_CALL(*mock_reasoner_service_,
+                loadData(testing::StrEq("data1"), ReasonerSyntaxType::TURTLE))
         .WillOnce(testing::Return(true));
-    EXPECT_CALL(mock_adapter_, loadData(testing::StrEq("data2"), ::testing::_))
+    EXPECT_CALL(*mock_reasoner_service_,
+                loadData(testing::StrEq("data2"), ReasonerSyntaxType::NQUADS))
         .WillOnce(testing::Return(true));
 
     // Assert that the initialization process does not throw any exceptions
@@ -151,17 +159,16 @@ TEST_F(TripleAssemblerUnitTest, InitializeSuccess) {
 }
 
 /**
- * @brief Unit test for transforming a message to RDF triples successfully.
+ * @brief Unit test for transforming a message to triples successfully.
  *
  * This test sets up a message and model base, then mocks various components
- * to simulate the transformation of a message into RDF triples. It verifies
+ * to simulate the transformation of a message into triples. It verifies
  * that the transformation process completes with the expected behaviour without throwing
  * exceptions.
  */
-TEST_F(TripleAssemblerUnitTest, TransformMessageToRDFTripleSuccess) {
+TEST_F(TripleAssemblerUnitTest, TransformMessageToTripleSuccess) {
     // Set up the initial message and model base for the test
     setUpMessage();
-    setUpModelBase();
 
     auto message_header = MessageHeader(VIN, SchemaType::VEHICLE);
     DataMessage message_feature(message_header, nodes_);
@@ -199,14 +206,14 @@ prefix so: <http://www.some.com#>
     const std::optional<double> ntm_coord_value = std::nullopt;
 
     // Mock adding RDF object and data to triples
-    EXPECT_CALL(mock_triple_writer_, addRDFObjectToTriple(object_prefixes, object_elements))
+    EXPECT_CALL(mock_triple_writer_, addElementObjectToTriple(object_prefixes, object_elements))
         .Times(3);
 
     EXPECT_CALL(mock_triple_writer_,
-                addRDFDataToTriple(data_prefixes, data_elements,
-                                   message_feature.getNodes().at(0).getValue().value(),
-                                   message_feature.getNodes().at(0).getMetadata().getReceived(),
-                                   ntm_coord_value))
+                addElementDataToTriple(data_prefixes, data_elements,
+                                       message_feature.getNodes().at(0).getValue().value(),
+                                       message_feature.getNodes().at(0).getMetadata().getReceived(),
+                                       ntm_coord_value))
         .Times(1);
 
     // Define a dummy Turtle (TTL) output for the RDF triples
@@ -225,13 +232,18 @@ car:Observation20181116155027O0
 	sosa:phenomenonTime """"2018-11-16 15:50:27"^^xsd:dateTime""" .)";
 
     // Mock generating the triple output and returning the dummy TTL
-    EXPECT_CALL(mock_triple_writer_,
-                generateTripleOutput(model_config_.reasoner_settings.output_format))
+    EXPECT_CALL(*mock_model_config_, getReasonerSettings())
+        .Times(2)
+        .WillRepeatedly(
+            testing::Return(ReasonerSettings(InferenceEngineType::RDFOX, ReasonerSyntaxType::TURTLE,
+                                             std::vector<SchemaType>{SchemaType::VEHICLE})));
+    EXPECT_CALL(*mock_model_config_, getOutput()).Times(1).WillOnce(testing::Return("output/"));
+    EXPECT_CALL(mock_triple_writer_, generateTripleOutput(ReasonerSyntaxType::TURTLE))
         .Times(1)
         .WillOnce(testing::Return(dummy_ttl));
 
     // Mock logging the generated TTL triples to RDFox
-    EXPECT_CALL(mock_adapter_, loadData(::testing::StrEq(dummy_ttl), ::testing::_))
+    EXPECT_CALL(*mock_reasoner_service_, loadData(::testing::StrEq(dummy_ttl), ::testing::_))
         .Times(1)
         .WillOnce(testing::Return(true));
 
@@ -241,78 +253,98 @@ car:Observation20181116155027O0
         .Times(1);
 
     // Assert that the transformation process does not throw any exceptions
-    EXPECT_NO_THROW(triple_assembler_->transformMessageToRDFTriple(message_feature));
+    EXPECT_NO_THROW(triple_assembler_->transformMessageToTriple(message_feature));
 }
 
 /**
- * @brief Unit test for transforming a multi-node message to RDF triples with exception handling.
+ * @brief Unit test for transforming a multi-node message to triples with exception handling.
  *
- * This test sets up a message with multiple nodes, including one invalid node to produces an error.
- * It verifies the transformation of the message into RDF triples, ensuring that exceptions
+ * This test sets up a message with multiple nodes, including one invalid node to produce an
+ * error.
+ * It verifies the transformation of the message into triples, ensuring that exceptions
  * are handled correctly during the process and that the transformation completes successfully.
  */
 TEST_F(TripleAssemblerUnitTest,
-       TransformMessageMultiNodeToRDFTripleWithAnExceptionGeneratingTriplesSuccess) {
+       TransformMessageMultiNodeToTripleWithAnExceptionGeneratingTriplesSuccess) {
     setUpMessage();
-    setUpModelBase();
 
     // Add two nodes more to the `message_feature`
     nodes_.emplace_back(
         "Vehicle.FuelLevel", "75", Metadata(),
         std::vector<std::string>{"Vehicle.FuelLevel"});  // Add data point as supported, `Node`
-                                                         // validation should not fail for this test
+                                                         // validation should not fail for this
+                                                         // test
     nodes_.emplace_back(
         "InvalidNode", "error_value", Metadata(),
-        std::vector<std::string>{"InvalidNode"});  // Add data point as supported, `Node` validation
-                                                   // should not fail for this test
+        std::vector<std::string>{"InvalidNode"});  // Add data point as supported, `Node`
+                                                   // validation should not fail for this test
 
     auto message_header = MessageHeader(VIN, SchemaType::VEHICLE);
     DataMessage message_feature(message_header, nodes_);
 
     // Mock data store has been setup
-    EXPECT_CALL(mock_adapter_, checkDataStore()).WillOnce(testing::Return(true));
+    EXPECT_CALL(*mock_reasoner_service_, checkDataStore()).WillOnce(testing::Return(true));
     EXPECT_CALL(mock_triple_writer_,
                 initiateTriple(VIN))  // ID is the same from message header id
         .Times(1);
 
-    // Mock the file reader to extract the SHACL query
+    // Mock the file reader to extract the reasoner query:
     // - Only the first node uses the object query in, it in its name 5 elements
-    EXPECT_CALL(mock_i_file_handler_, readFile(::testing::StrEq("object_property.rq")))
-        .Times(3)
-        .WillRepeatedly(::testing::Return("MOCK QUERY FOR OBJECTS PROPERTY"));
     // - Node one and two read the data query, the third one has throw an error, which should be
     //      logged.
-    EXPECT_CALL(mock_i_file_handler_, readFile(::testing::StrEq("data_property.rq")))
+
+    TripleAssemblerHelper::QueryPair query_pair;
+    query_pair.object_property =
+        std::make_pair(QueryLanguageType::SPARQL, "MOCK QUERY FOR OBJECTS PROPERTY");
+    query_pair.data_property =
+        std::make_pair(QueryLanguageType::SPARQL, "MOCK QUERY FOR DATA PROPERTY");
+    std::map<SchemaType, TripleAssemblerHelper::QueryPair> query_map = {
+        {SchemaType::VEHICLE, query_pair}};
+    TripleAssemblerHelper triple_assembler_helper(query_map, "output");
+
+    EXPECT_CALL(*mock_model_config_, getQueriesConfig())
         .Times(2)
-        .WillRepeatedly(::testing::Return("MOCK QUERY FOR DATA PROPERTY"));
+        .WillRepeatedly(testing::Return(triple_assembler_helper));
 
     // Mock the SHACL queries responses (first and second node)
-    EXPECT_CALL(mock_adapter_, queryData("MOCK QUERY FOR OBJECTS PROPERTY", ::testing::_)).Times(3);
-    EXPECT_CALL(mock_adapter_, queryData("MOCK QUERY FOR DATA PROPERTY", ::testing::_)).Times(2);
+    EXPECT_CALL(*mock_reasoner_service_, queryData("MOCK QUERY FOR OBJECTS PROPERTY",
+                                                   QueryLanguageType::SPARQL, ::testing::_))
+        .Times(3)
+        .WillRepeatedly(testing::Return("MOCK RESPONSE FOR OBJECTS PROPERTY"));
+    EXPECT_CALL(*mock_reasoner_service_,
+                queryData("MOCK QUERY FOR DATA PROPERTY", QueryLanguageType::SPARQL, ::testing::_))
+        .Times(2)
+        .WillRepeatedly(testing::Return("MOCK RESPONSE FOR DATA PROPERTY"));
 
     // Mock the data added to the RDF triples (only first node)
-    EXPECT_CALL(mock_triple_writer_, addRDFObjectToTriple(::testing::_, ::testing::_)).Times(3);
+    EXPECT_CALL(mock_triple_writer_, addElementObjectToTriple(::testing::_, ::testing::_)).Times(3);
 
     // Mock the data triple writer adding the values of the correct nodes one and two
     EXPECT_CALL(mock_triple_writer_,
-                addRDFDataToTriple(::testing::_, ::testing::_, ::testing::Eq("98.6"), ::testing::_,
-                                   ::testing::_))
+                addElementDataToTriple(::testing::_, ::testing::_, ::testing::Eq("98.6"),
+                                       ::testing::_, ::testing::_))
         .Times(1);
     EXPECT_CALL(mock_triple_writer_,
-                addRDFDataToTriple(::testing::_, ::testing::_, ::testing::Eq("75"), ::testing::_,
-                                   ::testing::_))
+                addElementDataToTriple(::testing::_, ::testing::_, ::testing::Eq("75"),
+                                       ::testing::_, ::testing::_))
         .Times(1);
 
     // Mock generate the triples (only first two nodes)
     std::string dummy_ttl = "some_ttl";
 
+    EXPECT_CALL(*mock_model_config_, getReasonerSettings())
+        .Times(2)
+        .WillRepeatedly(
+            testing::Return(ReasonerSettings(InferenceEngineType::RDFOX, ReasonerSyntaxType::TURTLE,
+                                             std::vector<SchemaType>{SchemaType::VEHICLE})));
+    EXPECT_CALL(*mock_model_config_, getOutput()).Times(1).WillOnce(testing::Return("output/"));
+
     EXPECT_CALL(mock_triple_writer_, generateTripleOutput(::testing::_))
         .Times(1)
-        .WillRepeatedly(testing::Return(dummy_ttl));
-    ;
+        .WillOnce(testing::Return(dummy_ttl));
 
     // Mock logging the generated TTL triples to RDFox
-    EXPECT_CALL(mock_adapter_, loadData(::testing::StrEq(dummy_ttl), ::testing::_))
+    EXPECT_CALL(*mock_reasoner_service_, loadData(::testing::StrEq(dummy_ttl), ::testing::_))
         .Times(1)
         .WillOnce(testing::Return(true));
 
@@ -321,114 +353,93 @@ TEST_F(TripleAssemblerUnitTest,
         .Times(1);
 
     // Assert
-    EXPECT_NO_THROW(triple_assembler_->transformMessageToRDFTriple(message_feature));
+    EXPECT_NO_THROW(triple_assembler_->transformMessageToTriple(message_feature));
 }
 
 /**
- * @brief Unit test for initialization failure of the Triple Assembler when no RDF data store is
+ * @brief Unit test for initialization failure of the Triple Assembler when no data store is
  * set.
  */
-TEST_F(TripleAssemblerUnitTest, InitializeFailWhenAnyRDFDataStoreIsSet) {
+TEST_F(TripleAssemblerUnitTest, InitializeFailWhenAnyDataStoreIsSet) {
     // Mock the data store check to return false, indicating the data store is not available
-    EXPECT_CALL(mock_adapter_, checkDataStore()).WillOnce(testing::Return(false));
-
-    // Ensure that no file reading operations are attempted
-    EXPECT_CALL(mock_i_file_handler_, readFile(testing::_)).Times(0);
+    EXPECT_CALL(*mock_reasoner_service_, checkDataStore()).WillOnce(testing::Return(false));
 
     // Assert that the initialization process throws a runtime error due to missing data store
     EXPECT_THROW(triple_assembler_->initialize(), std::runtime_error);
 }
 
 /**
- * @brief Unit test for the failure of TripleAssembler initialization when SHACL shapes are empty.
+ * @brief Unit test for the failure of TripleAssembler initialization when validation shapes are
+ empty.
  */
-TEST_F(TripleAssemblerUnitTest, InitializeFailIfShaclShapesAreEmptyInTheModelConfig) {
-    // Create a mock ModelConfig with an empty list of SHACL shapes files
-    model_config_.shacl_shapes_files = {};  // This cannot be empty for successful initialization
-
+TEST_F(TripleAssemblerUnitTest, InitializeFailIfValidationShapesAreEmptyInTheModelConfig) {
     // Mock functions
-    EXPECT_CALL(mock_adapter_, checkDataStore()).WillOnce(testing::Return(true));
+    EXPECT_CALL(*mock_reasoner_service_, checkDataStore()).WillOnce(testing::Return(true));
 
-    // Expect no file reads to occur since SHACL shapes are empty
-    EXPECT_CALL(mock_i_file_handler_, readFile(testing::_)).Times(0);
+    // Create a mock ModelConfig with an empty list of validation shapes files
+    EXPECT_CALL(*mock_model_config_, getValidationShapes())
+        .Times(1)
+        .WillOnce(testing::Return(
+            std::vector<std::pair<ReasonerSyntaxType, std::string>>{}));  // This cannot be empty
+                                                                          // for successful
+                                                                          // initialization
 
     // Attempt to initialize the TripleAssembler and expect a runtime error to be thrown
     EXPECT_THROW(triple_assembler_->initialize(), std::runtime_error);
 }
 
 /**
- * @brief Unit test for initializing the TripleAssembler with empty SHACL shape content.
- */
-TEST_F(TripleAssemblerUnitTest, InitializeFailIfShaclShapesContentIsEmpty) {
-    // Create a mock ModelConfig with a SHACL shape file
-    model_config_.shacl_shapes_files = {"shacl_shape.ttl"};
-
-    // Mock functions
-    EXPECT_CALL(mock_adapter_, checkDataStore()).WillOnce(testing::Return(true));
-
-    // Simulate reading the SHACL shape file and returning empty content
-    EXPECT_CALL(mock_i_file_handler_, readFile(testing::StrEq("shacl_shape.ttl")))
-        .WillOnce(testing::Return(""));  // The content cannot be empty
-
-    // Ensure no data loading is attempted with empty content
-    EXPECT_CALL(mock_adapter_, loadData(testing::_, ::testing::_)).Times(0);
-
-    // Attempt to initialize the TripleAssembler and expect a runtime error
-    TripleAssembler assembler(model_config_, mock_adapter_, mock_i_file_handler_,
-                              mock_triple_writer_);
-    EXPECT_THROW(triple_assembler_->initialize(), std::runtime_error);
-}
-
-/**
  * @brief Unit test for handling failure during the initialization of the TripleAssembler
- *        when loading data from SHACL shapes goes wrong.
+ *        when loading data to reasoner engine from validation shapes goes wrong.
  */
-TEST_F(TripleAssemblerUnitTest, InitializeFailsIfLoadingDataFromShaclShapesGoesWrong) {
-    // Create a mock ModelConfig with a SHACL shape file
-    model_config_.shacl_shapes_files = {"shacl_shape.ttl"};
-
+TEST_F(TripleAssemblerUnitTest, InitializeFailsIfLoadingDataFromValidationShapesGoesWrong) {
     // Mock functions
-    EXPECT_CALL(mock_adapter_, checkDataStore()).WillOnce(testing::Return(true));
-    EXPECT_CALL(mock_i_file_handler_, readFile(testing::StrEq("shacl_shape.ttl")))
-        .WillOnce(testing::Return("data"));
+    EXPECT_CALL(*mock_reasoner_service_, checkDataStore()).WillOnce(testing::Return(true));
+
+    // Mock reading SHACL shape files
+    EXPECT_CALL(*mock_model_config_, getValidationShapes())
+        .Times(1)
+        .WillOnce(testing::Return(std::vector<std::pair<ReasonerSyntaxType, std::string>>{
+            {ReasonerSyntaxType::TURTLE, "some_validation_shape_content"}}));
 
     // Simulate a failure in loading the data, returning false
-    EXPECT_CALL(mock_adapter_, loadData(testing::StrEq("data"), ::testing::_))
+    EXPECT_CALL(*mock_reasoner_service_,
+                loadData(testing::StrEq("some_validation_shape_content"), ::testing::_))
         .WillOnce(testing::Return(false));  // Fail loading data
 
     // Initialize TripleAssembler and expect a runtime error to be thrown
-    TripleAssembler assembler(model_config_, mock_adapter_, mock_i_file_handler_,
-                              mock_triple_writer_);
     EXPECT_THROW(triple_assembler_->initialize(), std::runtime_error);
 }
 
 /**
- * @brief Unit test for handling failure when transforming a message to RDF triples
- *        due to the absence of an RDF data store.
+ * @brief Unit test for handling failure when transforming a message to triples
+ *        due to the absence of a reasoner data store.
  */
-TEST_F(TripleAssemblerUnitTest, TransformMessageToRDFTripleFailsWhenAnyRDFDataStoreIsSet) {
+TEST_F(TripleAssemblerUnitTest, TransformMessageToTripleFailsWhenAnyDataStoreIsSet) {
     // Set up the initial message for the test
     setUpMessage();
     auto message_header = MessageHeader(VIN, SchemaType::VEHICLE);
     DataMessage message_feature(message_header, nodes_);
 
     // Mock the data store check to return false, indicating the data store is not available
-    EXPECT_CALL(mock_adapter_, checkDataStore()).WillOnce(testing::Return(false));
+    EXPECT_CALL(*mock_reasoner_service_, checkDataStore()).WillOnce(testing::Return(false));
 
     // Ensure that no other functions are called since the data store is not set up
     EXPECT_CALL(mock_triple_writer_, initiateTriple(::testing::_)).Times(0);
-    EXPECT_CALL(mock_i_file_handler_, readFile(::testing::_)).Times(0);
-    EXPECT_CALL(mock_i_file_handler_, writeFile(::testing::_, ::testing::_, ::testing::_)).Times(0);
-    EXPECT_CALL(mock_adapter_, queryData(::testing::_, ::testing::_)).Times(0);
-    EXPECT_CALL(mock_triple_writer_, addRDFObjectToTriple(::testing::_, ::testing::_)).Times(0);
-    EXPECT_CALL(mock_triple_writer_, addRDFDataToTriple(::testing::_, ::testing::_, ::testing::_,
-                                                        ::testing::_, ::testing::_))
+    EXPECT_CALL(*mock_reasoner_service_, queryData(::testing::_, ::testing::_, ::testing::_))
+        .Times(0);
+    EXPECT_CALL(*mock_model_config_, getQueriesConfig()).Times(0);
+    EXPECT_CALL(*mock_model_config_, getReasonerSettings()).Times(0);
+    EXPECT_CALL(*mock_model_config_, getOutput()).Times(0);
+    EXPECT_CALL(mock_triple_writer_, addElementObjectToTriple(::testing::_, ::testing::_)).Times(0);
+    EXPECT_CALL(mock_triple_writer_,
+                addElementDataToTriple(::testing::_, ::testing::_, ::testing::_, ::testing::_,
+                                       ::testing::_))
         .Times(0);
     EXPECT_CALL(mock_triple_writer_, generateTripleOutput(::testing::_)).Times(0);
 
     // Assert that the transformation process throws a runtime error due to the missing data store
-    EXPECT_THROW(triple_assembler_->transformMessageToRDFTriple(message_feature),
-                 std::runtime_error);
+    EXPECT_THROW(triple_assembler_->transformMessageToTriple(message_feature), std::runtime_error);
 }
 
 // Testing messages with coordinates
@@ -444,7 +455,6 @@ TEST_F(TripleAssemblerUnitTest, TransformMessageToRDFTripleFailsWhenAnyRDFDataSt
 
 TEST_F(TripleAssemblerUnitTest, TransformMessageToRDFTripleWithCoordinatesSuccess) {
     // Set up the initial message and model base for the test
-    setUpModelBase();
 
     std::vector<std::string> supported_data_points = {"Vehicle.CurrentLocation.Latitude",
                                                       "Vehicle.CurrentLocation.Longitude"};
@@ -462,22 +472,27 @@ TEST_F(TripleAssemblerUnitTest, TransformMessageToRDFTripleWithCoordinatesSucces
     initialSetupExpectations(1, 2, 2);
 
     // Mock adding RDF object and data to triples
-    EXPECT_CALL(mock_triple_writer_, addRDFObjectToTriple(::testing::_, ::testing::_)).Times(2);
+    EXPECT_CALL(mock_triple_writer_, addElementObjectToTriple(::testing::_, ::testing::_)).Times(2);
 
-    EXPECT_CALL(mock_triple_writer_, addRDFDataToTriple(::testing::_, ::testing::_, ::testing::_,
-                                                        ::testing::_, IsOptionalWithValue()))
+    EXPECT_CALL(mock_triple_writer_,
+                addElementDataToTriple(::testing::_, ::testing::_, ::testing::_, ::testing::_,
+                                       IsOptionalWithValue()))
         .Times(2);
 
     // Mock generate the triple output and return a dummy TTL
     std::string dummy_ttl = "some_ttl";
-
-    EXPECT_CALL(mock_triple_writer_,
-                generateTripleOutput(model_config_.reasoner_settings.output_format))
+    EXPECT_CALL(*mock_model_config_, getReasonerSettings())
+        .Times(2)
+        .WillRepeatedly(
+            testing::Return(ReasonerSettings(InferenceEngineType::RDFOX, ReasonerSyntaxType::TURTLE,
+                                             std::vector<SchemaType>{SchemaType::VEHICLE})));
+    EXPECT_CALL(*mock_model_config_, getOutput()).Times(1).WillOnce(testing::Return("output/"));
+    EXPECT_CALL(mock_triple_writer_, generateTripleOutput(ReasonerSyntaxType::TURTLE))
         .Times(1)
-        .WillRepeatedly(testing::Return(dummy_ttl));
+        .WillOnce(testing::Return(dummy_ttl));
 
     // Mock logging the generated TTL triples to RDFox
-    EXPECT_CALL(mock_adapter_, loadData(::testing::StrEq(dummy_ttl), ::testing::_))
+    EXPECT_CALL(*mock_reasoner_service_, loadData(::testing::StrEq(dummy_ttl), ::testing::_))
         .Times(1)
         .WillOnce(testing::Return(true));
 
@@ -487,17 +502,16 @@ TEST_F(TripleAssemblerUnitTest, TransformMessageToRDFTripleWithCoordinatesSucces
         .Times(1);
 
     // Assert that the transformation process does not throw any exceptions
-    EXPECT_NO_THROW(triple_assembler_->transformMessageToRDFTriple(message_feature));
+    EXPECT_NO_THROW(triple_assembler_->transformMessageToTriple(message_feature));
 }
 
 /**
- * @brief Unit test for handling failure when coordinates are given in the message but getting the
- * coordinates in NTM returns null option.
+ * @brief Unit test for handling failure when coordinates are given in the message but getting
+ the coordinates in NTM returns null option.
  */
-TEST_F(TripleAssemblerUnitTest, TransformMessageToRDFTripleFailsWhenCoordinatesAreNull) {
+TEST_F(TripleAssemblerUnitTest, TransformMessageToTripleFailsWhenCoordinatesAreNull) {
     // Set up the initial message for the test
     setUpMessage();
-    setUpModelBase();
 
     std::vector<std::string> supported_data_points = {"Vehicle.CurrentLocation.Latitude",
                                                       "Vehicle.CurrentLocation.Longitude"};
@@ -516,19 +530,26 @@ TEST_F(TripleAssemblerUnitTest, TransformMessageToRDFTripleFailsWhenCoordinatesA
     initialSetupExpectations(1, 3, 1);
 
     // Mock the data added to the RDF triples (only first node, the coordinates contain an error)
-    EXPECT_CALL(mock_triple_writer_, addRDFObjectToTriple(::testing::_, ::testing::_)).Times(3);
-    EXPECT_CALL(mock_triple_writer_, addRDFDataToTriple(::testing::_, ::testing::_, ::testing::_,
-                                                        ::testing::_, ::testing::Eq(std::nullopt)))
+    EXPECT_CALL(mock_triple_writer_, addElementObjectToTriple(::testing::_, ::testing::_)).Times(3);
+    EXPECT_CALL(mock_triple_writer_,
+                addElementDataToTriple(::testing::_, ::testing::_, ::testing::_, ::testing::_,
+                                       ::testing::Eq(std::nullopt)))
         .Times(1);
 
     // Mock generate the triple output (since the first node is correct) and return a dummy TTL
     std::string dummy_ttl = "some_ttl";
+    EXPECT_CALL(*mock_model_config_, getReasonerSettings())
+        .Times(2)
+        .WillRepeatedly(
+            testing::Return(ReasonerSettings(InferenceEngineType::RDFOX, ReasonerSyntaxType::TURTLE,
+                                             std::vector<SchemaType>{SchemaType::VEHICLE})));
+    EXPECT_CALL(*mock_model_config_, getOutput()).Times(1).WillOnce(testing::Return("output/"));
     EXPECT_CALL(mock_triple_writer_, generateTripleOutput(::testing::_))
         .Times(1)
         .WillRepeatedly(testing::Return(dummy_ttl));
 
     // Mock logging the generated TTL triples to RDFox
-    EXPECT_CALL(mock_adapter_, loadData(::testing::StrEq(dummy_ttl), ::testing::_))
+    EXPECT_CALL(*mock_reasoner_service_, loadData(::testing::StrEq(dummy_ttl), ::testing::_))
         .Times(1)
         .WillOnce(testing::Return(true));
 
@@ -537,5 +558,5 @@ TEST_F(TripleAssemblerUnitTest, TransformMessageToRDFTripleFailsWhenCoordinatesA
         .Times(1);
 
     // Assert
-    EXPECT_NO_THROW(triple_assembler_->transformMessageToRDFTriple(message_feature));
+    EXPECT_NO_THROW(triple_assembler_->transformMessageToTriple(message_feature));
 }

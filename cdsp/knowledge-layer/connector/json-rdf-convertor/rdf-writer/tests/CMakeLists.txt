@@ -9,6 +9,14 @@ target_link_libraries(triple_writer_integration_tests
 
 # Add the unit test executable for TripleAssembler
 add_executable(triple_assembler_unit_tests triple_assembler_unit_test.cpp)
+target_include_directories(triple_assembler_unit_tests
+    PRIVATE
+        ${PROJECT_ROOT_DIR}/connector/utils/tests/utils
+        ${PROJECT_ROOT_DIR}/connector/data-objects/bo/tests/utils
+        ${PROJECT_ROOT_DIR}/symbolic-reasoner/interfaces/tests/utils
+        ${PROJECT_ROOT_DIR}/symbolic-reasoner/services/tests/utils
+        ${CMAKE_CURRENT_SOURCE_DIR}/utils
+)
 target_link_libraries(triple_assembler_unit_tests 
     PRIVATE 
         GTest::gtest_main 
@@ -16,12 +24,7 @@ target_link_libraries(triple_assembler_unit_tests
         rdf_writer
         test_fixtures        
 )
-target_include_directories(triple_assembler_unit_tests
-    PRIVATE
-        ${PROJECT_ROOT_DIR}/connector/utils/tests/utils
-        ${PROJECT_ROOT_DIR}/symbolic-reasoner/test/utils
-        ${CMAKE_CURRENT_SOURCE_DIR}/utils
-)
+
 
 # Add unit and integration tests to CTest
 add_test(NAME TripleWriterIntegrationTests COMMAND triple_writer_integration_tests)

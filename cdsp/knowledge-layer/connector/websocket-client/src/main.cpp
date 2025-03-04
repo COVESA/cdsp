@@ -7,11 +7,11 @@
 #include <nlohmann/json.hpp>
 
 #include "data_types.h"
-#include "file_handler_impl.h"
 #include "helper.h"
-#include "model_config_utils.h"
-#include "triple_assembler.h"
-#include "triple_writer.h"
+#include "model_config.h"
+#include "reasoner_factory.h"
+#include "reasoner_service.h"
+#include "system_configuration_service.h"
 #include "websocket_client.h"
 
 using json = nlohmann::json;
@@ -22,15 +22,11 @@ constexpr char DEFAULT_HOST_WEB_SOCKET_SERVER[] = "127.0.0.1";
 constexpr char DEFAULT_PORT_WEB_SOCKET_SERVER[] = "8080";
 const std::string MODEL_CONFIGURATION_FILE =
     std::string(PROJECT_ROOT) + "/symbolic-reasoner/examples/use-case/model/model_config.json";
-constexpr char DEFAULT_RDFOX_SERVER[] = "127.0.0.1";
-constexpr char DEFAULT_PORT_RDFOX_SERVER[] = "12110";
-constexpr char DEFAULT_AUTH_RDFOX_SERVER_BASE64[] = "cm9vdDphZG1pbg==";  // 'root:admin' in base64
-constexpr char DEFAULT_RDFOX_DATASTORE[] = "ds-test";
-
-std::string getEnvVariable(const std::string& env_var, const std::string& default_value = "") {
-    const char* value_env = std::getenv(env_var.c_str());
-    return value_env ? std::string(value_env) : default_value;
-}
+constexpr char DEFAULT_REASONER_SERVER[] = "127.0.0.1";
+constexpr char DEFAULT_PORT_REASONER_SERVER[] = "12110";
+constexpr char DEFAULT_AUTH_REASONER_SERVER_BASE64[] =
+    "cm9vdDphZG1pbg==";  // 'root:admin' in base64
+constexpr char DEFAULT_REASONER_DATASTORE_NAME[] = "ds-test";
 
 void displayHelp() {
     std::string bold = "\033[1m";
@@ -48,70 +44,39 @@ void displayHelp() {
 
     std::cout << std::left << std::setw(35) << "HOST_WEBSOCKET_SERVER" << std::setw(65)
               << "IP address of the WebSocket server"
-              << getEnvVariable("HOST_WEBSOCKET_SERVER", DEFAULT_HOST_WEB_SOCKET_SERVER) << "\n";
+              << Helper::getEnvVariable("HOST_WEBSOCKET_SERVER", DEFAULT_HOST_WEB_SOCKET_SERVER)
+              << "\n";
     std::cout << std::left << std::setw(35) << "PORT_WEBSOCKET_SERVER" << std::setw(65)
               << "Port number of the WebSocket server"
-              << getEnvVariable("PORT_WEBSOCKET_SERVER", DEFAULT_PORT_WEB_SOCKET_SERVER) << "\n";
+              << Helper::getEnvVariable("PORT_WEBSOCKET_SERVER", DEFAULT_PORT_WEB_SOCKET_SERVER)
+              << "\n";
     std::cout << std::left << std::setw(35) << "<SCHEMA_DEFINITION>_OBJECT_ID" << std::setw(65)
               << "Object ID to be used in communication, where <SCHEMA_DEFINITION> is the "
                  "uppercase schema type, e.g., VEHICLE_OBJECT_ID to set a VIN"
-              << getEnvVariable("<SCHEMA_DEFINITION>_OBJECT_ID",
-                                light_red + "`Not Set (Required)`" + reset)
+              << Helper::getEnvVariable("<SCHEMA_DEFINITION>_OBJECT_ID",
+                                        light_red + "`Not Set (Required)`" + reset)
               << "\n";
-    std::cout << std::left << std::setw(35) << "HOST_RDFOX_SERVER" << std::setw(65)
-              << "IP address of the RDFox server"
-              << getEnvVariable("HOST_RDFOX_SERVER", DEFAULT_RDFOX_SERVER) << "\n";
-    std::cout << std::left << std::setw(35) << "PORT_RDFOX_SERVER" << std::setw(65)
-              << "Port number of the RDFox server"
-              << getEnvVariable("PORT_RDFOX_SERVER", DEFAULT_PORT_RDFOX_SERVER) << "\n";
-    std::cout << std::left << std::setw(35) << "AUTH_RDFOX_SERVER_BASE64" << std::setw(65)
-              << "Authentication credentials for RDFox Server encoded in base64"
-              << getEnvVariable("AUTH_RDFOX_SERVER_BASE64", DEFAULT_AUTH_RDFOX_SERVER_BASE64)
+    std::cout << std::left << std::setw(35) << "HOST_REASONER_SERVER" << std::setw(65)
+              << "IP address of the reasoner server"
+              << Helper::getEnvVariable("HOST_REASONER_SERVER", DEFAULT_REASONER_SERVER) << "\n";
+    std::cout << std::left << std::setw(35) << "PORT_REASONER_SERVER" << std::setw(65)
+              << "Port number of the reasoner server"
+              << Helper::getEnvVariable("PORT_REASONER_SERVER", DEFAULT_PORT_REASONER_SERVER)
               << "\n";
-    std::cout << std::left << std::setw(35) << "RDFOX_DATASTORE" << std::setw(65)
-              << "Datastore name of the RDFox server"
-              << getEnvVariable("RDFOX_DATASTORE", DEFAULT_RDFOX_DATASTORE) << "\n";
+    std::cout << std::left << std::setw(35) << "AUTH_REASONER_SERVER_BASE64" << std::setw(65)
+              << "Authentication credentials for reasoner Server encoded in base64"
+              << Helper::getEnvVariable("AUTH_REASONER_SERVER_BASE64",
+                                        DEFAULT_AUTH_REASONER_SERVER_BASE64)
+              << "\n";
+    std::cout << std::left << std::setw(35) << "REASONER_DATASTORE_NAME" << std::setw(65)
+              << "Datastore name of the reasoner server"
+              << Helper::getEnvVariable("REASONER_DATASTORE_NAME", DEFAULT_REASONER_DATASTORE_NAME)
+              << "\n";
 
     std::cout << "\n" << bold << "Description:\n" << reset;
     std::cout << "This client connects to a WebSocket server and processes incoming messages based "
                  "on the defined input.\n";
     std::cout << "The above environment variables are used to configure the application.\n\n";
-}
-
-/**
- * @brief Initializes and returns an InitConfig object with required configuration variables.
- *
- * This function creates an InitConfig instance and retrieving values
- * from environment variables. If the environment variables are not set,
- * default values are used.
- *
- * @return InitConfig The initialized configuration object.
- * @throws std::runtime_error if there is a problem setting a variable.
- */
-InitConfig AddInitConfig() {
-    ModelConfig model_config;
-    ModelConfigUtils::loadModelConfig(MODEL_CONFIGURATION_FILE, model_config);
-
-    InitConfig init_config;
-    init_config.websocket_server.host =
-        getEnvVariable("HOST_WEBSOCKET_SERVER", DEFAULT_HOST_WEB_SOCKET_SERVER);
-    init_config.websocket_server.port =
-        getEnvVariable("PORT_WEBSOCKET_SERVER", DEFAULT_PORT_WEB_SOCKET_SERVER);
-    // TODO: UUID is not used in the current implementation. It can be removed.
-    init_config.uuid = boost::uuids::to_string(uuidGenerator());
-    for (SchemaType schema : model_config.reasoner_settings.supported_schema_collections) {
-        std::string uppercase_schema_type = Helper::toUppercase(SchemaTypeToString(schema));
-        init_config.oid.insert({schema, getEnvVariable(uppercase_schema_type + "_OBJECT_ID")});
-    }
-
-    init_config.model_config = model_config;
-    init_config.rdfox_server.host = getEnvVariable("HOST_RDFOX_SERVER", DEFAULT_RDFOX_SERVER);
-    init_config.rdfox_server.port = getEnvVariable("PORT_RDFOX_SERVER", DEFAULT_PORT_RDFOX_SERVER);
-    init_config.rdfox_server.auth_base64 =
-        getEnvVariable("AUTH_RDFOX_SERVER_BASE64", DEFAULT_AUTH_RDFOX_SERVER_BASE64);
-    init_config.rdfox_server.data_store =
-        getEnvVariable("RDFOX_DATASTORE", DEFAULT_RDFOX_DATASTORE);
-    return init_config;
 }
 
 int main(int argc, char* argv[]) {
@@ -121,26 +86,25 @@ int main(int argc, char* argv[]) {
         return EXIT_SUCCESS;
     }
     try {
-        // Initialize configuration
-        InitConfig init_config = AddInitConfig();
+        // Initialize System Configuration
+        SystemConfig system_config = SystemConfigurationService::loadSystemConfig(
+            DEFAULT_HOST_WEB_SOCKET_SERVER, DEFAULT_PORT_WEB_SOCKET_SERVER, DEFAULT_REASONER_SERVER,
+            DEFAULT_PORT_REASONER_SERVER, DEFAULT_AUTH_REASONER_SERVER_BASE64,
+            DEFAULT_REASONER_DATASTORE_NAME);
 
-        // Initialize TripleAssembler
-        RDFoxAdapter rdfox_adapter(init_config.rdfox_server.host, init_config.rdfox_server.port,
-                                   init_config.rdfox_server.auth_base64,
-                                   init_config.rdfox_server.data_store.value());
-        rdfox_adapter.initialize();
+        // Initialize Model Configuration
+        std::shared_ptr<ModelConfig> model_config = std::make_shared<ModelConfig>(
+            SystemConfigurationService::loadModelConfig(MODEL_CONFIGURATION_FILE));
 
-        // Initialize TripleAssembler
-        FileHandlerImpl file_handler;
-        TripleWriter triple_writer;
-        TripleAssembler triple_assembler(init_config.model_config, rdfox_adapter, file_handler,
-                                         triple_writer);
-        triple_assembler.initialize();
-
-        std::cout << std::endl << "** Starting client! **" << std::endl;
+        // Initialize Reasoner Service
+        std::shared_ptr<ReasonerService> reasoner_service = ReasonerFactory::initReasoner(
+            model_config->getReasonerSettings().getInferenceEngine(), system_config.reasoner_server,
+            model_config->getReasonerRules());
 
         // Create the WebSocketClient
-        auto client = std::make_shared<WebSocketClient>(init_config, triple_assembler);
+        std::cout << std::endl << "** Starting client! **" << std::endl;
+        auto client =
+            std::make_shared<WebSocketClient>(system_config, reasoner_service, model_config);
 
         // Initialize the RealWebSocketConnection with the WebSocketClient
         client->initializeConnection();

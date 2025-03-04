@@ -50,13 +50,13 @@ class TripleWriterIntegrationTest : public ::testing::Test {
              "<http://example.ontology.com/car#StateOfCharge>"}};
 
         for (const auto& triple : object_triples) {
-            triple_writer->addRDFObjectToTriple(prefixes_input, triple);
+            triple_writer->addElementObjectToTriple(prefixes_input, triple);
         }
     }
 
     void SetUpRDFData(const std::string& prefixes_input) {
         // RDF Data Triple
-        triple_writer->addRDFDataToTriple(
+        triple_writer->addElementDataToTriple(
             prefixes_input,
             std::make_tuple("<http://example.ontology.com/car#StateOfCharge>",
                             "<http://example.ontology.com/car#CurrentEnergy>",
@@ -106,7 +106,8 @@ car:)" + OBSERVATION_IDENTIFIER + R"(
                                       R"("^^xsd:dateTime .)";
 
     // Run and Assert
-    std::string result_triple_writer = triple_writer->generateTripleOutput(RDFSyntaxType::TURTLE);
+    std::string result_triple_writer =
+        triple_writer->generateTripleOutput(ReasonerSyntaxType::TURTLE);
     ASSERT_EQ(result_triple_writer, expected_RDF_triple);
 }
 
@@ -160,7 +161,8 @@ TEST_F(TripleWriterIntegrationTest, WriteRDFTripleInNTriplesFormat) {
         R"("^^<http://www.w3.org/2001/XMLSchema#dateTime> .)";
 
     // Run and Assert
-    std::string result_triple_writer = triple_writer->generateTripleOutput(RDFSyntaxType::NTRIPLES);
+    std::string result_triple_writer =
+        triple_writer->generateTripleOutput(ReasonerSyntaxType::NTRIPLES);
     ASSERT_EQ(result_triple_writer, expected_RDF_triple);
 }
 
@@ -214,7 +216,8 @@ TEST_F(TripleWriterIntegrationTest, WriteRDFTripleInNQuatdsFormat) {
         R"("^^<http://www.w3.org/2001/XMLSchema#dateTime> .)";
 
     // Run and Assert
-    std::string result_triple_writer = triple_writer->generateTripleOutput(RDFSyntaxType::NQUADS);
+    std::string result_triple_writer =
+        triple_writer->generateTripleOutput(ReasonerSyntaxType::NQUADS);
     ASSERT_EQ(result_triple_writer, expected_RDF_triple);
 }
 
@@ -258,7 +261,8 @@ car:)" + OBSERVATION_IDENTIFIER + R"(
 	sosa:phenomenonTime ")" + DATA_TIME +
                                       R"("^^xsd:dateTime .)";
     // Run and Assert
-    std::string result_triple_writer = triple_writer->generateTripleOutput(RDFSyntaxType::TRIG);
+    std::string result_triple_writer =
+        triple_writer->generateTripleOutput(ReasonerSyntaxType::TRIG);
     ASSERT_EQ(result_triple_writer, expected_RDF_triple);
 }
 
@@ -291,7 +295,7 @@ TEST_F(TripleWriterIntegrationTest, FailAddingRDFObjectToTripleSendingWrongDataC
         std::make_tuple("this_is_wrong", "<http://example.ontology.com/car#hasPart>",
                         "<http://example.ontology.com/car#Powertrain>");
 
-    EXPECT_THROW(triple_writer->addRDFObjectToTriple(prefixes_fixture_, data_components),
+    EXPECT_THROW(triple_writer->addElementObjectToTriple(prefixes_fixture_, data_components),
                  std::runtime_error);
 }
 
@@ -316,7 +320,7 @@ TEST_F(TripleWriterIntegrationTest, FailAddingRDFDataToTripleSendingWrongDataCom
         std::make_tuple("", "<http://example.ontology.com/car#CurrentEnergy>",
                         "<http://www.w3.org/2001/XMLSchema#float>");
 
-    EXPECT_THROW(triple_writer->addRDFDataToTriple(prefixes_fixture_, data_components,
+    EXPECT_THROW(triple_writer->addElementDataToTriple(prefixes_fixture_, data_components,
                                                    OBSERVATION_VALUE, TIMESTAMP),
                  std::runtime_error);
 }
@@ -332,6 +336,6 @@ TEST_F(TripleWriterIntegrationTest, FailAddingRDFDataToTripleSendingWrongDataVal
                                                  "<http://www.w3.org/2001/XMLSchema#float>");
 
     EXPECT_THROW(
-        triple_writer->addRDFDataToTriple(prefixes_fixture_, data_components, "", TIMESTAMP),
+        triple_writer->addElementDataToTriple(prefixes_fixture_, data_components, "", TIMESTAMP),
         std::runtime_error);
 }

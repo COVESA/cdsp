@@ -4,7 +4,6 @@
 #include <variant>
 
 #include "data_message.h"
-#include "dto_to_bo.h"
 #include "helper.h"
 #include "real_websocket_connection.h"
 #include "status_message.h"
@@ -19,38 +18,34 @@ namespace {
 void Fail(const boost::system::error_code& ec, const std::string& what) {
     std::cerr << what << ": " << ec.message() << "\n";
 }
-
-/**
- * @brief Creates a log message for a received error message.
- *
- * @param error The InternalErrorMessage object.
- * @return A string containing the formatted log message.
- */
-std::string createLogInternalErrorMessage(const InternalErrorMessage& error) {
-    std::string errorDetails;
-    if (error.message.empty()) {
-        return "Received message with error code " + std::to_string(error.errorCode) + " - (" +
-               error.type + ")";
-    }
-
-    return "Received message with error code " + std::to_string(error.errorCode) + " - (" +
-           error.type + "): " + error.message;
-}
 }  // namespace
 
 /**
- * @brief Constructor for the WebSocketClient.
+ * @brief Constructs a WebSocketClient object with the specified initialization configuration and
+ * connection.
  *
- * @param init_config Configuration for initializing the client.
- * @param triple_assembler Reference to the TripleAssembler for processing messages.
- * @param connection Optional custom WebSocket connection implementation.
+ * This constructor initializes the WebSocketClient with the given configuration and connection
+ * interface. It sets up the RDFox adapter and triple assembler using the provided configuration and
+ * initializes them.
+ *
+ * @param system_config The initialization configuration containing settings for the
+ * WebSocketClient.
+ * @param connection A shared pointer to a WebSocketClientInterface, representing the connection to
+ * be used.
  */
-WebSocketClient::WebSocketClient(const InitConfig& init_config, TripleAssembler& triple_assembler,
+WebSocketClient::WebSocketClient(const SystemConfig& system_config,
+                                 std::shared_ptr<ReasonerService> reasoner_service,
+                                 std::shared_ptr<ModelConfig> model_config,
                                  std::shared_ptr<WebSocketClientInterface> connection)
-    : init_config_(init_config),
-      triple_assembler_(triple_assembler),
+    : system_config_(system_config),
+      reasoner_service_(std::move(reasoner_service)),
+      model_config_(std::move(model_config)),
+      connection_(std::move(connection)),
       io_context_(),
-      connection_(std::move(connection)) {}
+      triple_assembler_(model_config_, *reasoner_service_, file_handler_, triple_writer_),
+      message_service_(model_config_->getInputs()) {
+    triple_assembler_.initialize();
+}
 
 /**
  * @brief Initializes the WebSocket connection.
@@ -73,8 +68,8 @@ void WebSocketClient::initializeConnection() {
  * to process asynchronous events.
  */
 void WebSocketClient::run() {
-    connection_->asyncResolve(init_config_.websocket_server.host,
-                              init_config_.websocket_server.port);
+    connection_->asyncResolve(system_config_.websocket_server.host,
+                              system_config_.websocket_server.port);
     // Run the IO context to process asynchronous events
     io_context_.run();
 }
@@ -82,9 +77,9 @@ void WebSocketClient::run() {
 /**
  * @brief Provides access to the client's configuration.
  *
- * @return The current InitConfig object.
+ * @return The current SystemConfig object.
  */
-const InitConfig& WebSocketClient::getInitConfig() const { return init_config_; }
+const SystemConfig& WebSocketClient::getInitConfig() const { return system_config_; }
 
 // Callbacks for connection lifecycle and message handling
 void WebSocketClient::onConnect(boost::system::error_code ec,
@@ -114,22 +109,25 @@ void WebSocketClient::handshake(boost::system::error_code ec) {
     }
 
     for (const SchemaType& schema_type :
-         init_config_.model_config.reasoner_settings.supported_schema_collections) {
+         model_config_->getReasonerSettings().getSupportedSchemaCollections()) {
         // Start subscribing to supported schemas
         // TODO: Refactor to subscribe to each node in the schema collection
-        MessageHeader subscribe_header(init_config_.oid[schema_type], schema_type);
-        MessageUtils::addMessageToQueue(SubscribeMessage(subscribe_header, {}),
-                                        reply_messages_queue_);
+        const auto object_id = model_config_->getObjectId().at(schema_type);
+        MessageHeader subscribe_header(object_id, schema_type);
+        message_service_.addMessageToQueue(SubscribeMessage(subscribe_header, {}),
+                                           reply_messages_queue_);
 
         // Create a get message to retrieve all data points for the collection
         std::vector<Node> nodes;
-        for (const auto& data_point : init_config_.model_config.system_data_points[schema_type]) {
-            nodes.push_back(Node(data_point, std::nullopt, Metadata(),
-                                 init_config_.model_config.system_data_points[schema_type]));
-        }
 
-        MessageHeader get_header(init_config_.oid[schema_type], schema_type);
-        MessageUtils::addMessageToQueue(GetMessage(get_header, nodes), reply_messages_queue_);
+        const auto data_point_list = model_config_->getInputs().at(schema_type);
+        for (const auto data_point : data_point_list) {
+            nodes.push_back(Node(data_point, std::nullopt, Metadata(), data_point_list));
+        }
+        std::cout << "Nodes: " << nodes.size() << "\n";
+
+        MessageHeader get_header(object_id, schema_type);
+        message_service_.addMessageToQueue(GetMessage(get_header, nodes), reply_messages_queue_);
     }
 
     writeReplyMessagesOnQueue();
@@ -167,47 +165,23 @@ void WebSocketClient::onReceiveMessage(boost::beast::error_code ec, std::size_t 
 }
 
 /**
- * @brief Processes a message received from the WebSocket server.
+ * @brief Processes an incoming WebSocket message.
  *
- * This function processes the received message by parsing it and converting it to a DataMessage or
- * StatusMessage object.
+ * This method handles an incoming message by adding it to the response message queue,
+ * extracting the highest priority message, and attempting to transform it into a reasoning triple
+ * if it contains valid data. If there are reply messages queued, it writes them to the queue;
+ * otherwise, it initiates an asynchronous read operation on the connection.
  *
- * @param message The message to process.
+ * @param message A shared pointer to the incoming message string to be processed.
  */
 void WebSocketClient::processMessage(const std::shared_ptr<const std::string>& message) {
     response_messages_queue_.push_back(message);
     auto prio_message = *response_messages_queue_.front();
     response_messages_queue_.erase(response_messages_queue_.begin());
 
-    const auto parsed_message = MessageUtils::displayAndParseMessage(prio_message);
-
-    if (std::holds_alternative<InternalErrorMessage>(parsed_message)) {
-        auto error = std::get<InternalErrorMessage>(parsed_message);
-        throw std::runtime_error(createLogInternalErrorMessage(error));
-    } else if (std::holds_alternative<StatusMessageDto>(parsed_message)) {
-        StatusMessageDto status_message_dto = std::get<StatusMessageDto>(parsed_message);
-
-        // Convert to BO and log
-        try {
-            StatusMessage status_message = DtoToBo::convert(status_message_dto);
-            std::cout << "Status message received(" << status_message.getCode()
-                      << "): " << status_message.getMessage() << std::endl
-                      << std::endl;
-        } catch (const std::exception& e) {
-            std::cerr << "Error parsing status message: " << e.what() << std::endl;
-        }
-    } else {
-        DataMessageDto data_message_dto = std::get<DataMessageDto>(parsed_message);
-
-        try {
-            // Convert to BO and process
-            DataMessage data_message =
-                DtoToBo::convert(data_message_dto, init_config_.model_config.system_data_points);
-            triple_assembler_.transformMessageToRDFTriple(data_message);
-        } catch (const std::exception& e) {
-            std::cerr << "Error parsing and transforming data message to RDF triple: " << e.what()
-                      << std::endl;
-        }
+    const auto data_message = message_service_.getDataMessageOrLogStatus(prio_message);
+    if (data_message.has_value()) {
+        triple_assembler_.transformMessageToTriple(data_message.value());
     }
 
     if (!reply_messages_queue_.empty()) {

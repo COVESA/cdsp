@@ -26,6 +26,9 @@ class Helper {
         const std::string& iso_string);
     static std::chrono::nanoseconds getNanosecondsSinceEpoch(
         const std::chrono::system_clock::time_point& timestamp);
+
+    static std::string getEnvVariable(
+        const std::string& env_var, const std::optional<std::string>& default_value = std::nullopt);
     static std::string toLowerCase(const std::string& input);
     static std::string toUppercase(const std::string& input);
     static std::string trimTrailingNewlines(const std::string& str);
