@@ -62,7 +62,7 @@ export class RequestValidator {
           schema: {...notEmptyStringRule},
           data: {},
           requestId: {type: "string"},
-          metadata: {type: "array", items: {type: "object"}},
+          metadata: {type: "object"},
           sync: {type: "string", enum: ["off", "local", "remote"]},
           timeseries: {type: "boolean"},
         },

@@ -32,7 +32,11 @@ export class IoTDBHandler extends HandlerBase {
       throw new Error("Invalid database configuration.");
     }
     this.session = new Session();
-    this.subscriptionSimulator = getSubscriptionSimulator(this.sendMessageToClient, this.createDataContentMessage, this.createStatusMessage);
+    this.subscriptionSimulator = getSubscriptionSimulator(
+      this.sendMessageToClient,
+      this.createDataContentMessage,
+      this.createStatusMessage,
+      this.sendAlreadySubscribedErrorMsg);
   }
 
   async authenticateAndConnect(): Promise<void> {
@@ -43,11 +47,24 @@ export class IoTDBHandler extends HandlerBase {
   }
 
   protected subscribe(message: SubscribeMessageType, ws: WebSocketWithId): void {
-    this.subscriptionSimulator.subscribe(message, ws);
+    const newDataPoints = this.getKnownDatapointsByPrefix(message.path);
+
+    if (newDataPoints.length === 0) {  
+      this.sendRequestedDataPointsNotFoundErrorMsg(ws, message.path)
+      return;
+    }
+
+    void this.subscriptionSimulator.subscribe(message, ws, newDataPoints);
   }
 
   protected unsubscribe(message: UnsubscribeMessageType, ws: WebSocketWithId): void {
-    this.subscriptionSimulator.unsubscribe(message, ws);
+    const dataPointsToUnsub = this.getKnownDatapointsByPrefix(message.path);
+    if (dataPointsToUnsub.length === 0) {
+      this.sendRequestedDataPointsNotFoundErrorMsg(ws, message.path)
+      return;
+    }
+
+    this.subscriptionSimulator.unsubscribe(message, ws, dataPointsToUnsub);
   }
 
   async unsubscribe_client(ws: WebSocketWithId): Promise<void> {
@@ -203,6 +220,8 @@ export class IoTDBHandler extends HandlerBase {
 
   getKnownDatapointsByPrefix(datapointPrefix: string) {
     const allKnownDataPoints: string[] = Object.keys(this.dataPointsSchema);
-    return allKnownDataPoints.filter(value => value.startsWith(datapointPrefix));
+    return allKnownDataPoints
+      .filter(field => field !== databaseParams["VSS"].dataPointId) // remove VIN from the list, so only real data points are left
+      .filter(value => value.startsWith(datapointPrefix));
   }
 }

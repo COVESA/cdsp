@@ -34,7 +34,7 @@ server.on("connection", (ws: WebSocket) => {
 
     // validation
     const validator = new RequestValidator();
-    const result = validator.validate(messageString); // new validation
+    const result = validator.validate(messageString);
 
     if (result.valid) {
       // Handle valid Message and exit

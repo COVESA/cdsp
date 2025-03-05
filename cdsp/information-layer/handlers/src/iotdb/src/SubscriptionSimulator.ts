@@ -11,9 +11,10 @@ import {
 } from "../../../../router/utils/NewMessage";
 import {ErrorMessage, STATUS_ERRORS, STATUS_SUCCESS} from "../../../../router/utils/ErrorMessage";
 import {transformSessionDataSet} from "../utils/database-helper";
+import {toResponseFormat} from "../../../utils/transformations";
 
-type SubscriptionMap = Map<string, WebSocketWithId[]>;
-
+export type Subscription = { vin: string, dataPoints: Set<string> }
+export type WebsocketToSubscriptionsMap = Map<WebSocketWithId, Subscription[]>;
 const TREE_VSS = "VSS";
 
 // Define the singleton instance at the module level
@@ -22,11 +23,17 @@ let subscriptionSimulatorInstance: SubscriptionSimulator | null = null;
 // Function to get or initialize the singleton instance
 export function getSubscriptionSimulator(
   sendMessageToClient: (ws: WebSocketWithId, message: StatusMessage | DataContentMessage | ErrorMessage) => void,
-  createDataContentMessage: (instance: string, nodes: Array<{ name: string; value: any }>, requestId?: string) => DataContentMessage,
-  createStatusMessage: (code: number, statusMessage: string, requestId?: string) => StatusMessage
-): SubscriptionSimulator {
+  createDataContentMessage: (instance: string, nodes: Array<{ name: string; value: any; }>, requestId?: string) => DataContentMessage,
+  createStatusMessage: (code: number, statusMessage: string, requestId?: string) => StatusMessage,
+  sendAlreadySubscribedErrorMsg: (ws: WebSocketWithId, vin: string, newDataPoints: string[]) => void)
+  : SubscriptionSimulator {
   if (!subscriptionSimulatorInstance) {
-    subscriptionSimulatorInstance = new SubscriptionSimulator(sendMessageToClient, createDataContentMessage, createStatusMessage);
+    subscriptionSimulatorInstance = new SubscriptionSimulator(
+      sendMessageToClient,
+      createDataContentMessage,
+      createStatusMessage,
+      sendAlreadySubscribedErrorMsg
+    );
     logMessage("SubscriptionSimulator instance created.");
   }
   return subscriptionSimulatorInstance;
@@ -36,24 +43,27 @@ export class SubscriptionSimulator {
   private intervalId: NodeJS.Timeout | null = null;
   private session: Session;
   private timeIntervalLowerLimit: number | undefined = undefined;
-  private subscriptions: SubscriptionMap = new Map();
-  private sendMessageToClient: (ws: WebSocketWithId, message: StatusMessage | DataContentMessage | ErrorMessage) => void;
-  private createDataContentMessage: (instance: string, nodes: Array<{
+  private websocketToSubscriptionsMap: WebsocketToSubscriptionsMap = new Map();
+  private readonly sendMessageToClient: (ws: WebSocketWithId, message: StatusMessage | DataContentMessage | ErrorMessage) => void;
+  private readonly createDataContentMessage: (instance: string, nodes: Array<{
     name: string;
     value: any
   }>, requestId?: string) => DataContentMessage;
-  private createStatusMessage: (code: number, statusMessage: string, requestId?: string) => StatusMessage;
+  private readonly createStatusMessage: (code: number, statusMessage: string, requestId?: string) => StatusMessage;
+  private readonly sendAlreadySubscribedErrorMsg: (ws: WebSocketWithId, vin: string, newDataPoints: string[]) => void;
 
   constructor(
     sendMessageToClient: (ws: WebSocketWithId, message: StatusMessage | DataContentMessage | ErrorMessage) => void,
     createDataContentMessage: (instance: string, nodes: Array<{ name: string; value: any }>, requestId?: string) => DataContentMessage,
-    createStatusMessage: (code: number, statusMessage: string, requestId?: string) => StatusMessage) {
+    createStatusMessage: (code: number, statusMessage: string, requestId?: string) => StatusMessage,
+    sendAlreadySubscribedErrorMsg: (ws: WebSocketWithId, vin: string, newDataPoints: string[]) => void) {
     this.session = new Session();
     this.notifyDatabaseChanges = this.notifyDatabaseChanges.bind(this);
     this.sendMessageToClient = sendMessageToClient;
     this.createDataContentMessage = createDataContentMessage;
     this.createStatusMessage = createStatusMessage;
-    this.session.authenticateAndConnect();
+    this.sendAlreadySubscribedErrorMsg = sendAlreadySubscribedErrorMsg;
+    void this.session.authenticateAndConnect();
 
     // Register the cleanup function
     process.on("exit", this.cleanup.bind(this)); // Called when the process exits normally
@@ -69,95 +79,124 @@ export class SubscriptionSimulator {
   }
 
   /**
-   * Creates a new subscription for the given websocket.
+   * Creates a new subscription for the given websocket client for provided data points and VIN (message.instance)
    *
-   * A subscription is identified by an id/tree combination key.
    * An associated client is represented by a websocket.
-   * If a subscription with this key does not exist, it is created with the client.
-   * If such a subscription already exists, but not for the given client, the client is added to the sunscription.
-   * If the subscription exists with this client, an error message is sent.
-   * If a subscription was created and there is no timer yet, a timer is started.
+   * If the subscription exists, an error message is sent.
+   * If a subscription was created and there is no timer yet, periodic database listener is enabled.
    * @param message subscribe message
    * @param wsOfNewSubscription websocket representing a client to be associated with the new subscription
+   * @param newDataPoints list of data points the client wants to subscribe to
    * @returns void
    */
-  async subscribe(message: SubscribeMessageType, wsOfNewSubscription: WebSocketWithId): Promise<void> {
-    const key = `${message.instance}-VSS`;
-    const websockets = this.subscriptions.get(key);
+  async subscribe(message: SubscribeMessageType, wsOfNewSubscription: WebSocketWithId, newDataPoints: string[]): Promise<void> {
+    const subscriptions: Subscription[] = this.websocketToSubscriptionsMap.get(wsOfNewSubscription) ?? [];
+    let subscription = subscriptions.find(value => value.vin === message.instance);
+    if (!subscription) {
+      subscription = {vin: message.instance, dataPoints: new Set()};
+      subscriptions.push(subscription); // Add to the array
+    }
 
-    if (websockets && websockets.some(ws => ws.id === wsOfNewSubscription.id)) {
-      const statusMessage = this.createStatusMessage(STATUS_ERRORS.BAD_REQUEST,
-        `Subscription already done to id ${message.instance} and tree VSS for connection ${wsOfNewSubscription.id}`);
-      this.sendMessageToClient(wsOfNewSubscription, statusMessage);
+    const alreadySubscribed = newDataPoints.every(dataPoint => subscription.dataPoints.has(dataPoint));
+    if (alreadySubscribed) {
+      this.sendAlreadySubscribedErrorMsg(wsOfNewSubscription, message.instance, newDataPoints);
       return;
     }
-    if (websockets) {
-      websockets.push(wsOfNewSubscription);
-    } else {
-      this.subscriptions.set(key, [wsOfNewSubscription]);
-    }
 
-    if (this.intervalId === null) {
-      this.intervalId = setInterval(this.notifyDatabaseChanges, databaseConfig!.pollIntervalLenInSec * 1000);
-      this.intervalId.unref(); // Ensure timer doesn't keep the process alive
-      this.timeIntervalLowerLimit = Date.now();
+    // Update subscribed data points
+    newDataPoints.forEach(dataPoint => subscription.dataPoints.add(dataPoint));
+    this.websocketToSubscriptionsMap.set(wsOfNewSubscription, subscriptions)
 
-
-      logMessage("started timer");
-    }
-
-    this.sendMessageToClient(wsOfNewSubscription,
-      this.createStatusMessage(STATUS_SUCCESS.OK, "Successfully subscribed"));
+    this.startSubscriptionListenerIfNeeded();
+    this.sendMessageToClient(wsOfNewSubscription, this.createStatusMessage(STATUS_SUCCESS.OK,
+      `Successfully subscribed to '${message.instance}' [${toResponseFormat(newDataPoints)}].`
+    ));
 
     logMessage("subscribed");
     this.logSubscriptions();
   }
 
+  private startSubscriptionListenerIfNeeded() {
+    if (this.intervalId === null) {
+      this.intervalId = setInterval(this.notifyDatabaseChanges, databaseConfig!.pollIntervalLenInSec * 1000);
+      this.intervalId.unref(); // Ensure timer doesn't keep the process alive
+      this.timeIntervalLowerLimit = Date.now();
+      logMessage("started timer");
+    }
+  }
+
   /**
-   * Removes a subscription for the given websocket.
-   *
-   * A subscription is identified by an id/tree combination key.
-   * An associated client is represented by a websocket.
-   * If a subscription with this key exists for the given client, the client is removed from the subscription.
-   * If there is no other client left for this subscription, the entire subscription is removed.
-   * If subscription does not exist, an error message is sent.
-   * If no subscription is left, the timer is stopped.
+   * Unsubscribes the client from the provided data points for given a given VIN (message.instance).
+   * If a subscription with this exists for the given client, the client is removed from the subscription.
+   * If no subscription exists, an error message is sent.
+   * If no subscriptions are left for the client, it is removed.
+   * If no clients are left, the periodic database listener is disabled.
    * @param message unsubscribe message
    * @param wsOfSubscriptionToBeDeleted websocket to be removed from subscription
+   * @param dataPointsToUnsub list of data point strings to unsubscribe the client from
    * @returns void
    */
-  unsubscribe(message: UnsubscribeMessageType, wsOfSubscriptionToBeDeleted: WebSocketWithId): void {
-    const key = `${message.instance}-VSS`;
-    const websockets = this.subscriptions.get(key);
+  unsubscribe(message: UnsubscribeMessageType, wsOfSubscriptionToBeDeleted: WebSocketWithId, dataPointsToUnsub: string[]): void {
 
-    if (!websockets) {
+    let subscription =
+      this.websocketToSubscriptionsMap.get(wsOfSubscriptionToBeDeleted)?.find(value => value.vin === message.instance);
+
+    if (!subscription) {
       this.sendMessageToClient(wsOfSubscriptionToBeDeleted, this.createStatusMessage(
-        STATUS_ERRORS.BAD_REQUEST,
-        `Cannot unsubscribe. No subscription for instance ${message.instance} and for connection ${wsOfSubscriptionToBeDeleted.id}.`
+        STATUS_ERRORS.NOT_FOUND,
+        `Cannot unsubscribe. No subscription for instance '${message.instance}'`)
+      );
+      return;
+    }
+
+    const notSubscribed = dataPointsToUnsub.every(dataPoint => !subscription.dataPoints.has(dataPoint));
+
+    if (notSubscribed) {
+      this.sendMessageToClient(wsOfSubscriptionToBeDeleted, this.createStatusMessage(
+        STATUS_ERRORS.NOT_FOUND,
+        `Cannot unsubscribe. No subscription for instance '${message.instance}' ` +
+        `and datapoints [${toResponseFormat(dataPointsToUnsub)}].`
       ));
       return;
     }
-    const index = websockets.indexOf(wsOfSubscriptionToBeDeleted);
-    if (index > -1) {
-      websockets.splice(index, 1); // remove the websocket subscription
-      if (websockets.length === 0) {
-        this.subscriptions.delete(key); // remove the key created by instance of message from cache
-      }
 
-      logMessage("unsubscribed");
-      this.removeTimerIfNoSubscription();
-      this.sendMessageToClient(
-        wsOfSubscriptionToBeDeleted,
-        this.createStatusMessage(STATUS_SUCCESS.OK, "Successfully unsubscribed"));
-
-    } else {
-      this.sendMessageToClient(wsOfSubscriptionToBeDeleted, this.createStatusMessage(
-        STATUS_ERRORS.BAD_REQUEST,
-        `Cannot unsubscribe. No subscription for instance ${message.instance} and for connection ${wsOfSubscriptionToBeDeleted.id}.`
-      ));
-    }
-
+    // Remove the data points from the subscription
+    dataPointsToUnsub.forEach((dataPoint) => subscription.dataPoints.delete(dataPoint));
+    
+    this.cleanUpEmptySubscriptions(subscription, wsOfSubscriptionToBeDeleted, message.instance);
     this.logSubscriptions();
+  }
+
+  /**
+   * Cleans up client and/or it's subscriptions if they are not needed any more.
+   * Stops the database listener if no clients are subscribed anymore.
+   * @param subscription latest modified subscription
+   * @param wsOfSubscriptionToBeDeleted websocket client
+   * @param vin VIN the clients subscribed to
+   * @private
+   */
+  private cleanUpEmptySubscriptions(subscription: any, wsOfSubscriptionToBeDeleted: WebSocketWithId, vin: string) {
+    if (subscription.dataPoints.size == 0) {
+      const subscriptions = this.websocketToSubscriptionsMap.get(wsOfSubscriptionToBeDeleted);
+      if (subscriptions) {
+        // Filter out the subscription to be deleted
+        const updatedSubscriptions = subscriptions.filter(sub => sub.vin !== vin);
+
+        if (updatedSubscriptions.length > 0) {
+          // Update the Map with the new subscriptions array
+          this.websocketToSubscriptionsMap.set(wsOfSubscriptionToBeDeleted, updatedSubscriptions);
+        } else {
+          // Remove the key from the Map if no subscriptions are left
+          this.websocketToSubscriptionsMap.delete(wsOfSubscriptionToBeDeleted);
+        }
+
+        logMessage("unsubscribed");
+        this.removeTimerIfNoSubscription();
+        this.sendMessageToClient(
+          wsOfSubscriptionToBeDeleted,
+          this.createStatusMessage(STATUS_SUCCESS.OK, "Successfully unsubscribed"));
+      }
+    }
   }
 
   /**
@@ -169,7 +208,7 @@ export class SubscriptionSimulator {
    * @param ws websocket representing a client to be removed from all subscriptions
    */
   unsubscribeClient(ws: WebSocketWithId): void {
-    this.removeWebSocketFromSubscriptions(ws);
+    this.websocketToSubscriptionsMap.delete(ws);
     this.removeTimerIfNoSubscription();
     logMessage("unsubscribed client");
     this.logSubscriptions();
@@ -180,7 +219,7 @@ export class SubscriptionSimulator {
    */
   private removeTimerIfNoSubscription() {
     if (this.intervalId !== null &&
-      this.subscriptions.size === 0) {
+      this.websocketToSubscriptionsMap.size === 0) {
       clearInterval(this.intervalId);
       this.intervalId = null;
       this.timeIntervalLowerLimit = undefined;
@@ -194,13 +233,12 @@ export class SubscriptionSimulator {
    */
   private logSubscriptions(): void {
     let logString = "subscriptions:\n";
-    for (const [key, websockets] of this.subscriptions.entries()) {
-      logString += `${key} ws ids: \n`;
-      websockets.forEach(ws =>
-        logString += `  ${ws.id} \n`
+    for (const [ws, subscriptions] of this.websocketToSubscriptionsMap.entries()) {
+      logString += `WS id: ${ws.id} is subscribed to: \n`;
+      subscriptions.forEach(sub =>
+        logString += `  ${sub.vin} => [${Array.from(sub.dataPoints).join(", ")}] \n`
       )
     }
-    ;
     logMessage(logString);
   }
 
@@ -219,39 +257,43 @@ export class SubscriptionSimulator {
     }
 
     const timeIntervalUpperLimit = Date.now();
-    for (const [key, websockets] of this.subscriptions.entries()) {
-      const [id, tree] = key.split('-');
-
-      const dataContentMessage = await this.checkForChanges(id, timeIntervalUpperLimit);
-      if (dataContentMessage) {
-        websockets.forEach(ws =>
-          this.sendMessageToClient(ws, dataContentMessage)
-        );
-      }
+    for (const [ws, subscriptions] of this.websocketToSubscriptionsMap.entries()) {
+      await Promise.all(
+        subscriptions.map(async (subscription) => {
+          let dataContentMessage = await this.checkForChanges(
+            subscription.vin, subscription.dataPoints, timeIntervalUpperLimit
+          );
+          if (dataContentMessage) {
+            this.sendMessageToClient(ws, dataContentMessage);
+          }
+        })
+      );
     }
     this.timeIntervalLowerLimit = timeIntervalUpperLimit;
   }
 
   /**
-   * Checks for changes for the given id in the last time interval.
+   * Checks for changes for the given vin in the last time interval.
    * For each change it creates an update message for each client subscribed for this data point
    * and returns the update message.
    *
-   * @param id ID to be checked
+   * @param vin VIN for checking value changes
+   * @param dataPoints data points that are changes relevant
    * @param timeIntervalUpperLimit the upper limit of the time interval to be checked
    * @returns generated update message
    */
-  private async checkForChanges(id: string, timeIntervalUpperLimit: number): Promise<DataContentMessage | undefined> {
-    const {databaseName, dataPointId} =
-      databaseParams[TREE_VSS as keyof typeof databaseParams];
+  private async checkForChanges(vin: string, dataPoints: Set<string>, timeIntervalUpperLimit: number): Promise<DataContentMessage | undefined> {
+    const {databaseName, dataPointId} = databaseParams[TREE_VSS as keyof typeof databaseParams];
 
-    const sql = `SELECT *
+    const fieldsToSearch = Array.from(dataPoints).join(", ");
+    const sql = `SELECT ${fieldsToSearch}
                  FROM ${databaseName}
-                 WHERE ${dataPointId} = '${id}'
+                 WHERE ${dataPointId} = '${vin}'
                    AND Time
                      > ${this.timeIntervalLowerLimit}
                    AND Time <= ${timeIntervalUpperLimit}
                  ORDER BY Time ASC`;
+
     let dataContentMessage = undefined;
     try {
       const sessionDataSet = await this.session.executeQueryStatement(sql);
@@ -266,9 +308,9 @@ export class SubscriptionSimulator {
       const responseNodes = transformSessionDataSet(sessionDataSet, databaseName);
       if (responseNodes.length > 0) {
         dataContentMessage = this.createDataContentMessage(
-          id, responseNodes
+          vin, responseNodes
         );
-        logMessage(`Processed ${responseNodes.length} changes for id ${id}`);
+        logMessage(`Processed ${responseNodes.length} changes for id ${vin}`);
       }
 
     } catch (error: unknown) {
@@ -278,29 +320,4 @@ export class SubscriptionSimulator {
     }
   }
 
-  /**
-   * Removes client from all subscriptions.
-   *
-   * Checks all subscriptions and removes the given client from each of them.
-   * If a subscription is left with no client, the entire subscription is removed.
-   * @param webSocketToBeRemoved websocket representing the client to be removed
-   */
-  private removeWebSocketFromSubscriptions(
-    webSocketToBeRemoved: WebSocketWithId
-  ): void {
-    for (const [key, websockets] of this.subscriptions.entries()) {
-      // Find the index of the target WebSocket in the websockets array
-      const wsIndex = websockets.findIndex(ws => ws.id === webSocketToBeRemoved.id);
-
-      // If found, remove the WebSocket from the array
-      if (wsIndex !== -1) {
-        websockets.splice(wsIndex, 1);  // Remove the WebSocket at wsIndex
-
-        // If websockets array is now empty, delete the subscription
-        if (websockets.length === 0) {
-          this.subscriptions.delete(key);
-        }
-      }
-    }
-  }
 }

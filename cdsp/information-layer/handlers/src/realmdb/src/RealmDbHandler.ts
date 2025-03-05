@@ -13,7 +13,7 @@ import {
 } from "../../../../utils/logger";
 import {WebSocketWithId} from "../../../../utils/database-params";
 import {STATUS_ERRORS, STATUS_SUCCESS} from "../../../../router/utils/ErrorMessage";
-import {replaceUnderscoresWithDots} from "../../../utils/transformations";
+import {replaceUnderscoresWithDots, toResponseFormat} from "../../../utils/transformations";
 import {
   NewMessage,
   SetMessageType,
@@ -31,31 +31,67 @@ interface Changes {
 /**
  * Parses the response from a media element change event.
  *
- * @param changes - The object containing the changed properties.
- * @param mediaElement - The media element object with updated properties.
- * @returns An array of objects, each containing the name and value of a changed property.
+ * @param subscribedProperties -  Name of properties that values should be returned
+ * @param mediaElement - The media element object with updated values.
+ * @returns An array of objects, each containing the name and value of a subscribed property.
  */
 function parseOnMediaElementChangeResponse(
-  changes: Changes,
+  subscribedProperties: Set<string>,
   mediaElement: any
 ) {
-  return changes.changedProperties.map((prop) => ({
-    name: replaceUnderscoresWithDots(prop),
-    value: mediaElement[prop],
+  return Array.from(subscribedProperties).map((dataPointName) => ({
+    name: replaceUnderscoresWithDots(dataPointName),
+    value: mediaElement[dataPointName],
   }));
 }
 
+type Subscription = { listener: any, dataPoints: Set<string> };
+
+/**
+ * Handles the db connection for each client. Each client must get its own RealmDBHandler instance to work correctly.
+ */
 export class RealmDBHandler extends HandlerBase {
-  private realm: Realm | null;
-  private listeners: Map<WebSocketWithId, Map<string, any>>;
+  private realm: Realm | null = null;
+  private instanceToSubscriptionMap: Map<string, Subscription> = new Map();
+  private mediaElementCache = new Map<string, Realm.Object>();
 
   constructor() {
     super();
     if (!databaseConfig) {
       throw new Error("Invalid database configuration.");
     }
-    this.realm = null;
-    this.listeners = new Map();
+  }
+
+  getKnownDatapointsByPrefix(prefix: string) : string[] {
+    const mediaElementSchema = this.realm?.schema.find(
+      (schema) => schema.name === mediaElementsParams["VSS"].databaseName
+    );
+    const allSchemaFields: string[] = Object.keys(mediaElementSchema?.properties ?? {})
+    // remove primary key and VIN from the list of fields, so only datapoints are left
+    const allKnownDataPoints = allSchemaFields.filter(
+      field => field !== PRIMARY_KEY && field !== mediaElementsParams["VSS"].dataPointId
+    )
+
+    if (allKnownDataPoints.length === 0) {
+      logError("Retrieving known datapoints from RealmDB was not possible. This should not happen!", new Error())
+    }
+    return allKnownDataPoints.filter(value => value.startsWith(prefix));
+  }
+
+  async getDataPointsFromDB(dataPoints: string[], instance: string): Promise<QueryResult> {
+    const mediaElement = await this.getMediaElement(instance);
+    if (!mediaElement) {
+      return {success: false, error: `No data found for instance ${instance}`}
+    }
+
+    logWithColor(`Media Element: \n ${JSON.stringify(mediaElement)}`, COLORS.GREY);
+    const responseNodes = this.extractNodes(dataPoints, mediaElement);
+    const responseNodesWithDots = responseNodes.map(node => ({
+      name: replaceUnderscoresWithDots(node.name),
+      value: node.value
+    }));
+
+    return {success: true, nodes: responseNodesWithDots};
   }
 
   async authenticateAndConnect(): Promise<void> {
@@ -83,20 +119,6 @@ export class RealmDBHandler extends HandlerBase {
     } catch (error: unknown) {
       logError("Failed to authenticate with Realm", error);
     }
-  }
-
-  getKnownDatapointsByPrefix(prefix: string) {
-    const mediaElementSchema = this.realm?.schema.find(
-      (schema) => schema.name === mediaElementsParams["VSS"].databaseName
-    );
-    const allSchemaFields: string[] = Object.keys(mediaElementSchema?.properties ?? {})
-    // remove primary key from the list of fields, so only datapoints are left
-    const allKnownDataPoints = allSchemaFields.filter(field => field !== PRIMARY_KEY)
-
-    if (allKnownDataPoints.length === 0) {
-      logError("Retrieving known datapoints from RealmDB was not possible. This should not happen!", new Error())
-    }
-    return allKnownDataPoints.filter(value => value.startsWith(prefix));
   }
 
   protected async set(message: SetMessageType, ws: WebSocketWithId): Promise<void> {
@@ -144,116 +166,144 @@ export class RealmDBHandler extends HandlerBase {
   }
 
   protected async subscribe(message: SubscribeMessageType, ws: WebSocketWithId): Promise<void> {
-    let responseMessage: StatusMessage;
-    try {
-      const mediaElement = await this.getMediaElement(message.instance);
-
-      if (mediaElement) {
-        const objectId = mediaElement._id;
-        if (!mediaElementsParams["VSS"]) {
-          const errorMessage = "Tree does not exist in mediaElementsParams";
-          logErrorStr(errorMessage);
-          const statusMessage = this.createStatusMessage(STATUS_ERRORS.NOT_FOUND, errorMessage);
-          this.sendMessageToClient(ws, statusMessage);
-          return;
-        }
-
-        const {databaseName, dataPointId} = mediaElementsParams["VSS"];
-
-        if (!this.listeners.has(ws)) {
-          this.listeners.set(ws, new Map());
-        }
-
-        if (!this.listeners.get(ws)?.has(message.instance)) {
-          logWithColor(
-            `Subscribing element: Object ID: ${objectId} with ${dataPointId}: '${message.instance}' on ${databaseName}`,
-            COLORS.GREY
-          );
-
-          const listener = (mediaElement: any, changes: Changes) =>
-            this.onMediaElementChange(
-              mediaElement,
-              changes,
-              message.instance,
-              ws
-            );
-
-          mediaElement.addListener(listener);
-
-          this.listeners.get(ws)?.set(message.instance, {
-            objectId: objectId,
-            mediaElement: mediaElement,
-            listener: listener,
-          });
-
-          responseMessage = this.createStatusMessage(STATUS_SUCCESS.OK, "Successfully subscribed");
-
-          logWithColor(
-            `Subscription added! Amount Clients: ${this.listeners.size}`,
-            COLORS.GREY
-          );
-        } else {
-          responseMessage = this.createStatusMessage(STATUS_ERRORS.SERVICE_UNAVAILABLE,
-            `Subscription already done to ${dataPointId}: '${message.instance}'`);
-        }
-      } else {
-        responseMessage = this.createStatusMessage(STATUS_ERRORS.SERVICE_UNAVAILABLE,
-          "Object not found");
-      }
-    } catch (error: unknown) {
-      const errMsg = error instanceof Error ? error.message : "Unknown error";
-      responseMessage = this.createStatusMessage(STATUS_ERRORS.SERVICE_UNAVAILABLE,
-        `Subscription process could not finish, try again: ${errMsg}`);
-    }
-    this.sendMessageToClient(ws, responseMessage)
-  }
-
-  protected async unsubscribe(message: UnsubscribeMessageType, ws: WebSocketWithId): Promise<void> {
-    if (!mediaElementsParams["VSS"]) {
-      const errorMessage = "Tree does not exist in mediaElementsParams";
-      logErrorStr(errorMessage);
-      const statusMessage = this.createStatusMessage(STATUS_ERRORS.NOT_FOUND, errorMessage);
-      this.sendMessageToClient(ws, statusMessage);
+    const newDataPoints = this.getKnownDatapointsByPrefix(message.path);
+    if (newDataPoints.length === 0) {
+      this.sendRequestedDataPointsNotFoundErrorMsg(ws, message.path)
       return;
     }
 
-    const {databaseName, dataPointId} = mediaElementsParams["VSS"];
+    let subscription = this.instanceToSubscriptionMap.get(message.instance) ?? {
+      listener: undefined,
+      dataPoints: new Set<string>()
+    };
 
-    let responseMessage: StatusMessage;
-    if (this.listeners.has(ws)) {
-      const wsListeners = this.listeners.get(ws);
-      if (wsListeners?.has(message.instance)) {
-        const listener = wsListeners.get(message.instance);
-        logWithColor(
-          `Unsubscribing element: Object ID: ${listener.objectId} with ${dataPointId}: '${message.instance}' on ${databaseName}`,
-          COLORS.GREY
-        );
-        listener.mediaElement.removeListener(listener.listener);
-        wsListeners.delete(message.instance);
-
-        if (wsListeners.size === 0) {
-          this.listeners.delete(ws);
-        }
-
-        logWithColor(`Subscription removed! Amount Clients: ${this.listeners.size}`, COLORS.GREY);
-        responseMessage = this.createStatusMessage(STATUS_SUCCESS.OK, "Successfully unsubscribed");
-      } else {
-        responseMessage = this.createStatusMessage(STATUS_ERRORS.BAD_REQUEST,
-          `No subscription found for VIN: ${message.instance}`);
-      }
-    } else {
-      responseMessage = this.createStatusMessage(STATUS_ERRORS.BAD_REQUEST,
-        `No subscription found for this client`);
+    const alreadySubscribed = newDataPoints.every((dataPoint: string) => subscription.dataPoints.has(dataPoint));
+    if (alreadySubscribed) {
+      this.sendAlreadySubscribedErrorMsg(ws, message.instance, newDataPoints)
+      return;
     }
-    this.sendMessageToClient(ws, responseMessage);
+
+    // Update subscribed data points
+    newDataPoints.forEach(dataPoint => subscription.dataPoints.add(dataPoint));
+
+    // Update listener
+    const responseMessage = await this.updateDBListenerAndCreateResponseMsg(message.instance, subscription, ws);
+    this.sendMessageToClient(ws, responseMessage)
+    this.logCurrentSubscriptions(ws.id);
+  }
+
+  protected async unsubscribe(message: UnsubscribeMessageType, ws: WebSocketWithId): Promise<void> {
+    const dataPointsToUnsub = this.getKnownDatapointsByPrefix(message.path);
+    if (dataPointsToUnsub.length === 0) {
+      this.sendRequestedDataPointsNotFoundErrorMsg(ws, message.path)
+      return;
+    }
+
+    let subscription = this.instanceToSubscriptionMap.get(message.instance);
+    if (!subscription) {
+      this.sendMessageToClient(ws, this.createStatusMessage(
+        STATUS_ERRORS.NOT_FOUND,
+        `Cannot unsubscribe. No subscription for instance '${message.instance}'`)
+      );
+      return;
+    }
+
+    const notSubscribed = dataPointsToUnsub.every(dataPoint => !subscription.dataPoints.has(dataPoint));
+    if (notSubscribed) {
+      this.sendMessageToClient(ws, this.createStatusMessage(
+        STATUS_ERRORS.NOT_FOUND,
+        `Cannot unsubscribe. No subscription for instance '${message.instance}' ` +
+        `and datapoints [${toResponseFormat(dataPointsToUnsub)}].`
+      ));
+      return;
+    }
+
+    // Remove the data points from the subscription
+    dataPointsToUnsub.forEach((dataPoint) => subscription.dataPoints.delete(dataPoint));
+
+    let responseMessage;
+    if (subscription.dataPoints.size > 0) {
+      responseMessage = await this.updateDBListenerAndCreateResponseMsg(message.instance, subscription, ws);
+    } else {
+      responseMessage = await this.removeDBListenerAndCreateResponseMsg(message.instance, subscription)
+    }
+
+    this.sendMessageToClient(ws, responseMessage)
+    this.logCurrentSubscriptions(ws.id)
   }
 
   async unsubscribe_client(ws: WebSocketWithId): Promise<void> {
-    this.listeners.delete(ws);
-    logWithColor(
-      `All client subscriptions removed! Amount Clients: ${this.listeners.size}`,
-      COLORS.GREY
-    );
+    for (const [instance, subscription] of this.instanceToSubscriptionMap.entries()) {
+      await this.removeDBListenerAndCreateResponseMsg(instance, subscription);
+    }
+    this.logCurrentSubscriptions(ws.id)
+  }
+
+  private async updateDBListenerAndCreateResponseMsg(instance: string, subscription: Subscription, ws: WebSocketWithId) {
+    let responseMessage: StatusMessage;
+    try {
+      const mediaElement = await this.getMediaElement(instance);
+      if (!mediaElement) {
+        return this.createStatusMessage(STATUS_ERRORS.NOT_FOUND,
+          `Instance ${instance} does not exist in Database.`);
+      }
+
+      // remove current listener if existent 
+      if (subscription.listener) {
+        mediaElement.removeListener(subscription.listener);
+      }
+
+      const newListener = this.createNewListener(subscription, instance, ws);
+      subscription.listener = newListener;
+      mediaElement.addListener(subscription.listener);
+
+      // Store current subscription
+      this.instanceToSubscriptionMap.set(instance, subscription)
+      responseMessage = this.createStatusMessage(STATUS_SUCCESS.OK, "Subscription changed successfully.");
+
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : "Unknown error";
+      return this.createStatusMessage(STATUS_ERRORS.SERVICE_UNAVAILABLE,
+        `Subscription process could not finish, try again: ${errMsg}`);
+    }
+    return responseMessage;
+  }
+
+  private async removeDBListenerAndCreateResponseMsg(instance: string, subscription: Subscription) {
+    const mediaElement = await this.getMediaElement(instance);
+    if (!mediaElement) {
+      return this.createStatusMessage(STATUS_ERRORS.NOT_FOUND,
+        `Instance ${instance} does not exist in Database.`);
+    }
+
+    // remove current listener if existent 
+    if (subscription.listener) {
+      mediaElement.removeListener(subscription.listener);
+    }
+
+    this.instanceToSubscriptionMap.delete(instance);
+
+    return this.createStatusMessage(STATUS_SUCCESS.OK, "Subscription changed successfully.");
+  }
+
+  /**
+   * Create a new listener that notifies the client if any subscribed data points are changed.
+   */
+  private createNewListener(subscription: Subscription, instance: string, ws: WebSocketWithId) {
+    return (mediaElement: any, changes: Changes) => {
+      const changedSubscribedDatapoints = changes.changedProperties.filter(field => subscription.dataPoints.has(field));
+      if (changes.deleted) {
+        logWithColor(`Media element for ${instance} was deleted`, COLORS.YELLOW);
+      } else if (changedSubscribedDatapoints.length > 0) {
+        logMessage(`Media element for ${instance} changed`, LogMessageType.RECEIVED, `Web-Socket Connection Event Received`);
+        this.notifyClientOfDataPointChanges(
+          mediaElement,
+          instance,
+          ws,
+          subscription.dataPoints
+        );
+      }
+    };
   }
 
   /**
@@ -284,23 +334,6 @@ export class RealmDBHandler extends HandlerBase {
     return true;
   }
 
-  async getDataPointsFromDB(dataPoints: string[], vin: string): Promise<QueryResult> {
-    const mediaElement = await this.getMediaElement(vin);
-    if (!mediaElement) {
-      return {success: false, error: `No data found with the Id: ${vin}`}
-    }
-
-    logWithColor(`Media Element: \n ${JSON.stringify(mediaElement)}`, COLORS.GREY);
-    const responseNodes = this.extractNodes(dataPoints, mediaElement);
-    const responseNodesWithDots = responseNodes.map(node => ({
-      name: replaceUnderscoresWithDots(node.name),
-      value: node.value
-    }));
-
-    return {success: true, nodes: responseNodesWithDots};
-  }
-
-
   /**
    * Extract from the media element the requested datapoints with their values
    *
@@ -309,10 +342,7 @@ export class RealmDBHandler extends HandlerBase {
    * @returns - A list of nodes (name-value pairs) from a media element for provided list of datapoints.
    * @private
    */
-  private extractNodes(
-    requestedDataPoints: string[],
-    mediaElement: any
-  ): { name: string; value: any }[] {
+  private extractNodes(requestedDataPoints: string[], mediaElement: any): { name: string; value: any }[] {
     const data: { name: string; value: any }[] = [];
     requestedDataPoints.forEach((dataPoint) => {
       data.push({
@@ -325,16 +355,27 @@ export class RealmDBHandler extends HandlerBase {
 
   /**
    * Asynchronously retrieves a media element from the database based on the provided vin.
+   * Using a cache ensures that on consecutive calls the same media element reference is returned.
    *
    * @param vin - VIN
    * @returns - The media element object from the database for provided VIN
    * @private
    */
-  private async getMediaElement(vin: string): Promise<any> {
+  private async getMediaElement(vin: string): Promise<Realm.Object | undefined> {
     try {
+      if (this.mediaElementCache.has(vin)) {
+        return this.mediaElementCache.get(vin);
+      }
+
       const {databaseName, dataPointId} = mediaElementsParams["VSS"];
-      return this.realm?.objects(databaseName)
+      const mediaElement = this.realm?.objects(databaseName)
         .filtered(`${dataPointId} = '${vin}'`)[0];
+
+      if (mediaElement) {
+        this.mediaElementCache.set(vin, mediaElement);
+      }
+      return mediaElement;
+
     } catch (error: unknown) {
       logError("Error trying to get media element from Realm", error);
     }
@@ -343,32 +384,27 @@ export class RealmDBHandler extends HandlerBase {
   /**
    * Handles changes to a media element and sends update messages to clients.
    * @param mediaElement - The media element that has changed.
-   * @param changes - An object containing information about the changes.
    * @param instance - Vehicle identifier for the client message.
    * @param ws - The WebSocket object for communication.
+   * @param subscribedDataPoints
    */
-  private onMediaElementChange(
-    mediaElement: any,
-    changes: Changes,
-    instance: string,
-    ws: WebSocketWithId
+  private notifyClientOfDataPointChanges(
+    mediaElement: any, instance: string, ws: WebSocketWithId, subscribedDataPoints: Set<string>
   ): void {
-    logMessage(
-      "Media element changed",
-      LogMessageType.RECEIVED,
-      `Web-Socket Connection Event Received`
+
+    const responseNodes = parseOnMediaElementChangeResponse(
+      subscribedDataPoints,
+      mediaElement
     );
-    if (changes.deleted) {
-      logWithColor("MediaElement is deleted", COLORS.YELLOW);
-    } else {
-      if (changes.changedProperties.length > 0) {
-        const responseNodes = parseOnMediaElementChangeResponse(
-          changes,
-          mediaElement
-        );
-        const dataContentMessage = this.createDataContentMessage(instance, responseNodes);
-        this.sendMessageToClient(ws, dataContentMessage);
-      }
+    const dataContentMessage = this.createDataContentMessage(instance, responseNodes);
+    this.sendMessageToClient(ws, dataContentMessage);
+  }
+
+  private logCurrentSubscriptions(clientID: string) {
+    let logString = `Subscriptions of client ${clientID}:\n`;
+    for (const [instance, sub] of this.instanceToSubscriptionMap.entries()) {
+      logString += `${instance} =>  [${Array.from(sub.dataPoints).join(", ")}] \n`;
     }
+    logWithColor(logString, COLORS.ORANGE);
   }
 }

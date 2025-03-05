@@ -16,3 +16,11 @@
     return str.replace(/\./g, "_");
   }
 
+  /**
+   * Takes an array of strings. Replaces all underscores with dots and joins the strings with separator ', '.
+   * @param strings - list of strings
+   * @returns - transformed and joint string
+   */
+  export function toResponseFormat(strings :string[]): string {
+    return replaceUnderscoresWithDots(strings.join(", "));
+  }

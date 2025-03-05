@@ -14,7 +14,7 @@ import {DataPointSchema, WebSocketWithId} from "../../utils/database-params"
 import {ErrorMessage, STATUS_ERRORS} from "../../router/utils/ErrorMessage";
 import {getDataPointsPath} from "../config/config";
 import {logMessage, LogMessageType} from "../../utils/logger";
-import {replaceDotsWithUnderscore, replaceUnderscoresWithDots} from "../utils/transformations";
+import {replaceDotsWithUnderscore, replaceUnderscoresWithDots, toResponseFormat} from "../utils/transformations";
 import {databaseParams} from "./iotdb/config/database-params";
 
 export abstract class HandlerBase {
@@ -43,10 +43,7 @@ export abstract class HandlerBase {
     const requestedDataPoints = this.getKnownDatapointsByPrefix(message.path);
 
     if (requestedDataPoints.length === 0) { // no valid datapoints found for requested path 
-      this.sendMessageToClient(ws, this.createStatusMessage(
-        STATUS_ERRORS.BAD_REQUEST,
-        `There are no known datapoints with prefix ${replaceUnderscoresWithDots(message.path)}`
-      ));
+      this.sendRequestedDataPointsNotFoundErrorMsg(ws, message.path);
       return;
     }
 
@@ -54,6 +51,20 @@ export abstract class HandlerBase {
     const queryResult = await this.getDataPointsFromDB(requestedDataPoints, message.instance);
 
     this.sendGetResponseToClient(queryResult, message.instance, requestedDataPoints, ws);
+  }
+
+  protected sendRequestedDataPointsNotFoundErrorMsg(ws: WebSocketWithId, path: string) {
+    this.sendMessageToClient(ws, this.createStatusMessage(
+      STATUS_ERRORS.BAD_REQUEST,
+      `There are no known datapoints with prefix ${replaceUnderscoresWithDots(path)}`
+    ));
+  }
+  
+  protected sendAlreadySubscribedErrorMsg(ws: WebSocketWithId, instance: string, newDataPoints: string[]) {
+    const statusMessage = this.createStatusMessage(STATUS_ERRORS.BAD_REQUEST,
+      `Subscription already done to instance '${instance}' ` +
+      `and datapoints [${toResponseFormat(newDataPoints)}].`);
+    this.sendMessageToClient(ws, statusMessage);
   }
 
   protected set(message: SetMessageType, ws: WebSocketWithId): void {
@@ -77,7 +88,7 @@ export abstract class HandlerBase {
       switch (message.type) {
         case "get":
           const aGetMessage = ensureMessageType<GetMessageType>(message, NewMessageType.Get);
-          this.get(aGetMessage, ws);
+          void this.get(aGetMessage, ws);
           break;
         case "set":
           const aSetMessage = ensureMessageType<SetMessageType>(message, NewMessageType.Set);
