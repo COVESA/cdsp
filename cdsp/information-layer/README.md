@@ -127,14 +127,14 @@ Schema:
 # only the root node provided to get all data points
 {
   "type": "get",
-  "instance": "WBY11CF080CH470711_test1",
+  "instance": "VIN_123",
   "schema": "Vehicle",
   "requestId": "123-456"
 }
 # with path to non-leaf node to get multiple data points below this node
 {
   "type": "get",
-  "instance": "WBY11CF080CH470711_test1",
+  "instance": "VIN_123",
   "schema": "Vehicle",
   "path": "CurrentLocation",
   "requestId": "123-456"
@@ -142,16 +142,16 @@ Schema:
 # with path to leaf node to get one data point
 {
   "type": "get",
-  "instance": "WBY11CF080CH470711_test1",
+  "instance": "VIN_123",
   "schema": "Vehicle",
   "path": "CurrentLocation.Latitude",
   "requestId": "123-456"
   }
 ```
 
-Example (websocat currently not working because of racing condition between DB connection creation and DB request):
+Example:
 ```bash
-echo '{"type": "get","instance": "WBY11CF080CH470711_test1","schema": "Vehicle","path": "Speed","requestId": "123-456"}' | websocat ws://localhost:8080 | jq
+echo '{"type": "get","instance": "VIN_123","schema": "Vehicle","path": "Speed","requestId": "123-456"}' | websocat ws://localhost:8080 -n1 | jq
 ```
 
 ## Set
@@ -162,7 +162,7 @@ Schema:
 {
   "type": "set",
   "path": "CurrentLocation.Latitude",
-  "instance": "WBY11CF080CH470711_test1",
+  "instance": "VIN_123",
   "schema": "Vehicle",
   "data": 21,
   "requestId": "235-183"
@@ -170,7 +170,7 @@ Schema:
 # root node with multiple values in data nested and flat (no path provided)
 {
   "type": "set",
-  "instance": "WBY11CF080CH470711_test1",
+  "instance": "VIN_123",
   "schema": "Vehicle",
   "data": {
     "CurrentLocation": {
@@ -184,7 +184,7 @@ Schema:
 # non-leaf node with multiple values in data
 {
   "type": "set",
-  "instance": "WBY11CF080CH470711_test1",
+  "instance": "VIN_123",
   "schema": "Vehicle",
   "path": "CurrentLocation",
   "data": {
@@ -196,7 +196,7 @@ Schema:
 ```
 Example:
 ```bash
-echo '{"type": "set","path": "CurrentLocation.Latitude","instance": "WBY11CF080CH470711_test1","schema": "Vehicle","data": 21}' | websocat ws://localhost:8080 | jq
+echo '{"type": "set","path": "CurrentLocation.Latitude","instance": "VIN_123","schema": "Vehicle","data": 21}' | websocat ws://localhost:8080 -n1 | jq
 ```
 ```yaml
 {
@@ -216,9 +216,12 @@ Schema:
 ```yaml
 {
   "type": "subscribe",
-  "instance": "WBY11CF080CH470711_test1",
+  "instance": "VIN_123",
   "schema": "Vehicle"
 }
+```
+```bash
+echo '{"type": "subscribe", "instance": "VIN_123", "schema": "Vehicle"}' | websocat ws://localhost:8080 -n | jq 
 ```
 
 On success:
@@ -239,7 +242,7 @@ On success:
 {
   "type": "unsubscribe",
   "schema": "Vehicle",
-  "instance": "WBY11CF080CH470711_test1"
+  "instance": "VIN_123"
 }
 ```
 

@@ -10,7 +10,8 @@ import {
   logErrorStr,
 } from "../../utils/logger";
 import {WebSocketWithId} from "../../utils/database-params";
-import {ErrorMessage, STATUS_ERRORS} from "../utils/ErrorMessage";
+import {STATUS_ERRORS} from "../utils/ErrorMessage";
+import {HandlerBase} from "../../handlers/src/HandlerBase";
 // WebSocket server creation
 const server = new WebSocket.Server({port: 8080});
 
@@ -19,16 +20,28 @@ const clients = new Map<string, WebSocket>();
 
 // Handle new client connections
 server.on("connection", (ws: WebSocket) => {
+  // Temporarily pause the WebSocket connection to prevent processing incoming messages 
+  // until authentication is successfully completed. Once authenticated, resume the connection.
+  ws.pause()
+
   // add an uuid to the websocket connection
   const wsWithId = addIdToWebsocket(ws);
   const connectionId = wsWithId.id;
   clients.set(connectionId, ws); // Add client to the Map
   const handler = createHandler();
-  handler.authenticateAndConnect();
-  logWithColor(`Client connected and authenticated with id ${connectionId}`, COLORS.YELLOW);
 
   // Handle messages from the client
-  ws.on("message", (message: WebSocket.RawData) => {
+  ws.on("message", handleMessage(connectionId, handler, wsWithId, ws));
+
+  // Handle client disconnection
+  ws.on("close", handleCloseConnection(handler, wsWithId, connectionId));
+
+  handler.authenticateAndConnect().then(_ => ws.resume()); // continue message processing
+  logWithColor(`Client connected and authenticated with id ${connectionId}`, COLORS.YELLOW);
+});
+
+function handleMessage(connectionId: string, handler: HandlerBase, wsWithId: WebSocketWithId, ws: WebSocket) {
+  return (message: WebSocket.RawData) => {
     let messageString = rawDataToString(message);
     logMessage(JSON.stringify(messageString), LogMessageType.RECEIVED, connectionId);
 
@@ -53,16 +66,16 @@ server.on("connection", (ws: WebSocket) => {
       }
       ws.send(JSON.stringify(statusMessage));
     });
+  };
+}
 
-  });
-
-  // Handle client disconnection
-  ws.on("close", () => {
+function handleCloseConnection(handler: HandlerBase, wsWithId: WebSocketWithId, connectionId: string) {
+  return () => {
     handler.unsubscribe_client(wsWithId); // Remove all client listeners
     clients.delete(connectionId);
     logWithColor(`Client disconnected with ID ${connectionId}`, COLORS.ORANGE);
-  });
-});
+  };
+}
 
 // Log server start
 logWithColor(`Web-Socket server started on ws://localhost:8080\n`, COLORS.BOLD);

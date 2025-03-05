@@ -32,7 +32,7 @@ export abstract class HandlerBase {
   abstract getDataPointsFromDB(dataPoints: string[], vin: string): Promise<QueryResult>;
 
   // Default implementations of required functions
-  authenticateAndConnect(): void {
+  async authenticateAndConnect(): Promise<void> {
     logMessage(
       "authenticateAndConnect() is not implemented",
       LogMessageType.WARNING
