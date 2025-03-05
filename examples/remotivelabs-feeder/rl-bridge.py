@@ -103,22 +103,32 @@ async def websocket_handler(element_id: str):
 
                 # Prepare WebSocket data format
                 websocket_data = {
-                    "type": "write",
-                    "tree": "VSS",
-                    "id": element_id,
-                    "uuid": "rl-bridge",
+                    "type": "set",
+                    "instance": element_id,
                 }
 
                 if len(signal_map) == 1:
                     signal_name, signal_value = next(iter(signal_map.items()))
-                    websocket_data["node"] = {
-                        "name": signal_name,
-                        "value": signal_value,
-                    }
+                    schema, _, path = signal_name.partition('.')
+                    websocket_data["schema"] = schema
+                    websocket_data["path"] = path
+                    websocket_data["data"] = signal_value
                 else:
-                    websocket_data["nodes"] = [
-                        {"name": name, "value": value} for name, value in signal_map.items()
-                    ]
+                    # take any signal to extract the root path, that should be identical for all cases
+                    common_prefix, _ = next(iter(signal_map)).split('.', 1)
+                    websocket_data["schema"] = common_prefix.rstrip('.')
+                    websocket_data["data"] = {}
+
+                    for name, value in signal_map.items():
+                        parts = name.split('.')
+                        current_level = websocket_data["data"]
+                        # Traverse through the parts except the first and last one, creating nested dictionaries as needed.
+                        # First part can be removed, because it is used in the websocket_data["path"] field.
+                        # Last part is stored not as dictionary, but as a value.
+                        for part in parts[1:-1]:
+                            current_level = current_level.setdefault(part, {})
+                        # Set the value for the last part in the hierarchy
+                        current_level[parts[-1]] = value
 
                 signal_map.clear()
 
@@ -129,7 +139,7 @@ async def websocket_handler(element_id: str):
 
                 response = await websocket.recv()
                 response_data = json.loads(response)
-                if response_data.get("type") != "update":
+                if response_data.get("code") != 200:
                     safe_exit(f"Unexpected response from information-layer: {response}")
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
                 print(f"{timestamp} Received response from information-layer: {response}")
@@ -215,50 +225,50 @@ def main():
     parser = argparse.ArgumentParser(description="Provide address to RemotiveBroker")
 
     parser.add_argument(
-        "-u", 
-        "--url", 
+        "-u",
+        "--url",
         help="URL of the RemotiveBroker",
-        type=str, 
+        type=str,
         required=False,
         default="http://127.0.0.1:50051",
     )
 
     parser.add_argument(
-        "-x", 
-        "--x_api_key", 
+        "-x",
+        "--x_api_key",
         help="API key is required when accessing brokers running in the cloud",
-        type=str, 
+        type=str,
         required=False,
         default=None,
     )
 
     parser.add_argument(
-        "-t", 
-        "--access_token", 
+        "-t",
+        "--access_token",
         help="Personal or service-account access token",
-        type=str, 
+        type=str,
         required=False,
         default=None,
     )
 
     parser.add_argument(
-        "-s", 
-        "--signals", 
+        "-s",
+        "--signals",
         help="Signal to subscribe to",
-        required=True, 
+        required=True,
         nargs="*",
     )
 
     parser.add_argument(
-        "-o", 
-        "--output_mode", 
+        "-o",
+        "--output_mode",
         help="Output sent to iotdb or information-layer",
-        choices=["iotdb", "information-layer"], 
+        choices=["iotdb", "information-layer"],
         required=True,
     )
 
     parser.add_argument(
-        "-i", 
+        "-i",
         "--id",
         help="ID to which signals are related to (only information-layer mode)",
         type=str,

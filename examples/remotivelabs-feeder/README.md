@@ -46,22 +46,22 @@ RemotiveLabs have both a Cloud Demo and a Free Tier with pre-recorded datasets t
 Passing the `-h` parameter to the bridge will display the command line options:
 ```
 python3 rl-bridge.py -h
-usage: rl-bridge.py [-h] [-u URL] [-x X_API_KEY] [-t ACCESS_TOKEN] -s [SIGNALS [SIGNALS ...]] -o {iotdb,websocket} [-i ID]
+usage: rl-bridge.py [-h] [-u URL] [-x X_API_KEY] [-t ACCESS_TOKEN] -s [SIGNALS ...] -o {iotdb,information-layer} [-i ID]
 
 Provide address to RemotiveBroker
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
-  -u URL, --url URL     URL of the RemotiveBroker
-  -x X_API_KEY, --x_api_key X_API_KEY
+  -u, --url URL         URL of the RemotiveBroker
+  -x, --x_api_key X_API_KEY
                         API key is required when accessing brokers running in the cloud
-  -t ACCESS_TOKEN, --access_token ACCESS_TOKEN
+  -t, --access_token ACCESS_TOKEN
                         Personal or service-account access token
-  -s [SIGNALS [SIGNALS ...]], --signals [SIGNALS [SIGNALS ...]]
+  -s, --signals [SIGNALS ...]
                         Signal to subscribe to
-  -o {iotdb,websocket}, --output_mode {iotdb,websocket}
-                        Output mode: 'iotdb' to write to IoTDB, 'websocket' to send data to WebSocket.
-  -i ID, --id ID        Element ID to include in WebSocket data. Required when output_mode is 'websocket'.                        
+  -o, --output_mode {iotdb,information-layer}
+                        Output sent to iotdb or information-layer
+  -i, --id ID           ID to which signals are related to (only information-layer mode)
 ```
 Tip: To avoid displaying RemotiveLabs Broker secrets on the command line you can pass them using export variables, e.g:
 ```
@@ -99,21 +99,22 @@ More typically you would change `device_id_` if needed to reflect how you are or
 For sending data to the information-layer the websocket server has to listen on `ws://localhost:8080`.
 
 ### Signal subscription examples
-#### Single signal IoTDB
+#### Single signal to IoTDB
 Execute the bridge and subscribe to the signal `Vehicle.Speed` in the namespace `vss`:
 ```
 python3 rl-bridge.py --url $RL_BROKER_URL --x_api_key $RL_API_KEY -o iotdb --signals vss:Vehicle.Speed
 ```
 
-#### Multiple signals IoTDB
+#### Multiple signals to IoTDB
 Execute the bridge and subscribe to all supported VSS signals in the RemotiveLabs dataset example `Night drive to Luftkastellet`:
 ```
 python3 rl-bridge.py --url $RL_BROKER_URL --x_api_key $RL_API_KEY -o iotdb --signals vss:Vehicle.Speed vss:Vehicle.Chassis.Accelerator.PedalPosition vss:Vehicle.Powertrain.Transmission.CurrentGear vss:Vehicle.Powertrain.TractionBattery.NominalVoltage vss:Vehicle.Powertrain.TractionBattery.StateOfCharge.CurrentEnergy vss:Vehicle.Chassis.SteeringWheel.Angle vss:Vehicle.CurrentLocation.Longitude vss:Vehicle.CurrentLocation.Latitude
 ```
 
-#### Single signal websocket
-python3 rl-bridge.py --url $RL_BROKER_URL --x_api_key $RL_API_KEY -o websocket --signals vss:Vehicle.Speed -i TEST_VEHICLE
-
+#### Single signal to websocket (Information Layer)
+```
+python3 rl-bridge.py --url $RL_BROKER_URL --x_api_key $RL_API_KEY -o information-layer --signals vss:Vehicle.Speed -i TEST_VEHICLE
+```
 #### Errors
 If the requested signal or namespace name is not available in the broker an error will be reported:
 ```
@@ -135,7 +136,7 @@ The following example takes you through the steps of playing the RemotiveLabs da
 
 4. Execute the bridge for the signals you wish to subscribe too:
 ```
-python3 rl-bridge.py --url $RL_BROKER_URL --x_api_key $RL_API_KEY -iotdb --signals vss:Vehicle.Speed vss:Vehicle.Chassis.Accelerator.PedalPosition vss:Vehicle.Powertrain.Transmission.CurrentGear vss:Vehicle.Powertrain.TractionBattery.NominalVoltage vss:Vehicle.Powertrain.TractionBattery.StateOfCharge.CurrentEnergy vss:Vehicle.Chassis.SteeringWheel.Angle vss:Vehicle.CurrentLocation.Longitude vss:Vehicle.CurrentLocation.Latitude
+python3 rl-bridge.py --url $RL_BROKER_URL --x_api_key $RL_API_KEY -o iotdb --signals vss:Vehicle.Speed vss:Vehicle.Chassis.Accelerator.PedalPosition vss:Vehicle.Powertrain.Transmission.CurrentGear vss:Vehicle.Powertrain.TractionBattery.NominalVoltage vss:Vehicle.Powertrain.TractionBattery.StateOfCharge.CurrentEnergy vss:Vehicle.Chassis.SteeringWheel.Angle vss:Vehicle.CurrentLocation.Longitude vss:Vehicle.CurrentLocation.Latitude
 ```
 5. The bridge will report that it is waiting to receive signals:
 ```
@@ -155,6 +156,9 @@ Broker connection and subscription setup completed, waiting for signals...
 ```
 #### Stop the bridge:
 8. To exit the bridge, e.g. when playback has finished, press the keyboard interrupt (Ctrl-C).
+
+#### Known Errors
+Startup of the bridge fails sometimes (when sending signals to Information Layer) if the playback is already going on. Solution is to pause the playback, start the bridge and then to continue the playback. 
 
 #### Tips
 Tip: Playback can be paused and restarted at any time.

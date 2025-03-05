@@ -1,3 +1,4 @@
 remotivelabs-broker == 0.1.21
 thrift >= 0.14.1
 apache-iotdb >= 1.2.1
+websockets >= 15.0
