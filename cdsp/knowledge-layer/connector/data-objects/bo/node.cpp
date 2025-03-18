@@ -1,6 +1,7 @@
 #include "node.h"
 
 #include <algorithm>
+#include <stdexcept>
 /**
  * @brief Constructs a new Node object.
  *
