@@ -16,12 +16,16 @@ RUN wget https://archives.boost.io/release/1.87.0/source/boost_1_87_0.tar.gz \
 
 WORKDIR /src
 
-COPY . .
+COPY connector connector
+COPY numeric-analyzer numeric-analyzer
+COPY symbolic-reasoner symbolic-reasoner
+COPY third_party third_party
+COPY common-test-resources common-test-resources
+COPY CMakeLists.txt .
 
 WORKDIR /src/build
 
 RUN cmake -DCMAKE_BUILD_TYPE=Release .. && make reasoner_client -j8
 
-RUN ln -s /src/build/bin/reasoner_client /usr/local/bin/reasoner_client
+ENTRYPOINT ["/src/build/bin/reasoner_client"]
 
-CMD ["reasoner_client"]
