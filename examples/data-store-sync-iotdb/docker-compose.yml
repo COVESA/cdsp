@@ -1,0 +1,44 @@
+name: cdsp-data-store-sync-iotdb
+services:
+
+  vehicle-hpc-iotdb-service:
+    extends:
+      file: ../../docker/docker-compose-cdsp.yml
+      service: iotdb-service
+    hostname: hpc-iotb-service
+    container_name: hpc-iotdb-service
+    build:
+      args:
+        SERVICE_HOSTNAME: hpc-iotdb-service
+    environment:
+      - cn_internal_address=hpc-iotdb-service
+      - cn_seed_config_node=hpc-iotdb-service:10710
+      - dn_rpc_address=hpc-iotdb-service
+      - dn_internal_address=hpc-iotdb-service
+      - dn_seed_config_node=hpc-iotdb-service:10710
+    volumes:
+      - ./hpc-iotdb-data:/iotdb/data
+      - ./hpc-iotdb-logs:/iotdb/logs
+#      - ./hpc-iotdb-conf:/iotdb/conf
+
+  cloud-iotdb-service:
+    extends:
+      file: ../../docker/docker-compose-cdsp.yml
+      service: iotdb-service
+    hostname: cloud-iotdb-service
+    container_name: cloud-iotdb-service
+    build:
+      args:
+        SERVICE_HOSTNAME: cloud-iotdb-service
+    ports: !override
+      - "6666:6667"
+    environment:
+      - cn_internal_address=cloud-iotdb-service
+      - cn_seed_config_node=cloud-iotdb-service:10710
+      - dn_rpc_address=cloud-iotdb-service
+      - dn_internal_address=cloud-iotdb-service
+      - dn_seed_config_node=cloud-iotdb-service:10710
+    volumes:
+      - ./cloud-iotdb-data:/iotdb/data
+      - ./cloud-iotdb-logs:/iotdb/logs
+#      - ./cloud-iotdb-conf:/iotdb/conf
