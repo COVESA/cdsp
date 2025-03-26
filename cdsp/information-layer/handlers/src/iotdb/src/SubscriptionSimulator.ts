@@ -12,6 +12,7 @@ import {
 import {ErrorMessage, STATUS_ERRORS, STATUS_SUCCESS} from "../../../../router/utils/ErrorMessage";
 import {transformSessionDataSet} from "../utils/database-helper";
 import {toResponseFormat} from "../../../utils/transformations";
+import {METADATA_SUFFIX} from "../utils/iotdb-constants";
 
 export type Subscription = { vin: string, dataPoints: Set<string> }
 export type WebsocketToSubscriptionsMap = Map<WebSocketWithId, Subscription[]>;
@@ -23,7 +24,10 @@ let subscriptionSimulatorInstance: SubscriptionSimulator | null = null;
 // Function to get or initialize the singleton instance
 export function getSubscriptionSimulator(
   sendMessageToClient: (ws: WebSocketWithId, message: StatusMessage | DataContentMessage | ErrorMessage) => void,
-  createDataContentMessage: (instance: string, nodes: Array<{ name: string; value: any; }>, requestId?: string) => DataContentMessage,
+  createDataContentMessage: (instance: string,
+                             dataPoints: Array<{ name: string; value: any; }>,
+                             metadata: Array<{ name: string; value: any; }>,
+                             requestId?: string) => DataContentMessage,
   createStatusMessage: (code: number, statusMessage: string, requestId?: string) => StatusMessage,
   sendAlreadySubscribedErrorMsg: (ws: WebSocketWithId, vin: string, newDataPoints: string[]) => void)
   : SubscriptionSimulator {
@@ -45,16 +49,20 @@ export class SubscriptionSimulator {
   private timeIntervalLowerLimit: number | undefined = undefined;
   private websocketToSubscriptionsMap: WebsocketToSubscriptionsMap = new Map();
   private readonly sendMessageToClient: (ws: WebSocketWithId, message: StatusMessage | DataContentMessage | ErrorMessage) => void;
-  private readonly createDataContentMessage: (instance: string, nodes: Array<{
-    name: string;
-    value: any
-  }>, requestId?: string) => DataContentMessage;
+  private readonly createDataContentMessage: (
+    instance: string,
+    dataPoints: Array<{ name: string; value: any }>,
+    metadata: Array<{ name: string; value: any }>,
+    requestId?: string) => DataContentMessage;
   private readonly createStatusMessage: (code: number, statusMessage: string, requestId?: string) => StatusMessage;
   private readonly sendAlreadySubscribedErrorMsg: (ws: WebSocketWithId, vin: string, newDataPoints: string[]) => void;
 
   constructor(
     sendMessageToClient: (ws: WebSocketWithId, message: StatusMessage | DataContentMessage | ErrorMessage) => void,
-    createDataContentMessage: (instance: string, nodes: Array<{ name: string; value: any }>, requestId?: string) => DataContentMessage,
+    createDataContentMessage: (instance: string,
+                               dataPoints: Array<{ name: string; value: any }>,
+                               metadata: Array<{ name: string; value: any }>,
+                               requestId?: string) => DataContentMessage,
     createStatusMessage: (code: number, statusMessage: string, requestId?: string) => StatusMessage,
     sendAlreadySubscribedErrorMsg: (ws: WebSocketWithId, vin: string, newDataPoints: string[]) => void) {
     this.session = new Session();
@@ -284,8 +292,8 @@ export class SubscriptionSimulator {
    */
   private async checkForChanges(vin: string, dataPoints: Set<string>, timeIntervalUpperLimit: number): Promise<DataContentMessage | undefined> {
     const {databaseName, dataPointId} = databaseParams[TREE_VSS as keyof typeof databaseParams];
-
-    const fieldsToSearch = Array.from(dataPoints).join(", ");
+    const metadataPoints = [...dataPoints].map((dataPoint) => dataPoint + METADATA_SUFFIX)
+    const fieldsToSearch = [...dataPoints, ...metadataPoints].join(", ");
     const sql = `SELECT ${fieldsToSearch}
                  FROM ${databaseName}
                  WHERE ${dataPointId} = '${vin}'
@@ -305,12 +313,12 @@ export class SubscriptionSimulator {
         );
       }
 
-      const responseNodes = transformSessionDataSet(sessionDataSet, databaseName);
-      if (responseNodes.length > 0) {
+      const [data, metadata] = transformSessionDataSet(sessionDataSet, databaseName);
+      if (data.length > 0) {
         dataContentMessage = this.createDataContentMessage(
-          vin, responseNodes
+          vin, data, metadata
         );
-        logMessage(`Processed ${responseNodes.length} changes for id ${vin}`);
+        logMessage(`Processed ${data.length} changes for id ${vin}`);
       }
 
     } catch (error: unknown) {

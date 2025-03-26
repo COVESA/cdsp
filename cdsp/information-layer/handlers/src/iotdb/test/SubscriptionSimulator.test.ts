@@ -56,7 +56,7 @@ describe('SubscriptionSimulator', () => {
       code,
       message: statusMessage,
       ...(requestId && {requestId}),
-      timestamp: {seconds: 1715253322, nanoseconds: 123000000}, // Mocked timestamp
+      timestamp: {seconds: 1715253322, nanos: 123000000}, // Mocked timestamp
     }));
 
     sendAlreadySubscribedErrorMsg = jest.fn();

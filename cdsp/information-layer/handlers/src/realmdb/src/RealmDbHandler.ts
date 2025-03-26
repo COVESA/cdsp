@@ -91,7 +91,7 @@ export class RealmDBHandler extends HandlerBase {
       value: node.value
     }));
 
-    return {success: true, nodes: responseNodesWithDots};
+    return {success: true, dataPoints: responseNodesWithDots, metadata: Array.of()};
   }
 
   async authenticateAndConnect(): Promise<void> {
@@ -396,7 +396,7 @@ export class RealmDBHandler extends HandlerBase {
       subscribedDataPoints,
       mediaElement
     );
-    const dataContentMessage = this.createDataContentMessage(instance, responseNodes);
+    const dataContentMessage = this.createDataContentMessage(instance, responseNodes, Array.of());
     this.sendMessageToClient(ws, dataContentMessage);
   }
 

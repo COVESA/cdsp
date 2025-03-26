@@ -1,6 +1,6 @@
 import {Session} from "./Session";
 import {getSubscriptionSimulator, SubscriptionSimulator} from "./SubscriptionSimulator";
-import {SupportedMessageDataTypes} from "../utils/iotdb-constants";
+import {SupportedMessageDataTypes, METADATA_SUFFIX} from "../utils/iotdb-constants";
 import {HandlerBase, QueryResult} from "../../HandlerBase";
 import {SessionDataSet} from "../utils/SessionDataSet";
 import {IoTDBDataInterpreter} from "../utils/IoTDBDataInterpreter";
@@ -16,7 +16,7 @@ import {
   StatusMessage,
   SubscribeMessageType, UnsubscribeMessageType
 } from "../../../../router/utils/NewMessage";
-import {replaceDotsWithUnderscore} from "../../../utils/transformations";
+import {removeSuffixFromString, replaceDotsWithUnderscore, replaceUnderscoresWithDots} from "../../../utils/transformations";
 
 import {TSInsertRecordReq} from "../gen-nodejs/client_types";
 
@@ -49,7 +49,7 @@ export class IoTDBHandler extends HandlerBase {
   protected subscribe(message: SubscribeMessageType, ws: WebSocketWithId): void {
     const newDataPoints = this.getKnownDatapointsByPrefix(message.path);
 
-    if (newDataPoints.length === 0) {  
+    if (newDataPoints.length === 0) {
       this.sendRequestedDataPointsNotFoundErrorMsg(ws, message.path)
       return;
     }
@@ -71,19 +71,22 @@ export class IoTDBHandler extends HandlerBase {
     this.subscriptionSimulator.unsubscribeClient(ws);
     await this.session.closeSession();
   }
-  
+
   protected async set(message: SetMessageType, ws: WebSocketWithId): Promise<void> {
     if (this.areNodesValid(message, ws)) {
       let statusMessage: StatusMessage;
       try {
-        const data = this.extractNodesFromMessageWithVinAsNode(message);
+        const data = {
+          ...this.extractNodesFromMessageWithVinAsNode(message),
+          ...this.extractNodesFromMetadata(message)
+        }
         let measurements: string[] = [];
         let dataTypes: string[] = [];
         let values: any[] = [];
 
         for (const [key, value] of Object.entries(data)) {
           measurements.push(key);
-          dataTypes.push(this.dataPointsSchema[key]);
+          dataTypes.push(this.getDataType(key));
           values.push(value);
         }
 
@@ -107,6 +110,36 @@ export class IoTDBHandler extends HandlerBase {
       }
       this.sendMessageToClient(ws, statusMessage);
     }
+  }
+
+  private extractNodesFromMetadata(message: SetMessageType): Record<string, any> {
+    if (!message.metadata) return {}; // Return an empty object if metadata is missing
+
+    return Object.fromEntries(
+      Object.entries(message.metadata).map(([key, value]) =>
+        [
+          message.path + this.formatKey(key) + METADATA_SUFFIX,
+          JSON.stringify(value)
+        ]
+      )
+    );
+  }
+  
+  private formatKey = (key: string) => key ? "_" + replaceDotsWithUnderscore(key) : "";
+
+  private getDataType(dataPointName: string) {
+    // return string type for metadata if correlating data point is known, throw error otherwise
+    if (dataPointName.endsWith(METADATA_SUFFIX)) {
+      let dataPoint = removeSuffixFromString(dataPointName, METADATA_SUFFIX);
+      if (this.dataPointsSchema.hasOwnProperty(dataPoint)) {
+        return SupportedMessageDataTypes.string
+      } else {
+        throw new Error(`Invalid metadata provided, datapoint ${replaceUnderscoresWithDots(dataPoint)} not defined.`);
+      }
+    }
+
+    // return defined datapoint type 
+    return this.dataPointsSchema[dataPointName];
   }
 
   /**
@@ -196,8 +229,9 @@ export class IoTDBHandler extends HandlerBase {
     vin: string
   ): Promise<QueryResult> {
 
+    const metadataPoints = dataPoints.map((dataPoint) => dataPoint + METADATA_SUFFIX)
+    const fieldsToSearch = [...dataPoints, ...metadataPoints].join(", ");
     const {databaseName, dataPointId} = databaseParams["VSS"];
-    const fieldsToSearch = dataPoints.join(", ");
     const sql = `SELECT ${fieldsToSearch}
                  FROM ${databaseName}
                  WHERE ${dataPointId} = '${vin}'
@@ -210,7 +244,8 @@ export class IoTDBHandler extends HandlerBase {
       if (!(sessionDataSet instanceof SessionDataSet)) {
         return {success: false, error: "Invalid session dataset received."};
       }
-      return {success: true, nodes: transformSessionDataSet(sessionDataSet, databaseName)};
+      const [data, meta] = transformSessionDataSet(sessionDataSet, databaseName);
+      return {success: true, dataPoints: data, metadata: meta};
 
     } catch (error: unknown) {
       const errMsg = error instanceof Error ? error.message : "Unknown database error";
@@ -222,6 +257,8 @@ export class IoTDBHandler extends HandlerBase {
     const allKnownDataPoints: string[] = Object.keys(this.dataPointsSchema);
     return allKnownDataPoints
       .filter(field => field !== databaseParams["VSS"].dataPointId) // remove VIN from the list, so only real data points are left
-      .filter(value => value.startsWith(datapointPrefix));
+      .filter(value => value === datapointPrefix
+        || (value.startsWith(datapointPrefix) && value[datapointPrefix.length] === "_")
+      );
   }
 }

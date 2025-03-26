@@ -157,7 +157,7 @@ describe("RealmDBHandler", () => {
         type: "status",
         timestamp: expect.objectContaining({
           seconds: expect.any(Number),
-          nanoseconds: expect.any(Number),
+          nanos: expect.any(Number),
         }),
       })
     );
@@ -176,7 +176,7 @@ describe("RealmDBHandler", () => {
         type: "status",
         timestamp: expect.objectContaining({
           seconds: expect.any(Number),
-          nanoseconds: expect.any(Number),
+          nanos: expect.any(Number),
         }),
       })
     );

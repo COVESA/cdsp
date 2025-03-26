@@ -19,3 +19,5 @@ export const SupportedMessageDataTypes = {
   uint8: "uint8",
   uint16: "uint16",
 } as const;
+
+export const METADATA_SUFFIX = "_Metadata";

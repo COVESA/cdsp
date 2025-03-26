@@ -22,7 +22,7 @@ export type SetMessageType = {
   instance: string;
   data: any;
   requestId?: string;
-  metadata?: any[];
+  metadata?: Record<string, any>;
   timeseries?: boolean;
 };
 
@@ -88,7 +88,7 @@ export type StatusMessage = {
   requestId?: string;
   timestamp: {
     seconds: number;
-    nanoseconds: number;
+    nanos: number;
   };
 };
 

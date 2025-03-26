@@ -6,12 +6,11 @@ import asyncio
 import json
 import sys
 from typing import Optional
-from threading import Thread, Lock  # Lock for synchronous contexts
+from threading import Lock  # Lock for synchronous contexts
 from asyncio import Lock as AsyncLock  # Lock for asynchronous contexts
 from remotivelabs.broker.sync import (
     Client,
     SignalsInFrame,
-    BrokerException,
     SignalIdentifier,
 )
 from iotdb.Session import Session
@@ -64,7 +63,7 @@ def process_signals(signals_in_frame: SignalsInFrame, output_mode: str):
             break
 
         name = signal.name()
-        value = signal.value()
+        value_timestamp = (signal.value(), signal.timestamp_us())
 
         timestamp = int(signal.timestamp_us() / 1000)  # Convert microseconds to milliseconds
 
@@ -72,19 +71,31 @@ def process_signals(signals_in_frame: SignalsInFrame, output_mode: str):
             try:
                 # Write directly to IoTDB
                 iotdb_name = ['`{}`'.format(name)]
-                iotdb_value = [str(value)]
+                iotdb_value = [str(value_timestamp[0])]
                 session.insert_str_record(device_id_, timestamp, iotdb_name, iotdb_value)
-                print(f"Written to IoTDB: name={name}, value={value}, timestamp={timestamp}")
+                print(f"Written to IoTDB: name={name}, value={value_timestamp[0]}, timestamp={timestamp}")
             except Exception as e:
                 print(f"Error writing to IoTDB: {e}")
                 if stopped:
                     break
         elif output_mode == "information-layer":
             with signal_map_lock:  # Use threading.Lock here
-                signal_map[name] = value
-                print(f"Written to signal map: name={name}, value={value}, timestamp={timestamp}")
+                signal_map[name] = value_timestamp
+                print(f"Written to signal map: name={name}, value={value_timestamp[0]}, timestamp={timestamp}")
 
-
+def timestamp_to_metadata_format(timestamp_micro, path=""):
+    seconds = timestamp_micro // 1_000_000
+    nanos = (timestamp_micro % 1_000_000) * 1_000
+    return {
+        path: {
+            "timestamps": {
+                "generated": {
+                    "seconds": seconds,
+                    "nanos": nanos
+                }
+            }
+        }
+    }
 
 async def websocket_handler(element_id: str):
     """
@@ -108,18 +119,20 @@ async def websocket_handler(element_id: str):
                 }
 
                 if len(signal_map) == 1:
-                    signal_name, signal_value = next(iter(signal_map.items()))
+                    signal_name, signal_value_timestamp = next(iter(signal_map.items()))
                     schema, _, path = signal_name.partition('.')
                     websocket_data["schema"] = schema
                     websocket_data["path"] = path
-                    websocket_data["data"] = signal_value
+                    websocket_data["data"] = signal_value_timestamp[0]
+                    websocket_data["metadata"] = timestamp_to_metadata_format(signal_value_timestamp[1])
                 else:
                     # take any signal to extract the root path, that should be identical for all cases
                     common_prefix, _ = next(iter(signal_map)).split('.', 1)
                     websocket_data["schema"] = common_prefix.rstrip('.')
                     websocket_data["data"] = {}
+                    metadata_accumulation = {}
 
-                    for name, value in signal_map.items():
+                    for name, value_timestamp in signal_map.items():
                         parts = name.split('.')
                         current_level = websocket_data["data"]
                         # Traverse through the parts except the first and last one, creating nested dictionaries as needed.
@@ -128,8 +141,13 @@ async def websocket_handler(element_id: str):
                         for part in parts[1:-1]:
                             current_level = current_level.setdefault(part, {})
                         # Set the value for the last part in the hierarchy
-                        current_level[parts[-1]] = value
+                        current_level[parts[-1]] = value_timestamp[0]
+                        # Add timestamp to metadata
+                        data_point_path = name.lstrip(common_prefix + ".")
+                        metadata_accumulation.update(timestamp_to_metadata_format(value_timestamp[1], data_point_path))
 
+                    # add accumulated metadata
+                    websocket_data["metadata"] = metadata_accumulation
                 signal_map.clear()
 
             try:

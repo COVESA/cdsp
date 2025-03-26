@@ -23,7 +23,7 @@ export abstract class HandlerBase {
    *  Returns a list of all known data point names that begin with the specified prefix.
    */
   abstract getKnownDatapointsByPrefix(prefix: string): string[]
-  
+
   /**
    * Returns the dataPoints from DB based on the provided list of dataPoints and VIN.
    * @param dataPoints to extract from DB
@@ -39,7 +39,7 @@ export abstract class HandlerBase {
     );
   }
 
-  async get(message: GetMessageType, ws: WebSocketWithId):Promise<void> {
+  async get(message: GetMessageType, ws: WebSocketWithId): Promise<void> {
     const requestedDataPoints = this.getKnownDatapointsByPrefix(message.path);
 
     if (requestedDataPoints.length === 0) { // no valid datapoints found for requested path 
@@ -59,7 +59,7 @@ export abstract class HandlerBase {
       `There are no known datapoints with prefix ${replaceUnderscoresWithDots(path)}`
     ));
   }
-  
+
   protected sendAlreadySubscribedErrorMsg(ws: WebSocketWithId, instance: string, newDataPoints: string[]) {
     const statusMessage = this.createStatusMessage(STATUS_ERRORS.BAD_REQUEST,
       `Subscription already done to instance '${instance}' ` +
@@ -130,8 +130,8 @@ export abstract class HandlerBase {
     }
 
     let responseMessage: DataContentMessage | StatusMessage;
-    if (queryResult.nodes.length > 0) {
-      responseMessage = this.createDataContentMessage(vin, queryResult.nodes);
+    if (queryResult.dataPoints.length > 0) {
+      responseMessage = this.createDataContentMessage(vin, queryResult.dataPoints, queryResult.metadata);
     } else {
       responseMessage = this.createStatusMessage(
         STATUS_ERRORS.NOT_FOUND,
@@ -177,28 +177,31 @@ export abstract class HandlerBase {
   /**
    * Generic function to create a data content message.
    * @param instance - The ID of the element in the tree.
-   * @param nodes - the data point nodes.
+   * @param dataPoints - the data points with values.
+   * @param metadata - available metadata for the data points
    * @param requestId - The ID of the corresponding request.
    * @param shouldBeNested - Controls format of the data response structure: Nested if true, flat if false.
    * @returns - A data content message.
    */
   protected createDataContentMessage(
     instance: string,
-    nodes: Array<{ name: string; value: any }>,
+    dataPoints: Array<{ name: string; value: any }>,
+    metadata?: Array<{ name: string; value: any }>,
     requestId?: string,
     shouldBeNested: boolean = false
   ): DataContentMessage {
     // Ensure nodes are valid
-    if (nodes.length === 0) {
+    if (dataPoints.length === 0) {
       throw new Error("Nodes array cannot be empty.");
     }
 
     return {
       type: "data",
       instance: instance,
-      schema: getSchemaOrThrow(nodes),
-      data: shouldBeNested ? buildDataStructureAsTreeWithoutRootElement(nodes) : buildDataStructureFlatWithoutRootElement(nodes),
+      schema: getSchemaOrThrow(dataPoints),
+      data: shouldBeNested ? buildDataStructureAsTreeWithoutRootElement(dataPoints) : buildDataStructureFlatWithoutRootElement(dataPoints),
       requestId: requestId,
+      ...(metadata && Object.keys(metadata).length && {metadata: buildDataStructureFlatWithoutRootElement(metadata)}),
     };
   }
 
@@ -384,7 +387,7 @@ function getSchemaOrThrow(nodes: Array<{ name: string; value: any }>) {
 function buildDataStructureFlatWithoutRootElement(
   nodes: Array<{ name: string; value: any }>
 ): Record<string, any> {
-  return nodes.reduce((accumulator, { name, value }) => {
+  return nodes.reduce((accumulator, {name, value}) => {
     const nameWithoutRoot = name.includes(".") ? name.split(".").slice(1).join(".") : name;
     accumulator[nameWithoutRoot] = value;
     return accumulator;
@@ -420,14 +423,14 @@ function buildDataStructureAsTreeWithoutRootElement(
   return data;
 }
 
-function getCurrentTimestamp(): { seconds: number; nanoseconds: number } {
+function getCurrentTimestamp(): { seconds: number; nanos: number } {
   const now = new Date();
   const seconds = Math.floor(now.getTime() / 1000); // Convert milliseconds to seconds
-  const nanoseconds = (now.getTime() % 1000) * 1e6; // Remainder in milliseconds converted to nanoseconds
-  return {seconds, nanoseconds: nanoseconds};
+  const nanos = (now.getTime() % 1000) * 1e6; // Remainder in milliseconds converted to nanoseconds
+  return {seconds, nanos: nanos};
 }
 
 export type QueryResult =
-  | { success: true; nodes: Array<{ name: string; value: any }> }
+  | { success: true; dataPoints: Array<{ name: string; value: any }>; metadata: Array<{ name: string; value: any }> }
   | { success: false; error: string };
 
