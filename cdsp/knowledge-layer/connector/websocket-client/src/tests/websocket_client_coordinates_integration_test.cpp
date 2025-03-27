@@ -2,7 +2,6 @@
 #include <string>
 
 #include "helper.h"
-#include "observation_id_utils.h"
 #include "random_utils.h"
 #include "utc_date_utils.h"
 #include "websocket_client_base_integration_test.h"
@@ -18,6 +17,15 @@
 
 class WebSocketClientCoordinatesIntegrationTest : public WebSocketClientBaseIntegrationTest {
    protected:
+    const std::string extractNumericTimestamp(const std::string& timestamp) {
+        std::string compact_time;
+        for (char c : timestamp) {
+            if (std::isdigit(c)) {
+                compact_time += c;
+            }
+        }
+        return compact_time;
+    }
     const std::string createObservationQuery(const std::string& vin, const std::string& class_name,
                                              const std::string& observed_property,
                                              const std::string& node_value,
@@ -62,9 +70,7 @@ class WebSocketClientCoordinatesIntegrationTest : public WebSocketClientBaseInte
     void processAndVerifyMessages(const std::vector<std::vector<MessageNodeData>>& messages_nodes,
                                   const std::string& latitude, const std::string& longitude,
                                   const std::string& data_time_latitude,
-                                  const std::string& data_time_longitude, bool expect_exists,
-                                  const int consecutive_observation_latitude = 0,
-                                  const int consecutive_observation_longitude = 1) {
+                                  const std::string& data_time_longitude, bool expect_exists) {
         // Add received messages_nodes
         for (const auto& nodes : messages_nodes) {
             std::string vin = model_config_->getObjectId()[SchemaType::VEHICLE];
@@ -87,8 +93,8 @@ class WebSocketClientCoordinatesIntegrationTest : public WebSocketClientBaseInte
             sparql_query_longitude, QueryLanguageType::SPARQL, DataQueryAcceptType::SPARQL_JSON);
 
         // Helper function to check if the observation exists and `ntmValue` is valid
-        auto verifyObservation = [](const std::string& result, bool expect_exist,
-                                    int expected_obs_id) {
+        auto verifyObservation = [](const std::string& result,
+                                    const std::string& expected_observation_id, bool expect_exist) {
             try {
                 json json_result = json::parse(result);
 
@@ -108,9 +114,9 @@ class WebSocketClientCoordinatesIntegrationTest : public WebSocketClientBaseInte
                                 first_binding["obs"].contains("value"))
                         << "Observation ID is missing in RDFox response!";
                     std::string observation_id = first_binding["obs"]["value"];
-                    ASSERT_TRUE(observation_id.find("O" + std::to_string(expected_obs_id)) !=
-                                std::string::npos)
-                        << "Expected observation ID not found! Found: " << observation_id;
+                    ASSERT_TRUE(observation_id.find(expected_observation_id) != std::string::npos)
+                        << "Expected observation ID `" << expected_observation_id
+                        << "` not found! Found: " << observation_id;
 
                     // Assert `ntmValue` exists and is a valid float/double
                     ASSERT_TRUE(first_binding.contains("ntmValue") &&
@@ -127,10 +133,11 @@ class WebSocketClientCoordinatesIntegrationTest : public WebSocketClientBaseInte
                 FAIL() << "JSON Parsing failed: " << e.what();
             }
         };
-
         // Check latitude and longitude observations
-        verifyObservation(result_latitude, expect_exists, consecutive_observation_latitude);
-        verifyObservation(result_longitude, expect_exists, consecutive_observation_longitude);
+        verifyObservation(result_latitude, extractNumericTimestamp(data_time_latitude),
+                          expect_exists);
+        verifyObservation(result_longitude, extractNumericTimestamp(data_time_longitude),
+                          expect_exists);
     }
 };
 
@@ -317,5 +324,5 @@ TEST_F(WebSocketClientCoordinatesIntegrationTest, MixedContentMessages) {
 
     // Process and verify the constructed messages with the generated data.
     processAndVerifyMessages({node_msg_1, node_msg_2}, latitude, longitude, data_time_latitude,
-                             data_time_longitude, true, 1, 2);
+                             data_time_longitude, true);
 }

@@ -16,11 +16,12 @@ class TripleWriterIntegrationTest : public ::testing::Test {
     std::string prefixes_fixture_;
     const std::string VIN = VinUtils::getRandomVinString();
     const std::string OBSERVATION_VALUE = std::to_string(RandomUtils::generateRandomFloat(0, 300));
-    const std::chrono::system_clock::time_point TIMESTAMP = RandomUtils::generateRandomTimestamp();
+    const std::chrono::system_clock::time_point TIMESTAMP =
+        RandomUtils::generateRandomTimestamp(2000, 2030, true);
     const std::string DATA_TIME = UtcDateUtils::formatCustomTimestampAsIso8601(TIMESTAMP);
+
     const std::string OBSERVATION_IDENTIFIER =
-        "Observation" + ObservationIdentifier::createObservationIdentifier(TIMESTAMP, 0);
-    const double NTM_VALUE = RandomUtils::generateRandomDouble(-100, 100);
+        "Observation" + ObservationIdentifier::createObservationIdentifier(TIMESTAMP);
 
     void SetUp() override {
         triple_writer = new TripleWriter();
@@ -321,7 +322,7 @@ TEST_F(TripleWriterIntegrationTest, FailAddingRDFDataToTripleSendingWrongDataCom
                         "<http://www.w3.org/2001/XMLSchema#float>");
 
     EXPECT_THROW(triple_writer->addElementDataToTriple(prefixes_fixture_, data_components,
-                                                   OBSERVATION_VALUE, TIMESTAMP),
+                                                       OBSERVATION_VALUE, TIMESTAMP),
                  std::runtime_error);
 }
 /**

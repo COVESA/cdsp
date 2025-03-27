@@ -135,11 +135,7 @@ const std::string WebSocketClientBaseIntegrationTest::createDataJsonMessage(
                                .count()
                         << R"(,
                 "nanoseconds": )"
-                        << std::chrono::duration_cast<std::chrono::nanoseconds>(
-                               generated_time.time_since_epoch())
-                                   .count() %
-                               1000000000
-                        << R"(})";
+                        << std::stoi(Helper::extractNanoseconds(generated_time)) << R"(})";
             }
 
             if (has_received) {
@@ -155,11 +151,7 @@ const std::string WebSocketClientBaseIntegrationTest::createDataJsonMessage(
                                .count()
                         << R"(,
                 "nanoseconds": )"
-                        << std::chrono::duration_cast<std::chrono::nanoseconds>(
-                               received_time.time_since_epoch())
-                                   .count() %
-                               1000000000
-                        << R"(})";
+                        << std::stoi(Helper::extractNanoseconds(received_time)) << R"(})";
             }
 
             message << R"(}})";

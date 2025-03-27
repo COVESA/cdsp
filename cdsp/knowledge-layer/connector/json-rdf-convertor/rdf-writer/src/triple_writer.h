@@ -39,7 +39,6 @@ class TripleWriter {
 
    private:
     std::string identifier_;
-    int observation_counter_ = 0;
 
     std::unordered_map<std::string, std::string> unique_supported_prefixes_;
     std::map<std::string, std::string> unique_rdf_prefix_definitions_;

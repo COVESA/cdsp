@@ -41,7 +41,6 @@ void TripleWriter::initiateTriple(const std::string& identifier) {
     identifier_ = identifier;
     rdf_triples_definitions_.clear();
     unique_rdf_prefix_definitions_.clear();
-    observation_counter_ = 0;
 }
 
 /**
@@ -135,18 +134,20 @@ void TripleWriter::addElementDataToTriple(
     TripleNodes triple_nodes;
 
     // Create identifiers instances for each class
-    const std::string data_time = Helper::getFormattedTimestampCustom("%Y%m%d%H%M%S", timestamp);
 
     const std::string date_time_with_nano =
         Helper::getFormattedTimestampCustom("%Y-%m-%dT%H:%M:%S", timestamp, true);
+
+    const std::string observation_identifier =
+        Helper::getFormattedTimestampCustom("%Y%m%d%H%M%S", timestamp) +
+        Helper::extractNanoseconds(timestamp);
 
     auto milliseconds_since_epoch =
         std::chrono::duration_cast<std::chrono::milliseconds>(timestamp.time_since_epoch()).count();
 
     const std::string class_1_instance_uri = createInstanceUri(class_1_prefix, class_1_identifier);
     std::stringstream observation_instance_uri;
-    observation_instance_uri << class_1_prefix << ":" << "Observation" << data_time << "O"
-                             << observation_counter_++;
+    observation_instance_uri << class_1_prefix << ":" << "Observation" << observation_identifier;
 
     // Create triples
     triple_nodes.subject = std::make_pair(SERD_CURIE, class_1_instance_uri);

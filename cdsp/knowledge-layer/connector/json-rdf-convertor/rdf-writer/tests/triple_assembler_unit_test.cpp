@@ -224,12 +224,12 @@ ex:Class_1WBY11CF080CH470711
 	a ex:Class_1 ;
 	ex:hasPart car:Class_2WBY11CF080CH470711 .
 
-car:Observation20181116155027O0
+car:Observation20181116155027123456789
 	a sosa:Observation ;
 	sosa:hasFeatureOfInterest car:Class_2WBY11CF080CH470711 ;
 	sosa:hasSimpleResult "98.6"^^xsd:float ;
 	sosa:observedProperty car:Data_Q ;
-	sosa:phenomenonTime """"2018-11-16 15:50:27"^^xsd:dateTime""" .)";
+	sosa:phenomenonTime """"2018-11-16 15:50:27.123456789"^^xsd:dateTime""" .)";
 
     // Mock generating the triple output and returning the dummy TTL
     EXPECT_CALL(*mock_model_config_, getReasonerSettings())

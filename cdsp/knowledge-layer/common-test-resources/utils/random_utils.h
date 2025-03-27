@@ -19,7 +19,8 @@ class RandomUtils {
     static std::variant<std::string, int, double, float, bool> generateRandomValue();
     static bool generateRandomBool();
     static std::chrono::system_clock::time_point generateRandomTimestamp(int start_year = 2000,
-                                                                         int end_year = 2030);
+                                                                         int end_year = 2030,
+                                                                         bool includeNanos = false);
 };
 
 #endif  // RANDOM_UTILS_H

@@ -7,7 +7,7 @@
 class ObservationIdentifier {
    public:
     static const std::string createObservationIdentifier(
-        const std::chrono::system_clock::time_point& timestamp, const int identifier_counter);
+        const std::chrono::system_clock::time_point& timestamp);
 };
 
 #endif  // OBSERVATION_ID_UTILS_H

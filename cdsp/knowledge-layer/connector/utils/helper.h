@@ -20,6 +20,7 @@ class Helper {
     static std::string getFormattedTimestampCustom(
         const std::string& format, const std::chrono::system_clock::time_point& timestamp,
         bool include_milliseconds = false, bool use_utc = true);
+    static std::string extractNanoseconds(const std::chrono::system_clock::time_point& timestamp);
     static std::optional<NtmCoord> getCoordInNtm(const std::string& latitude,
                                                  const std::string& longitude);
     static std::tuple<std::optional<std::tm>, std::optional<int>> parseISO8601ToTime(
@@ -40,6 +41,6 @@ class Helper {
    private:
     static const Wgs84Coord ZONE_ORIGIN;
     static std::string formatTimeT(bool use_utc, std::time_t& time_t, const std::string& format,
-                                   std::optional<int> nanoseconds);
+                                   std::optional<std::string> nanoseconds);
 };
 #endif  // HELPER_H

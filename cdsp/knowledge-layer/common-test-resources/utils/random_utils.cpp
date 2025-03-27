@@ -95,7 +95,8 @@ bool RandomUtils::generateRandomBool() { return static_cast<bool>(rand() % 2); }
  * @return A random UTC date in ISO 8601 format with fractional seconds.
  */
 std::chrono::system_clock::time_point RandomUtils::generateRandomTimestamp(int start_year,
-                                                                           int end_year) {
+                                                                           int end_year,
+                                                                           bool includeNanos) {
     // Convert years to time_t
     std::tm start_tm = {0, 0, 0, 1, 0, start_year - 1900};  // Jan 1, start_year
     std::tm end_tm = {0, 0, 0, 31, 11, end_year - 1900};    // Dec 31, end_year
@@ -110,5 +111,11 @@ std::chrono::system_clock::time_point RandomUtils::generateRandomTimestamp(int s
     std::time_t random_time = dist(gen);
 
     // Convert to time_point
+    if (includeNanos) {
+        std::uniform_int_distribution<int> nanos_dist(0, 999999999);
+        return std::chrono::time_point_cast<std::chrono::system_clock::duration>(
+            std::chrono::system_clock::from_time_t(random_time) +
+            std::chrono::nanoseconds(nanos_dist(gen)));
+    }
     return std::chrono::system_clock::from_time_t(random_time);
 }

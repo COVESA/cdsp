@@ -30,11 +30,9 @@ std::string Helper::getFormattedTimestampNow(const std::string& format, bool inc
     auto now = std::chrono::system_clock::now();
     auto now_time_t = std::chrono::system_clock::to_time_t(now);
 
-    std::optional<int> nanoseconds = std::nullopt;
+    std::optional<std::string> nanoseconds = std::nullopt;
     if (include_nanoseconds) {
-        auto now_ns =
-            std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
-        nanoseconds = now_ns % 1000000000;
+        nanoseconds = extractNanoseconds(now);
     }
     return formatTimeT(use_utc, now_time_t, format, nanoseconds);
 }
@@ -60,15 +58,37 @@ std::string Helper::getFormattedTimestampCustom(
     bool include_nanoseconds, bool use_utc) {
     std::time_t time_t = std::chrono::system_clock::to_time_t(timestamp);
 
-    std::optional<int> nanoseconds = std::nullopt;
+    std::optional<std::string> nanoseconds = std::nullopt;
     if (include_nanoseconds) {
-        auto nanoseconds_count =
-            std::chrono::duration_cast<std::chrono::nanoseconds>(timestamp.time_since_epoch())
-                .count();
-        nanoseconds = nanoseconds_count % 1000000000;
+        nanoseconds = extractNanoseconds(timestamp);
     }
 
     return formatTimeT(use_utc, time_t, format, nanoseconds);
+}
+
+/**
+ * @brief Extracts the nanoseconds component from a given time point.
+ *
+ * This function takes a time point representing a specific point in time
+ * and extracts the nanoseconds part of its duration since the epoch.
+ * The result is formatted as a string with exactly 9 digits, including
+ * leading zeros if necessary.
+ *
+ * @param timestamp The time point from which to extract the nanoseconds.
+ * @return A string representing the nanoseconds component, formatted with
+ *         leading zeros to ensure a length of 9 digits.
+ */
+std::string Helper::extractNanoseconds(const std::chrono::system_clock::time_point& timestamp) {
+    auto nanoseconds_count =
+        std::chrono::duration_cast<std::chrono::nanoseconds>(timestamp.time_since_epoch()).count();
+
+    uint32_t nanoseconds = nanoseconds_count % 1000000000;  // Ensure only the last 9 digits
+
+    // Format to ensure 9 digits with leading zeros
+    std::ostringstream oss;
+    oss << std::setw(9) << std::setfill('0') << nanoseconds;
+
+    return oss.str();
 }
 
 /**
@@ -317,7 +337,7 @@ std::chrono::system_clock::time_point Helper::convertToTimestamp(int64_t seconds
  * @return A formatted time string based on the provided format and options.
  */
 std::string Helper::formatTimeT(bool use_utc, std::time_t& time_t, const std::string& format,
-                                std::optional<int> nanoseconds) {
+                                std::optional<std::string> nanoseconds) {
     // Convert time_t to tm (local or UTC)
     auto tm = use_utc ? *std::gmtime(&time_t) : *std::localtime(&time_t);
 
@@ -326,7 +346,7 @@ std::string Helper::formatTimeT(bool use_utc, std::time_t& time_t, const std::st
     oss << std::put_time(&tm, format.c_str());
 
     if (nanoseconds.has_value()) {
-        oss << '.' << std::setw(9) << std::setfill('0') << nanoseconds.value();
+        oss << '.' << nanoseconds.value();
     }
 
     std::string formatted_time = oss.str();
