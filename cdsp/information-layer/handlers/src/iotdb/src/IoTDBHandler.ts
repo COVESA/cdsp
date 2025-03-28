@@ -240,22 +240,31 @@ export class IoTDBHandler extends HandlerBase {
   ): Promise<QueryResult> {
 
     const metadataPoints = dataPoints.map((dataPoint) => dataPoint + METADATA_SUFFIX)
-    const fieldsToSearch = [...dataPoints, ...metadataPoints].join(", ");
     const {databaseName, dataPointId} = databaseParams["VSS"];
-    const sql = `SELECT ${fieldsToSearch}
-                 FROM ${databaseName}
-                 WHERE ${dataPointId} = '${vin}'
-                 ORDER BY Time ASC`;
-
+    const latestDataPoints: Array<{ name: string; value: any }> = [];
+    const latestMetadata: Array<{ name: string; value: any }> = [];
     try {
-      const sessionDataSet = await this.session.executeQueryStatement(sql);
+      for (const field of [...dataPoints, ...metadataPoints]) {
+        const fieldSQL = `SELECT ${field}
+                          FROM ${databaseName}
+                          WHERE ${dataPointId} = '${vin}'
+                            AND ${field} IS NOT NULL
+                          ORDER BY time DESC
+                              LIMIT 1`;
+        const sessionDataSet = await this.session.executeQueryStatement(fieldSQL);
+        if (sessionDataSet instanceof SessionDataSet) {
+          const [data, meta] = transformSessionDataSet(sessionDataSet, databaseName);
+          data.forEach(({name, value}) => {
+            latestDataPoints.push({name, value});
+          });
 
-      // Check if sessionDataSet is not an instance of SessionDataSet, and handle the error
-      if (!(sessionDataSet instanceof SessionDataSet)) {
-        return {success: false, error: "Invalid session dataset received."};
+          meta.forEach(({name, value}) => {
+            latestMetadata.push({name, value});
+          });
+        }
       }
-      const [data, meta] = transformSessionDataSet(sessionDataSet, databaseName);
-      return {success: true, dataPoints: data, metadata: meta};
+
+      return {success: true, dataPoints: latestDataPoints, metadata: latestMetadata};
 
     } catch (error: unknown) {
       const errMsg = error instanceof Error ? error.message : "Unknown database error";

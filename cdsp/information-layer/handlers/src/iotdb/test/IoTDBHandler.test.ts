@@ -40,19 +40,25 @@ describe("IoTDBHandler", () => {
     expect(mockSession.authenticateAndConnect).toHaveBeenCalled();
   });
 
-  test("should query data points and metadata from IoTDB", async () => {
+  test("should query data points and metadata from IoTDB individually", async () => {
     const mockDataPoints = ["Temperature", "Speed"];
     const vin = "TEST_VIN";
     mockSession.executeQueryStatement.mockResolvedValueOnce(new SessionDataSet([], [], {}, 0, {}, 0, {}, {}, false));
 
     const result = await handler.getDataPointsFromDB(mockDataPoints, vin);
+
+    const expectedCalls = [
+      expect.stringContaining("SELECT Temperature"),
+      expect.stringContaining("SELECT Speed"),
+      expect.stringContaining("SELECT Temperature_Metadata"),
+      expect.stringContaining("SELECT Speed_Metadata"),
+    ];
+
+    expectedCalls.forEach((expected, index) => {
+      // expect(mockExecuteQueryStatement.mock.calls[index][0]).toEqual(expected);
+      expect(mockSession.executeQueryStatement.mock.calls[index][0]).toEqual(expected);
+    });
     // Ensure the metadata timeseries have been requested together with the data points
-    expect(mockSession.executeQueryStatement).toHaveBeenCalledWith(
-      "SELECT Temperature, Speed, Temperature_Metadata, Speed_Metadata\n" +
-      "                 FROM test_db\n" +
-      "                 WHERE Vehicle_VehicleIdentification_VIN = 'TEST_VIN'\n" +
-      "                 ORDER BY Time ASC"
-    );
     expect(result.success).toBe(true);
   });
 
