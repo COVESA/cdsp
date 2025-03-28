@@ -58,6 +58,20 @@ Derived output data:
 
 ## Installation and Running
 
+1. Create `Remotive Labs` account
+2. Fill the [.env](.env) file with your Remotive Labs broker url and api key, you can see find them in the `Brokers` section
+3. Select `Night drive to Luftkastellet` in the `recordings`section, open the tab `Files` and drag and drop the zip file `examples/shared-config/remotive-labs/config_vss_aggressive_driving.zip` in the `Signal Transformations` section.
+4. Navigate to `Playback` tab and select `config_vss_aggressive_driving` as `signal transformation` and press the `Play` button.
+5. If the recording starts playing, stop it for now.
+6. TODO next Steps: Get RDFOX license and place it in provided folder and Other KL config
+..
+X. start all services with single command
+```bash
+docker compose up
+```
+Y. Play the recording on Remotive Labs webpage
+
+
 To be determined (TBD).
 
 ---

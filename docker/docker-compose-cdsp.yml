@@ -5,7 +5,6 @@ services:
 # Apache IoTDB acting as VSS Data Store
   iotdb-service:
     image: apache/iotdb:1.2.2-standalone
-    hostname: iotdb-service
     container_name: iotdb-service
     restart: on-failure:3
     ports:
@@ -28,6 +27,14 @@ services:
     volumes:
         - ./data:/iotdb/data
         - ./logs/iotdb:/iotdb/logs
+    healthcheck: 
+      test: [ "CMD", "./start-cli.sh", "-h", "iotdb-service", "-p", "6667", "-u", "root", "-pw", "root", "-e", "SHOW DATABASES;" ]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+      start_interval: 5s
+
 
 # WebSocket server service
   websocket-service:

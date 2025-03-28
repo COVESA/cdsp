@@ -44,6 +44,16 @@ export class IoTDBHandler extends HandlerBase {
     const supportedDataPoint: SupportedDataPoints =
       this.getSupportedDataPoints() as SupportedDataPoints;
     this.dataPointsSchema = createDataPointsSchema(supportedDataPoint);
+    await this.createDatabaseIfNeeded()
+   }
+  
+  async createDatabaseIfNeeded() {
+    const sql = `CREATE DATABASE ${databaseParams["VSS"].databaseName};`;
+    try {
+      await this.session.executeQueryStatement(sql);
+    } catch (e) {
+      logErrorStr(`Error creating database in IotDB: ${e}`);
+    }
   }
 
   protected subscribe(message: SubscribeMessageType, ws: WebSocketWithId): void {

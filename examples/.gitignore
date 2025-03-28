@@ -1,0 +1,3 @@
+# Ignore example folders for logs and databases
+*/iotdb-data
+*/iotdb-logs

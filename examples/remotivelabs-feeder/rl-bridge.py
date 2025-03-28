@@ -25,8 +25,8 @@ password_ = "root"
 session = None
 device_id_ = "root.test2.dev1"
 
-# WebSocket URL with the default value
-websocket_url = "ws://localhost:8080"
+# Information Layer URL default value, can be changed via args
+information_layer_url = "ws://localhost:8080"
 
 # Global variables
 signal_map = {}
@@ -103,7 +103,7 @@ async def websocket_handler(element_id: str):
     """
     global websocket
     try:
-        websocket = await websockets.connect(websocket_url)
+        websocket = await websockets.connect(information_layer_url)
         print("Connected to information-layer websocket.")
 
         while not stopped:
@@ -178,14 +178,12 @@ def run_subscribe_sample(url: str, signals: list[str], secret: Optional[str], ou
     """
     global client, subscription, stopped
     subscription = None
-
     client = Client(client_id="Sample client")
-    client.connect(url=url, api_key=secret)
+    client.on_signals = lambda signals_in_frame: process_signals(signals_in_frame, output_mode)
+
 
     if output_mode == "iotdb":
         setup_iotdb()
-
-    client.on_signals = lambda signals_in_frame: process_signals(signals_in_frame, output_mode)
 
     try:
         def to_signal_id(signal: str):
@@ -195,12 +193,20 @@ def run_subscribe_sample(url: str, signals: list[str], secret: Optional[str], ou
                 sys.exit(1)
             return SignalIdentifier(s[1], s[0])
 
-        subscription = client.subscribe(
-            signals_to_subscribe_to=list(map(to_signal_id, signals)),
-            changed_values_only=False,
-        )
-
-        print("Broker connection and subscription setup completed, waiting for signals...")
+        while True:
+            try:
+                client.connect(url=url, api_key=secret)
+                subscription = client.subscribe(
+                    signals_to_subscribe_to=list(map(to_signal_id, signals)),
+                    changed_values_only=False,
+                )
+                break
+                
+            except Exception as e:
+                print(f"Subscription to Remotive Labs broker failed: Remotive Labs recording not prepared or {e}. Retrying in 2 seconds...")
+                time.sleep(2)
+            
+        print("Remotive Labs broker connection and subscription setup completed, waiting for signals...")
 
         if output_mode == "information-layer":
             asyncio.run(websocket_handler(element_id))
@@ -238,6 +244,10 @@ def safe_exit(reason: str):
     close_iotdb()
     sys.exit(0)
 
+def non_empty_string(value):
+    if not value.strip():
+        raise argparse.ArgumentTypeError("argument cannot be an empty string.")
+    return value
 
 def main():
     parser = argparse.ArgumentParser(description="Provide address to RemotiveBroker")
@@ -246,16 +256,15 @@ def main():
         "-u",
         "--url",
         help="URL of the RemotiveBroker",
-        type=str,
-        required=False,
-        default="http://127.0.0.1:50051",
+        type=non_empty_string,
+        required=False
     )
 
     parser.add_argument(
         "-x",
         "--x_api_key",
         help="API key is required when accessing brokers running in the cloud",
-        type=str,
+        type=non_empty_string,
         required=False,
         default=None,
     )
@@ -293,6 +302,14 @@ def main():
         required=False,
     )
 
+    parser.add_argument(
+        "-ilu",
+        "--information_layer_url",
+        help="URL of the information layer. If not provided ws://localhost:8080 will be used.",
+        type=str,
+        required=False,
+    )
+
     try:
         args = parser.parse_args()
     except Exception as e:
@@ -305,6 +322,10 @@ def main():
     if args.output_mode == "information-layer" and not args.id:
         print("Error: In information-layer mode an ID has to be defined.")
         exit(1)
+
+    if args.information_layer_url is not None:
+        global information_layer_url
+        information_layer_url = args.information_layer_url
 
     secret = args.x_api_key if args.x_api_key is not None else args.access_token
 
