@@ -23,7 +23,7 @@ class ModelConfigDtoServiceUnitTest : public ::testing::Test {
 nlohmann::json generateValidStatusMessageJson() {
     return {{"code", 200},
             {"message", "OK"},
-            {"timestamp", {{"seconds", 1234567890}, {"nanoseconds", 123456789}}}};
+            {"timestamp", {{"seconds", 1234567890}, {"nanos", 123456789}}}};
 }
 
 // Test for parsing a Status Message JSON
@@ -45,8 +45,7 @@ TEST_F(ModelConfigDtoServiceUnitTest, ParseStatusMessage) {
     nlohmann::json json_message = {
         {"code", random_code},
         {"message", random_message},
-        {"timestamp",
-         {{"seconds", random_timestamps.first}, {"nanoseconds", random_timestamps.second}}}};
+        {"timestamp", {{"seconds", random_timestamps.first}, {"nanos", random_timestamps.second}}}};
     if (random_requestId.has_value()) {
         json_message["requestId"] = random_requestId.value();
     }
@@ -54,7 +53,7 @@ TEST_F(ModelConfigDtoServiceUnitTest, ParseStatusMessage) {
     std::cout << "Incoming message: \n" << json_message.dump(4) << std::endl;
 
     // Act
-    StatusMessageDTO dto = dto_service_.parseStatusDto(json_message);
+    StatusMessageDTO dto = dto_service_.parseStatusJsonToDto(json_message);
     std::cout << "Parsed StatusMessageDTO: \n" << dto << std::endl;
 
     // Assert
@@ -62,14 +61,14 @@ TEST_F(ModelConfigDtoServiceUnitTest, ParseStatusMessage) {
     ASSERT_EQ(dto.message, random_message);
     ASSERT_EQ(dto.requestId, random_requestId);
     ASSERT_EQ(dto.timestamp.seconds, random_timestamps.first);
-    ASSERT_EQ(dto.timestamp.nanoseconds, random_timestamps.second);
+    ASSERT_EQ(dto.timestamp.nanos, random_timestamps.second);
 }
 
 /**
  * @brief Unit test for the DtoService class to verify exception handling for missing required
  * fields for the status message.
  *
- * This test case checks that the `parseStatusDto` method of the `dto_service_` object
+ * This test case checks that the `parseStatusJsonToDto` method of the `dto_service_` object
  * throws an `std::invalid_argument` exception when any of the required fields are missing
  * from the JSON message. The required fields are "code", "message", and "timestamp".
  *
@@ -93,17 +92,17 @@ TEST_F(ModelConfigDtoServiceUnitTest, ParseStatusDtoThrowsExceptionWhenRequiredF
         std::cout << test_message.dump(4) << std::endl;
 
         // Act & Assert: Ensure exception is thrown when a required field is missing
-        ASSERT_THROW(dto_service_.parseStatusDto(test_message), std::invalid_argument);
+        ASSERT_THROW(dto_service_.parseStatusJsonToDto(test_message), std::invalid_argument);
     }
 }
 
 /**
  * @brief Unit test for the DtoService class to verify exception handling for incomplete timestamps.
  *
- * This test case checks that the `parseStatusDto` method of the `dto_service_` object
+ * This test case checks that the `parseStatusJsonToDto` method of the `dto_service_` object
  * throws an `std::invalid_argument` exception when any of the required fields in the timestamp
  * are missing from the JSON message. The required fields within the "timestamp" are "seconds" and
- * "nanoseconds".
+ * "nanos".
  *
  * The test iterates over each required field, removes it from a valid JSON message's timestamp,
  * and asserts that an exception is thrown when the modified message is parsed.
@@ -113,7 +112,7 @@ TEST_F(ModelConfigDtoServiceUnitTest, ParseStatusDtoThrowsExceptionWhenTimestamp
     nlohmann::json json_message = generateValidStatusMessageJson();
 
     // List of required fields in the timestamp
-    std::vector<std::string> required_fields = {"seconds", "nanoseconds"};
+    std::vector<std::string> required_fields = {"seconds", "nanos"};
 
     // Iterate over each required field
     for (const auto& field : required_fields) {
@@ -125,6 +124,6 @@ TEST_F(ModelConfigDtoServiceUnitTest, ParseStatusDtoThrowsExceptionWhenTimestamp
         std::cout << test_message.dump(4) << std::endl;
 
         // Act & Assert: Ensure exception is thrown when a required field is missing
-        ASSERT_THROW(dto_service_.parseStatusDto(test_message), std::invalid_argument);
+        ASSERT_THROW(dto_service_.parseStatusJsonToDto(test_message), std::invalid_argument);
     }
 }

@@ -278,7 +278,7 @@ std::string inferenceEngineTypeToString(const InferenceEngineType& type);
  *
  * @throws std::runtime_error if the input MessageStructureFormat is not supported.
  */
-std::string stringToMessageStructureFormat(const MessageStructureFormat& type);
+std::string MessageStructureFormatToString(const MessageStructureFormat& type);
 
 inline std::string messageTypeToString(const MessageType& type) {
     switch (type) {
@@ -432,7 +432,7 @@ inline SchemaType stringToSchemaType(const std::string& type) {
     }
 }
 
-inline std::string stringToMessageStructureFormat(const MessageStructureFormat& type) {
+inline std::string MessageStructureFormatToString(const MessageStructureFormat& type) {
     switch (type) {
         case MessageStructureFormat::FLAT:
             return "flat";

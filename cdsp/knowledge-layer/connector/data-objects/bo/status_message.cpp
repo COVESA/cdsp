@@ -62,7 +62,7 @@ std::ostream& operator<<(std::ostream& os, const StatusMessage& message) {
     os << "  message: " << message.getMessage() << ",\n";
     os << "  request_id: "
        << (message.getRequestId() ? *message.getRequestId() : std::string("null")) << ",\n";
-    os << "  timestamp: " << message.getTimestamp().time_since_epoch().count() << " nanoseconds\n";
+    os << "  timestamp: " << message.getTimestamp().time_since_epoch().count() << " nanos\n";
     os << "}";
 
     return os;

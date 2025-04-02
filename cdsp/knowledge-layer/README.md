@@ -117,10 +117,10 @@ The project requires certain environment variables to work with the WebSocket se
 - **HOST_WEBSOCKET_SERVER:** Specifies the hostname of the WebSocket server. The default is `127.0.0.1`.
 - **PORT_WEBSOCKET_SERVER:** Specifies the port for connecting to the WebSocket server. The default is `8080`.
 - **[SCHEMA]_OBJECT_ID:** The Object ID environment variable is required to subscribe and retrieve information for a specific object, such as a VIN (Vehicle Identification Number) when working with Vehicle Signal Specification (VSS) data. [SCHEMA] represents the schema type being used, such as VEHICLE. For example, if you are working with Vehicle data under the VSS schema, the environment variable should be set as: `VEHICLE_OBJECT_ID`. Use the Object ID configured in the [`information-layer`](../information-layer/README.md).
-- **HOST_RDFOX_SERVER:** Hostname of the RDFox server. The default is `127.0.0.1`.
-- **PORT_RDFOX_SERVER:** Port for RDFox server. The default is `12110`.
-- **AUTH_RDFOX_SERVER_BASE64:** Base64-encoded credentials for RDFox authentication. The default is `cm9vdDphZG1pbg==` (For `root:admin` encoded in base64).
-- **RDFOX_DATASTORE:** Data store used in RDFox server to store the generated data. The default is `ds-test`.
+- **HOST_REASONER_SERVER:** Hostname of the RDFox server. The default is `127.0.0.1`.
+- **PORT_REASONER_SERVER:** Port for RDFox server. The default is `12110`.
+- **AUTH_REASONER_SERVER_BASE64:** Base64-encoded credentials for RDFox authentication. The default is `cm9vdDphZG1pbg==` (For `root:admin` encoded in base64).
+- **REASONER_DATASTORE_NAME:** Data store used in RDFox server to store the generated data. The default is `ds-test`.
 
 You can customize the WebSocket server configuration by adding the following environment variables in the `/docker/.env` file. Below is an example of what the file could look like:
 

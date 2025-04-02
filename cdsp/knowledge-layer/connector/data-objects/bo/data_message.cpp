@@ -61,12 +61,12 @@ std::ostream& operator<<(std::ostream& os, const DataMessage& message) {
            << "\n";
         if (node.getMetadata().getGenerated()) {
             auto generated = node.getMetadata().getGenerated().value().time_since_epoch();
-            os << "      Generated Time: " << generated.count() << " nanoseconds\n";
+            os << "      Generated Time: " << generated.count() << " nanos\n";
         } else {
             os << "      Generated Time: null\n";
         }
         auto received = node.getMetadata().getReceived().time_since_epoch();
-        os << "      Received Time: " << received.count() << " nanoseconds\n";
+        os << "      Received Time: " << received.count() << " nanos\n";
         os << "    },\n";
     }
 

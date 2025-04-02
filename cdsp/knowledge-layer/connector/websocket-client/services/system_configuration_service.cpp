@@ -37,20 +37,21 @@ ModelConfig SystemConfigurationService::loadModelConfig(const std::string& confi
     try {
         std::shared_ptr<FileHandlerImpl> file_handler = std::make_shared<FileHandlerImpl>();
 
+        std::cout << "** Loading model configuration ** \n - Path:" << config_file << "" << "\n";
         auto file_content = file_handler->readFile(config_file);
         if (file_content.empty()) {
-            throw std::runtime_error("Model configuration file is empty: " + config_file);
+            throw std::runtime_error(" - Model configuration file is empty");
         }
         nlohmann::json config_json;
         config_json = nlohmann::json::parse(file_content);
 
-        ModelConfigDTO model_config_dto = DtoService::parseModelConfigDto(config_json);
+        ModelConfigDTO model_config_dto = DtoService::parseModelConfigJsonToDto(config_json);
         DtoToBo dto_to_bo(file_handler);
         const auto model_config = dto_to_bo.convert(model_config_dto);
-        std::cout << "Model configuration loaded successfully\n\n";
+        std::cout << " - Model configuration loaded successfully\n\n";
         return model_config;
 
     } catch (const std::exception& e) {
-        throw std::runtime_error("Error loading model configuration: " + std::string(e.what()));
+        throw std::runtime_error(" - Error loading model configuration: " + std::string(e.what()));
     }
 }

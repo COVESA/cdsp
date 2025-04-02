@@ -101,7 +101,8 @@ TEST_F(ModelConfigDtoServiceUnitTest, ParseModelConfigWithRandomValues) {
     auto random_ontologies = generateRandomVector(1, "ontologies/");
     auto random_output = "output/" + RandomUtils::generateRandomString(10) + "/";
 
-    auto random_query_output = "queries/" + RandomUtils::generateRandomString(10) + "/";
+    auto random_reasoning_output_queries_path =
+        "queries/" + RandomUtils::generateRandomString(10) + "/";
     auto random_triple_assembler_helper = generateRandomMapOfStringsVector(1, 2, "queries/");
 
     auto random_rules = generateRandomVector(1, "rules/");
@@ -118,7 +119,7 @@ TEST_F(ModelConfigDtoServiceUnitTest, ParseModelConfigWithRandomValues) {
         {"output", random_output},
         {"queries",
          {{"triple_assembler_helper", random_triple_assembler_helper},
-          {"output", random_query_output}}},
+          {"output", random_reasoning_output_queries_path}}},
         {"rules", random_rules},
         {"shacl", random_shacl},
         {"reasoner_settings",
@@ -129,7 +130,7 @@ TEST_F(ModelConfigDtoServiceUnitTest, ParseModelConfigWithRandomValues) {
     std::cout << "Incoming random message: \n" << json_message.dump(4) << std::endl;
 
     // Act: Parse the random JSON into a ModelConfigDTO
-    ModelConfigDTO dto = dto_service_.parseModelConfigDto(json_message);
+    ModelConfigDTO dto = dto_service_.parseModelConfigJsonToDto(json_message);
     std::cout << "Parsed ModelConfigDTO with random values: \n" << dto << std::endl;
 
     // Assert: Validate the parsed data against the randomly generated values
@@ -137,8 +138,8 @@ TEST_F(ModelConfigDtoServiceUnitTest, ParseModelConfigWithRandomValues) {
     ASSERT_EQ(dto.ontologies, random_ontologies);
     ASSERT_EQ(dto.output, random_output);
 
-    ASSERT_EQ(dto.queries_config.queries, random_triple_assembler_helper);
-    ASSERT_EQ(dto.queries_config.output, random_query_output);
+    ASSERT_EQ(dto.queries.triple_assembler_helper, random_triple_assembler_helper);
+    ASSERT_EQ(dto.queries.reasoning_output_queries_path, random_reasoning_output_queries_path);
 
     ASSERT_EQ(dto.rules, random_rules);
     ASSERT_EQ(dto.shacl_shapes, random_shacl);
@@ -152,7 +153,7 @@ TEST_F(ModelConfigDtoServiceUnitTest, ParseModelConfigWithRandomValues) {
 /**
  * @brief Unit test for the DtoService class to verify exception handling.
  *
- * This test case checks that the `parseModelConfigDto` method of the `dto_service_` object
+ * This test case checks that the `parseModelConfigJsonToDto` method of the `dto_service_` object
  * throws an `std::invalid_argument` exception when any of the required fields are missing
  * from the JSON message. The required fields are "inputs", "ontologies", "output", "queries",
  * "rules", "shacl", and "reasoner_settings".
@@ -179,6 +180,6 @@ TEST_F(ModelConfigDtoServiceUnitTest,
         std::cout << test_message.dump(4) << std::endl;
 
         // Act & Assert: Ensure exception is thrown when a required field is missing
-        ASSERT_THROW(dto_service_.parseModelConfigDto(test_message), std::invalid_argument);
+        ASSERT_THROW(dto_service_.parseModelConfigJsonToDto(test_message), std::invalid_argument);
     }
 }

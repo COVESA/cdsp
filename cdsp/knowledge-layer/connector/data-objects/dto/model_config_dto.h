@@ -8,27 +8,25 @@
 /**
  * @brief Data Transfer Object for the Triple Assembler Helper
  */
-struct TripleAssemblerHelperDTO {
-    std::map<std::string, std::vector<std::string>> queries;
-    std::string output;
+struct QueriesDTO {
+    std::map<std::string, std::vector<std::string>> triple_assembler_helper;
+    std::string reasoning_output_queries_path;
 
-    TripleAssemblerHelperDTO() : output("") {}
-
-    // Overload the << operator to print the TripleAssemblerHelperDTO
-    friend std::ostream& operator<<(std::ostream& os, const TripleAssemblerHelperDTO& dto) {
-        os << "    TripleAssemblerHelperDTO {\n";
-        os << "      queries: \n";
-        os << "      {\n";
-        for (const auto& [key, value] : dto.queries) {
-            os << "        " << key << ": [\n";
+    // Overload the << operator to print the QueriesDTO
+    friend std::ostream& operator<<(std::ostream& os, const QueriesDTO& dto) {
+        os << "QueriesDTO {\n";
+        os << "  triple_assembler_helper: {\n";
+        for (const auto& [key, value] : dto.triple_assembler_helper) {
+            os << "    " << key << ": [\n";
             for (const auto& query : value) {
-                os << "          " << query << ",\n";
+                os << "      " << query << ",\n";
             }
-            os << "        ]\n";
+            os << "    ]\n";
         }
-        os << "      }\n";
-        os << "      output: " << dto.output << "\n";
-        os << "    }";
+        os << "  }\n";
+        os << "  reasoning_output_queries_path: " << dto.reasoning_output_queries_path << "\n";
+        os << "}";
+
         return os;
     }
 };
@@ -63,7 +61,7 @@ struct ModelConfigDTO {
     std::map<std::string, std::string> inputs;
     std::vector<std::string> ontologies;
     std::string output;
-    TripleAssemblerHelperDTO queries_config;
+    QueriesDTO queries;
     std::vector<std::string> rules;
     std::vector<std::string> shacl_shapes;
     ReasonerSettingsDTO reasoner_settings;
@@ -72,7 +70,7 @@ struct ModelConfigDTO {
         : inputs(),
           ontologies(),
           output(""),
-          queries_config(),
+          queries(),
           rules(),
           shacl_shapes(),
           reasoner_settings() {}
@@ -91,7 +89,7 @@ struct ModelConfigDTO {
         }
         os << "  ]\n";
         os << "  output: " << dto.output << "\n";
-        os << "  queries_config:\n" << dto.queries_config << "\n";
+        os << "  queries: " << dto.queries << "\n";
         os << "  rules: [\n";
         for (const auto& rule : dto.rules) {
             os << "    " << rule << ",\n";

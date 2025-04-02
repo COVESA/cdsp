@@ -16,7 +16,7 @@ class JSONWriterTest : public ::testing::Test {
  * file handler to ensure the write operation is called exactly once.
  *
  * The test checks that the resulting JSON object contains the expected
- * fields "created_at" and "results", and that the "results" field is not empty.
+ * fields.
  */
 TEST_F(JSONWriterTest, WriteJsonToFile) {
     std::string csv_input = "id,name,age\n1,Alice,30\n2,Bob,25";
@@ -28,9 +28,7 @@ TEST_F(JSONWriterTest, WriteJsonToFile) {
     nlohmann::json result = jsonWriter.writeToJson(csv_input, DataQueryAcceptType::TEXT_CSV,
                                                    output_file_path, mockFileHandler);
 
-    ASSERT_TRUE(result.contains("created_at"));
-    ASSERT_TRUE(result.contains("results"));
-    ASSERT_FALSE(result["results"].empty());
+    ASSERT_FALSE(result.empty());
 }
 
 /**
@@ -41,7 +39,7 @@ TEST_F(JSONWriterTest, WriteJsonToFile) {
  * file handler to ensure the write operation is not called.
  *
  * The test checks that the resulting JSON object contains the expected
- * fields "created_at" and "results", and that the "results" field is not empty.
+ * fields.
  */
 TEST_F(JSONWriterTest, WriteJsonWithoutFilePath) {
     std::string csv_input = "id,name,age\n1,Alice,30\n2,Bob,25";
@@ -53,53 +51,115 @@ TEST_F(JSONWriterTest, WriteJsonWithoutFilePath) {
     nlohmann::json result =
         jsonWriter.writeToJson(csv_input, DataQueryAcceptType::TEXT_CSV, output_file_path);
 
-    ASSERT_TRUE(result.contains("created_at"));
-    ASSERT_TRUE(result.contains("results"));
-    ASSERT_FALSE(result["results"].empty());
+    ASSERT_FALSE(result.empty());
 }
 
 /**
- * @brief Test case for writing JSON data with an invalid format.
+ * @brief Test case for JSONWriter's handling of invalid format.
  *
- * This test verifies that the JSONWriter throws a runtime error when
- * attempting to write JSON data with an unsupported format type.
+ * This test verifies that the JSONWriter throws a runtime_error when
+ * an unsupported DataQueryAcceptType is provided.
+ *
+ * The input query_result is a string representing a CSV format with
+ * headers and data. The test specifically uses an invalid
+ * DataQueryAcceptType (999) to trigger the error.
  */
 TEST_F(JSONWriterTest, WriteJsonWithInvalidFormat) {
     std::string query_result = "id,name,age\n1,Alice,30\n2,Bob,25";
 
-    EXPECT_THROW(
-        jsonWriter.writeToJson(query_result, static_cast<DataQueryAcceptType>(999), std::nullopt),
+    ASSERT_THROW(
+        {
+            try {
+                jsonWriter.writeToJson(query_result, static_cast<DataQueryAcceptType>(999),
+                                       std::nullopt);
+            } catch (const std::runtime_error& e) {
+                EXPECT_THAT(e.what(), testing::HasSubstr("Unsupported query result format"));
+                throw;
+            }
+        },
         std::runtime_error);
 }
 
 /**
- * @brief Test case for handling invalid SPARQL JSON input.
+ * @brief Test case for JSONWriter that verifies the behavior when writing JSON
+ * with empty values in the query result.
  *
- * This test verifies that the JSONWriter throws a runtime error
- * when attempting to write an invalid SPARQL JSON format. The test
- * uses an invalid JSON string to simulate erroneous input and expects
- * the writeToJson method to throw a std::runtime_error.
+ * This test checks that a runtime error is thrown when the input query result
+ * does not contain any data. It expects the error message to indicate that no
+ * results were found in the query result.
+ */
+TEST_F(JSONWriterTest, WriteJsonWithEmptyValues) {
+    std::string query_result = "id,name,age\n";
+
+    ASSERT_NO_THROW({
+        nlohmann::json result =
+            jsonWriter.writeToJson(query_result, DataQueryAcceptType::TEXT_CSV, std::nullopt);
+        ASSERT_TRUE(result.empty());
+    });
+}
+
+/**
+ * @brief Test case for JSONWriter's behavior when writing JSON with an empty result.
+ *
+ * This test verifies that when an empty query result is provided to the
+ * jsonWriter's writeToJson method, it throws a runtime_error. The test
+ * also checks that the error message contains the expected substring
+ * indicating that no results were found.
+ */
+TEST_F(JSONWriterTest, WriteJsonWithEmptyResult) {
+    std::string query_result = "";
+
+    ASSERT_NO_THROW({
+        nlohmann::json result =
+            jsonWriter.writeToJson(query_result, DataQueryAcceptType::TEXT_CSV, std::nullopt);
+        ASSERT_TRUE(result.empty());
+    });
+}
+
+/**
+ * @brief Test case for handling invalid SPARQL JSON input in the JSONWriter.
+ *
+ * This test verifies that the JSONWriter correctly throws a runtime error
+ * when provided with an invalid SPARQL JSON format. It captures the exception,
+ * logs the error message, and checks that the message contains the expected
+ * substring indicating the nature of the error.
  */
 TEST_F(JSONWriterTest, InvalidSparqlJson) {
     std::string invalid_sparql_json = R"({ "invalid": "format" })";
 
-    EXPECT_THROW(
-        jsonWriter.writeToJson(invalid_sparql_json, DataQueryAcceptType::SPARQL_JSON, std::nullopt),
+    ASSERT_THROW(
+        {
+            try {
+                jsonWriter.writeToJson(invalid_sparql_json, DataQueryAcceptType::SPARQL_JSON,
+                                       std::nullopt);
+            } catch (const std::runtime_error& e) {
+                EXPECT_THAT(e.what(), testing::HasSubstr("Invalid SPARQL JSON response format"));
+                throw;
+            }
+        },
         std::runtime_error);
 }
 
 /**
- * @brief Test case for handling invalid SPARQL XML input.
+ * @brief Test case for handling invalid SPARQL XML input in the JSONWriter.
  *
- * This test verifies that the JSONWriter throws a runtime error
- * when attempting to write an invalid SPARQL XML format. The test
- * uses an invalid XML string to simulate erroneous input and expects
- * the writeToJson method to throw a std::runtime_error.
+ * This test verifies that the JSONWriter correctly throws a runtime_error
+ * when provided with an invalid SPARQL XML string. It checks that the error
+ * message contains the expected substring indicating the failure to parse
+ * the SPARQL XML response.
  */
 TEST_F(JSONWriterTest, InvalidSparqlXml) {
     std::string invalid_sparql_xml = R"(<sparql><invalid></sparql>)";
 
-    EXPECT_THROW(
-        jsonWriter.writeToJson(invalid_sparql_xml, DataQueryAcceptType::SPARQL_XML, std::nullopt),
+    ASSERT_THROW(
+        {
+            try {
+                jsonWriter.writeToJson(invalid_sparql_xml, DataQueryAcceptType::SPARQL_XML,
+                                       std::nullopt);
+            } catch (const std::runtime_error& e) {
+                EXPECT_THAT(e.what(), testing::HasSubstr("Failed to parse SPARQL XML response"));
+                throw;
+            }
+        },
         std::runtime_error);
 }

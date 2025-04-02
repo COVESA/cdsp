@@ -1,14 +1,21 @@
 #ifndef REASONER_SERVICE_H
 #define REASONER_SERVICE_H
 
+#include <iostream>
+
 #include "data_types.h"
 #include "i_reasoner_adapter.h"
 #include "memory"
 
 class ReasonerService {
    public:
-    explicit ReasonerService(std::shared_ptr<IReasonerAdapter> adapter)
+    explicit ReasonerService(std::shared_ptr<IReasonerAdapter> adapter, const bool reset_datastore)
         : adapter_(std::move(adapter)) {
+        if (reset_datastore) {
+            std::cout << "Deleting the datastore...\n";
+            deleteDataStore();
+            std::cout << std::endl;
+        }
         adapter_->initialize();
     }
 

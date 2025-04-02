@@ -54,8 +54,7 @@ nlohmann::json generateMetadataTag(
         if (!timestamps.empty()) {
             nlohmann::json timestamps_json;
             for (const auto& [timestamp, values] : timestamps) {
-                timestamps_json[timestamp] = {{"seconds", values.first},
-                                              {"nanoseconds", values.second}};
+                timestamps_json[timestamp] = {{"seconds", values.first}, {"nanos", values.second}};
             }
             node_metadata["timestamps"] = timestamps_json;
         }
@@ -65,14 +64,14 @@ nlohmann::json generateMetadataTag(
 }
 
 nlohmann::json generateValidDataMessageJson() {
-    return {{"type", "data"},
-            {"schema", "Vehicle"},
-            {"instance", "1234"},
-            {"data", {{"Speed", 120}}},
-            {"metadata",
-             {{"Speed",
-               {{"timestamps",
-                 {{"generated", {{"seconds", 1234567890}, {"nanoseconds", 123456789}}}}}}}}}};
+    return {
+        {"type", "data"},
+        {"schema", "Vehicle"},
+        {"instance", "1234"},
+        {"data", {{"Speed", 120}}},
+        {"metadata",
+         {{"Speed",
+           {{"timestamps", {{"generated", {{"seconds", 1234567890}, {"nanos", 123456789}}}}}}}}}};
 }
 
 // Tests for parsing DataMessageDTO
@@ -121,7 +120,7 @@ TEST_P(ModelConfigDtoServiceUnitTest, ParseJsonDataMessage) {
     std::cout << "Incoming message: \n" << json_message.dump(4) << std::endl;
 
     // Act
-    DataMessageDTO dto = dto_service_.parseDataDto(json_message);
+    DataMessageDTO dto = dto_service_.parseDataJsonToDto(json_message);
     std::cout << "Parsed DataMessageDTO: \n" << dto << std::endl;
 
     // Assert
@@ -141,14 +140,14 @@ TEST_P(ModelConfigDtoServiceUnitTest, ParseJsonDataMessage) {
                     random_nodes_metadata[node].end()) {
                     ASSERT_EQ(timestamps.generated.seconds,
                               random_nodes_metadata[node]["generated"].first);
-                    ASSERT_EQ(timestamps.generated.nanoseconds,
+                    ASSERT_EQ(timestamps.generated.nanos,
                               random_nodes_metadata[node]["generated"].second);
                 }
                 if (random_nodes_metadata[node].find("received") !=
                     random_nodes_metadata[node].end()) {
                     ASSERT_EQ(timestamps.received.seconds,
                               random_nodes_metadata[node]["received"].first);
-                    ASSERT_EQ(timestamps.received.nanoseconds,
+                    ASSERT_EQ(timestamps.received.nanos,
                               random_nodes_metadata[node]["received"].second);
                 }
             }
@@ -159,7 +158,7 @@ TEST_P(ModelConfigDtoServiceUnitTest, ParseJsonDataMessage) {
 /**
  * @brief Unit test for the DtoService class to verify exception handling.
  *
- * This test case checks that the `parseDataDto` method of the `dto_service_` object
+ * This test case checks that the `parseDataJsonToDto` method of the `dto_service_` object
  * throws an `std::invalid_argument` exception when any of the required fields are missing
  * from the JSON message. The required fields are "type", "schema", "instance", and "data".
  *
@@ -183,17 +182,17 @@ TEST_F(ModelConfigDtoServiceUnitTest, ParseDataDtoThrowsExceptionWhenRequiredFie
         std::cout << test_message.dump(4) << std::endl;
 
         // Act & Assert: Ensure exception is thrown when a required field is missing
-        ASSERT_THROW(dto_service_.parseDataDto(test_message), std::invalid_argument);
+        ASSERT_THROW(dto_service_.parseDataJsonToDto(test_message), std::invalid_argument);
     }
 }
 
 /**
  * @brief Unit test for the DtoService class to verify exception handling for incomplete metadata.
  *
- * This test case checks that the `parseDataDto` method of the `dto_service_` object
+ * This test case checks that the `parseDataJsonToDto` method of the `dto_service_` object
  * throws an `std::invalid_argument` exception when any of the required fields in the metadata
  * are missing from the JSON message. The required fields within the "generated" timestamps
- * are "seconds" and "nanoseconds".
+ * are "seconds" and "nanos".
  *
  * The test iterates over each required field, removes it from a valid JSON message's metadata,
  * and asserts that an exception is thrown when the modified message is parsed.
@@ -203,7 +202,7 @@ TEST_F(ModelConfigDtoServiceUnitTest, ParseDataDtoThrowsExceptionWhenMetadataIsI
     nlohmann::json json_message = generateValidDataMessageJson();
 
     // List of required fields in the metadata's "generated" timestamps
-    std::vector<std::string> required_fields = {"seconds", "nanoseconds"};
+    std::vector<std::string> required_fields = {"seconds", "nanos"};
 
     // Iterate over each required field
     for (const auto& field : required_fields) {
@@ -216,7 +215,7 @@ TEST_F(ModelConfigDtoServiceUnitTest, ParseDataDtoThrowsExceptionWhenMetadataIsI
         std::cout << test_message.dump(4) << std::endl;
 
         // Act & Assert: Ensure exception is thrown when a required field is missing
-        ASSERT_THROW(dto_service_.parseDataDto(test_message), std::invalid_argument);
+        ASSERT_THROW(dto_service_.parseDataJsonToDto(test_message), std::invalid_argument);
     }
 }
 
@@ -225,8 +224,8 @@ TEST_F(ModelConfigDtoServiceUnitTest, ParseDataDtoThrowsExceptionWhenMetadataIsI
  * the JSON message and data is not an object.
  *
  * This test constructs a JSON message with missing path information and verifies that the
- * parseDataDto function throws an std::invalid_argument exception when data is not an object. The
- * JSON message includes a type, schema, instance, and data, but lacks the necessary path field,
+ * parseDataJsonToDto function throws an std::invalid_argument exception when data is not an object.
+ * The JSON message includes a type, schema, instance, and data, but lacks the necessary path field,
  * which should trigger the exception.
  */
 TEST_F(ModelConfigDtoServiceUnitTest, ParseDataDtoThrowsExceptionWhenPathIsMissing) {
@@ -239,5 +238,5 @@ TEST_F(ModelConfigDtoServiceUnitTest, ParseDataDtoThrowsExceptionWhenPathIsMissi
     std::cout << "\nTesting with missing path\n" << json_message.dump(4) << std::endl;
 
     // Act & Assert: Ensure exception is thrown when path is missing
-    ASSERT_THROW(dto_service_.parseDataDto(json_message), std::invalid_argument);
+    ASSERT_THROW(dto_service_.parseDataJsonToDto(json_message), std::invalid_argument);
 }

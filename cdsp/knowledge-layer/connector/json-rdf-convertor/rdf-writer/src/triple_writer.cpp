@@ -147,7 +147,8 @@ void TripleWriter::addElementDataToTriple(
 
     const std::string class_1_instance_uri = createInstanceUri(class_1_prefix, class_1_identifier);
     std::stringstream observation_instance_uri;
-    observation_instance_uri << class_1_prefix << ":" << "Observation" << observation_identifier;
+    observation_instance_uri << class_1_prefix << ":" << "ob_" << data_property_identifier << "_"
+                             << observation_identifier;
 
     // Create triples
     triple_nodes.subject = std::make_pair(SERD_CURIE, class_1_instance_uri);

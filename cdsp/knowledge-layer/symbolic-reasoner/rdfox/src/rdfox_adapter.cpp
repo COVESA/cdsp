@@ -29,7 +29,8 @@ std::unique_ptr<RequestBuilder> RDFoxAdapter::createRequestBuilder() const {
  * @throws std::runtime_error if the data store creation fails.
  */
 void RDFoxAdapter::initialize() {
-    std::cout << "Initializing RDFox adapter ... " << std::endl;
+    std::cout << "** Initializing RDFox adapter **" << std::endl;
+
     std::cout << " - Starting data store: " << data_store_ << std::endl;
     // checks if the data store exists, create it if not
     if (checkDataStore()) {
@@ -134,14 +135,14 @@ bool RDFoxAdapter::deleteDataStore() {
                 ->setMethod(http::verb::delete_)
                 .setTarget(target)
                 .sendRequest()) {
-            std::cout << "Data store '" + data_store_ + "' have been removed successfully."
+            std::cout << " - Data store '" + data_store_ + "' have been removed successfully."
                       << std::endl;
         } else {
-            std::cout << "Data store '" + data_store_ + "' could not be removed." << std::endl;
+            std::cout << " - Data store '" + data_store_ + "' could not be removed." << std::endl;
             return false;
         }
     } else {
-        std::cout << "Data store '" + data_store_ + "' does not exists anymore." << std::endl;
+        std::cout << " - Data store '" + data_store_ + "' does not exists anymore." << std::endl;
     }
     return true;
 }

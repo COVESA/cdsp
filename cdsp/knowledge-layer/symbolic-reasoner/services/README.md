@@ -15,9 +15,3 @@ This is an interface between the application and the underlying reasoner adapter
 ###  The ReasonerFactory 
 
 It is responsible for creating and initializing a ReasonerService with the appropriate reasoning engine (e.g., RDFox). It provides a seamless way to instantiate services with the required configurations.
-
-## Future extensions
-
-The ReasonerService and ReasonerFactory are designed with future extensibility in mind:
-- Additional Reasoning Engines: Support for new engines can be added by implementing new adapters.
-- Rule Management Services: Extend the module to support dynamic rule loading and querying.

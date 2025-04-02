@@ -28,7 +28,7 @@ $ ./rdfox_test
 # SPARQL query result:
 # ?p	?n
 # <https://oxfordsemantic.tech/RDFox/getting-started/peter>	"Peter"
-# <https://oxfordsemantic.tech/RDFox/getting-started/stewie>	"Stewie"
+# <https://oxfordsemantic.tech/RDFox/getting-started/stewie> "Steve"
 # <https://oxfordsemantic.tech/RDFox/getting-started/chris>	"Chris"
 # <https://oxfordsemantic.tech/RDFox/getting-started/meg>	"Meg"
 # <https://oxfordsemantic.tech/RDFox/getting-started/lois>	"Lois"

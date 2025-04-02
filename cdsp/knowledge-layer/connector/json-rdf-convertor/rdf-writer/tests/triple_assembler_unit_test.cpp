@@ -104,10 +104,9 @@ SELECT some_data_query)";
         TripleAssemblerHelper::QueryPair query_pair;
         query_pair.object_property = std::make_pair(QueryLanguageType::SPARQL, query_object);
         query_pair.data_property = std::make_pair(QueryLanguageType::SPARQL, query_data);
-        TripleAssemblerHelper triple_assembler_helper({{SchemaType::VEHICLE, query_pair}},
-                                                      "output");
+        TripleAssemblerHelper triple_assembler_helper({{SchemaType::VEHICLE, query_pair}});
 
-        EXPECT_CALL(*mock_model_config_, getQueriesConfig())
+        EXPECT_CALL(*mock_model_config_, getQueriesTripleAssemblerHelper())
             .Times(times_executing_data_related_functions)
             .WillRepeatedly(testing::Return(triple_assembler_helper));
 
@@ -300,9 +299,9 @@ TEST_F(TripleAssemblerUnitTest,
         std::make_pair(QueryLanguageType::SPARQL, "MOCK QUERY FOR DATA PROPERTY");
     std::map<SchemaType, TripleAssemblerHelper::QueryPair> query_map = {
         {SchemaType::VEHICLE, query_pair}};
-    TripleAssemblerHelper triple_assembler_helper(query_map, "output");
+    TripleAssemblerHelper triple_assembler_helper(query_map);
 
-    EXPECT_CALL(*mock_model_config_, getQueriesConfig())
+    EXPECT_CALL(*mock_model_config_, getQueriesTripleAssemblerHelper())
         .Times(2)
         .WillRepeatedly(testing::Return(triple_assembler_helper));
 
@@ -428,7 +427,7 @@ TEST_F(TripleAssemblerUnitTest, TransformMessageToTripleFailsWhenAnyDataStoreIsS
     EXPECT_CALL(mock_triple_writer_, initiateTriple(::testing::_)).Times(0);
     EXPECT_CALL(*mock_reasoner_service_, queryData(::testing::_, ::testing::_, ::testing::_))
         .Times(0);
-    EXPECT_CALL(*mock_model_config_, getQueriesConfig()).Times(0);
+    EXPECT_CALL(*mock_model_config_, getQueriesTripleAssemblerHelper()).Times(0);
     EXPECT_CALL(*mock_model_config_, getReasonerSettings()).Times(0);
     EXPECT_CALL(*mock_model_config_, getOutput()).Times(0);
     EXPECT_CALL(mock_triple_writer_, addElementObjectToTriple(::testing::_, ::testing::_)).Times(0);

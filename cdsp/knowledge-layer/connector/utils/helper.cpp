@@ -20,21 +20,21 @@ const Wgs84Coord Helper::ZONE_ORIGIN{11.579144, 48.137416, 0.0};
  *
  * @param format The format string to use for formatting the timestamp.
  *               This should be a valid format string for strftime.
- * @param include_nanoseconds A boolean flag indicating whether to include nanoseconds in the
+ * @param include_nanos A boolean flag indicating whether to include nanos in the
  * output.
  * @param use_utc A boolean flag indicating whether to use UTC time instead of local time.
  * @return A formatted timestamp string representing the current date and time.
  */
-std::string Helper::getFormattedTimestampNow(const std::string& format, bool include_nanoseconds,
+std::string Helper::getFormattedTimestampNow(const std::string& format, bool include_nanos,
                                              bool use_utc) {
     auto now = std::chrono::system_clock::now();
     auto now_time_t = std::chrono::system_clock::to_time_t(now);
 
-    std::optional<std::string> nanoseconds = std::nullopt;
-    if (include_nanoseconds) {
-        nanoseconds = extractNanoseconds(now);
+    std::optional<std::string> nanos = std::nullopt;
+    if (include_nanos) {
+        nanos = extractNanoseconds(now);
     }
-    return formatTimeT(use_utc, now_time_t, format, nanoseconds);
+    return formatTimeT(use_utc, now_time_t, format, nanos);
 }
 
 /**
@@ -48,22 +48,22 @@ std::string Helper::getFormattedTimestampNow(const std::string& format, bool inc
  *               This should be a valid format string for strftime.
  * @param timestamp The time point to be formatted. This is a time point from
  *                  the system clock.
- * @param include_nanoseconds A boolean flag indicating whether to include
+ * @param include_nanos A boolean flag indicating whether to include
  *                             nanoseconds in the formatted output.
  * @param use_utc A boolean flag indicating whether to use UTC time instead of local time.
  * @return A formatted timestamp string based on the provided format and options.
  */
 std::string Helper::getFormattedTimestampCustom(
     const std::string& format, const std::chrono::system_clock::time_point& timestamp,
-    bool include_nanoseconds, bool use_utc) {
+    bool include_nanos, bool use_utc) {
     std::time_t time_t = std::chrono::system_clock::to_time_t(timestamp);
 
-    std::optional<std::string> nanoseconds = std::nullopt;
-    if (include_nanoseconds) {
-        nanoseconds = extractNanoseconds(timestamp);
+    std::optional<std::string> nanos = std::nullopt;
+    if (include_nanos) {
+        nanos = extractNanoseconds(timestamp);
     }
 
-    return formatTimeT(use_utc, time_t, format, nanoseconds);
+    return formatTimeT(use_utc, time_t, format, nanos);
 }
 
 /**
@@ -145,16 +145,36 @@ std::chrono::nanoseconds Helper::getNanosecondsSinceEpoch(
 }
 
 /**
+ * @brief Converts a `std::chrono::system_clock::time_point` to seconds and nanoseconds since
+ * epoch.alignas
+ *
+ * This function takes a `std::chrono::system_clock::time_point` and converts it to a pair of
+ * int64_t representing seconds and nanoseconds since the epoch. The result is returned as a
+ * `std::pair<int64_t, int64_t>`.
+ *
+ * @param timestamp The time point to convert to seconds and nanoseconds since the epoch.
+ * @return std::pair<int64_t, int64_t> A pair of int64_t representing seconds and nanoseconds since
+ * the epoch for the given time.
+ */
+std::pair<int64_t, int64_t> Helper::getSecondsAndNanosecondsSinceEpoch(
+    const std::chrono::system_clock::time_point& timestamp) {
+    auto duration = timestamp.time_since_epoch();
+    auto seconds = std::chrono::duration_cast<std::chrono::seconds>(duration);
+    auto nanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(duration - seconds);
+    return {seconds.count(), nanoseconds.count()};
+}
+
+/**
  * @brief Retrieves the value of an environment variable.
  *
  * This function attempts to retrieve the value of a specified environment variable.
  * If the environment variable is not set, it returns a provided default value.
  *
  * @param env_var The name of the environment variable to retrieve.
- * @param default_value The value to return if the environment variable is not set. Defaults to an
- * empty string.
- * @return std::string The value of the environment variable, or the default value if the variable
- * is not set.
+ * @param default_value The value to return if the environment variable is not set. Defaults to
+ * an empty string.
+ * @return std::string The value of the environment variable, or the default value if the
+ * variable is not set.
  */
 std::string Helper::getEnvVariable(const std::string& env_var,
                                    const std::optional<std::string>& default_value) {
@@ -309,6 +329,47 @@ std::string Helper::jsonToString(const nlohmann::json& json_value) {
     throw std::runtime_error("The message contains a node with an unsupported value.");
 }
 
+/**
+ * @brief Converts a std::variant containing different types to a std::string.
+ *
+ * This function takes a std::variant that can hold a std::string, int, double, float, or bool,
+ * and converts the contained value to a std::string. It uses std::visit to apply a lambda
+ * function that handles each possible type:
+ * - If the value is a std::string, it is returned directly.
+ * - If the value is a bool, it is converted to "true" or "false".
+ * - If the value is a numeric type (int, double, float), it is converted using std::to_string.
+ *
+ * @param var A std::variant containing a value of type std::string, int, double, float, or bool.
+ *
+ * @return A std::string representation of the value contained in the variant.
+ */
+std::string Helper::variantToString(
+    const std::variant<std::string, int, double, float, bool>& var) {
+    return std::visit(
+        [](const auto& value) -> std::string {
+            if constexpr (std::is_same_v<std::decay_t<decltype(value)>, std::string>) {
+                return value;  // Return string directly
+            } else if constexpr (std::is_same_v<std::decay_t<decltype(value)>, bool>) {
+                return value ? "true" : "false";  // Convert boolean to string
+            } else {
+                return std::to_string(value);  // Convert numbers using std::to_string
+            }
+        },
+        var);
+}
+
+/**
+ * @brief Converts a given number of seconds and nanoseconds into a system clock timestamp.
+ *
+ * This function takes two parameters representing time in seconds and nanoseconds,
+ * and converts them into a `std::chrono::system_clock::time_point` object.
+ * If the conversion fails, an invalid_argument exception is thrown with an error message.
+ *
+ * @param seconds The number of seconds to be converted into a timestamp.
+ * @param nanos The number of nanoseconds to be added to the timestamp.
+ * @return std::chrono::system_clock::time_point The resulting timestamp as a time_point object.
+ * @throws std::invalid_argument If the conversion fails due to an invalid input.
+ */
 std::chrono::system_clock::time_point Helper::convertToTimestamp(int64_t seconds, int64_t nanos) {
     try {
         return std::chrono::system_clock::time_point(
@@ -332,12 +393,12 @@ std::chrono::system_clock::time_point Helper::convertToTimestamp(int64_t seconds
  * @param format The format string to specify the output format of the time.
  *               This string should be compatible with the formatting options
  *               used by the underlying time formatting functions.
- * @param nanoseconds An optional integer representing the nanoseconds to append
+ * @param nanos An optional integer representing the nanoseconds to append
  *                    to the formatted time. If not provided, nanoseconds are not included.
  * @return A formatted time string based on the provided format and options.
  */
 std::string Helper::formatTimeT(bool use_utc, std::time_t& time_t, const std::string& format,
-                                std::optional<std::string> nanoseconds) {
+                                std::optional<std::string> nanos) {
     // Convert time_t to tm (local or UTC)
     auto tm = use_utc ? *std::gmtime(&time_t) : *std::localtime(&time_t);
 
@@ -345,8 +406,8 @@ std::string Helper::formatTimeT(bool use_utc, std::time_t& time_t, const std::st
     std::ostringstream oss;
     oss << std::put_time(&tm, format.c_str());
 
-    if (nanoseconds.has_value()) {
-        oss << '.' << nanoseconds.value();
+    if (nanos.has_value()) {
+        oss << '.' << nanos.value();
     }
 
     std::string formatted_time = oss.str();

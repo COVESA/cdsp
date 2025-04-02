@@ -2,6 +2,7 @@
 add_library(websocket_client
     src/websocket_client.cpp
     src/real_websocket_connection.cpp
+    services/bo_service.cpp
     services/bo_to_dto.cpp
     services/message_service.cpp
     services/system_configuration_service.cpp
@@ -28,6 +29,7 @@ target_link_libraries(websocket_client
         nlohmann_json::nlohmann_json
         data_objects
         rdf_writer
+        rdf_services
         reasoner
     PRIVATE  
         Boost::system

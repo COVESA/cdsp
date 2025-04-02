@@ -81,14 +81,15 @@ void TripleAssembler::transformMessageToTriple(const DataMessage& message) {
         if (node.getName() == "Vehicle.CurrentLocation.Latitude" ||
             node.getName() == "Vehicle.CurrentLocation.Longitude") {
             const auto node_timestamp = getTimestampFromNode(node);
-            const auto nanosecondsSinceEpoch = Helper::getNanosecondsSinceEpoch(node_timestamp);
+            const auto nanoseconds_since_epoch = Helper::getNanosecondsSinceEpoch(node_timestamp);
 
-            const auto found_key = timestamp_coordinates_messages_map_.find(nanosecondsSinceEpoch);
+            const auto found_key =
+                timestamp_coordinates_messages_map_.find(nanoseconds_since_epoch);
             if (found_key != timestamp_coordinates_messages_map_.end()) {
                 found_key->second.insert({node.getName(), node});
             } else {
                 timestamp_coordinates_messages_map_.emplace(
-                    nanosecondsSinceEpoch,
+                    nanoseconds_since_epoch,
                     std::unordered_map<std::string, Node>{{node.getName(), node}});
             }
 
@@ -129,11 +130,11 @@ void TripleAssembler::transformMessageToTriple(const DataMessage& message) {
  * if no valid pair exists.
  */
 std::optional<CoordinateNodes> TripleAssembler::getValidCoordinatesPair() {
-    chrono_time_nanoseconds last_timestamp_to_delete(0);
+    chrono_time_nanos last_timestamp_to_delete(0);
     const Node* latitude = nullptr;
-    chrono_time_nanoseconds latitude_time;
+    chrono_time_nanos latitude_time;
     const Node* longitude = nullptr;
-    chrono_time_nanoseconds longitude_time;
+    chrono_time_nanos longitude_time;
 
     for (const auto& [time, nodes] : timestamp_coordinates_messages_map_) {
         // Check if latitude exists
@@ -204,7 +205,7 @@ void TripleAssembler::generateTriplesFromNode(const Node& node, const SchemaType
         // Split node data point into object and data elements
         const auto [object_elements, data_element] = extractObjectsAndDataElements(node.getName());
 
-        const auto queries = model_config_->getQueriesConfig().getQueries();
+        const auto queries = model_config_->getQueriesTripleAssemblerHelper().getQueries();
         TripleAssemblerHelper::QueryPair query_pair;
         if (queries.find(msg_schema_type) != queries.end()) {
             query_pair = queries.at(msg_schema_type);
@@ -437,7 +438,7 @@ void TripleAssembler::storeTripleOutput(const std::string& triple_output) {
     }
 
     // Create file name
-    const std::string file_name = model_config_->getOutput() + "gen_triple_" +
+    const std::string file_name = model_config_->getOutput() + "triples/gen_triple_t_" +
                                   Helper::getFormattedTimestampNow("%H", false, true) +
                                   reasonerSyntaxTypeToFileExtension(output_format);
 

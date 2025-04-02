@@ -26,26 +26,51 @@ nlohmann::json JSONWriter::writeToJson(const std::string& query_result,
                                        const DataQueryAcceptType& result_format_type,
                                        std::optional<std::string> output_file_path,
                                        std::shared_ptr<IFileHandler> file_handler) {
-    nlohmann::json json_result;
+    nlohmann::json flat_result;
+
     if (result_format_type == DataQueryAcceptType::TEXT_CSV) {
-        json_result = parseTableFormat(query_result, ',');
+        flat_result = parseTableFormat(query_result, ',');
     } else if (result_format_type == DataQueryAcceptType::TEXT_TSV) {
-        json_result = parseTableFormat(query_result, '\t');
+        flat_result = parseTableFormat(query_result, '\t');
     } else if (result_format_type == DataQueryAcceptType::SPARQL_JSON) {
-        json_result = parseSparqlJson(query_result);
+        flat_result = parseSparqlJson(query_result);
     } else if (result_format_type == DataQueryAcceptType::SPARQL_XML) {
-        json_result = parseSparqlXml(query_result);
+        flat_result = parseSparqlXml(query_result);
     } else {
         throw std::runtime_error("Unsupported query result format");
     }
-    nlohmann::json json_object;
-    json_object["created_at"] = Helper::getFormattedTimestampNow("%Y-%m-%dT%H:%M:%S", true, true);
-    json_object["results"] = json_result;
 
-    !output_file_path.value_or("").empty()
-        ? storeJsonToFile(json_object, *output_file_path, file_handler)
-        : void();
-    return json_object;
+    nlohmann::json grouped_result = nlohmann::json::array();
+
+    for (const auto& item : flat_result) {
+        nlohmann::json grouped;
+
+        for (auto it = item.begin(); it != item.end(); ++it) {
+            std::string key = it.key();
+            auto value = it.value();
+
+            size_t dot_pos = key.find('.');
+            if (dot_pos != std::string::npos) {
+                std::string schema = key.substr(0, dot_pos);
+                std::string flat_data_point = key.substr(dot_pos + 1);
+                grouped[schema][flat_data_point] = value;
+            } else {
+                std::cerr << "Warning parsing reasoning query to JSON - No schema found for key: "
+                          << key << std::endl;
+            }
+        }
+
+        grouped_result.push_back(grouped);
+    }
+
+    if (!grouped_result.empty()) {
+        if (output_file_path.has_value() && !output_file_path->empty()) {
+            storeJsonToFile(grouped_result, *output_file_path, file_handler);
+        }
+
+        return grouped_result;
+    }
+    return nlohmann::json::object();  // Return an empty JSON object if no results
 }
 
 /**
@@ -219,7 +244,8 @@ void JSONWriter::storeJsonToFile(const nlohmann::json& json_data,
 
     // Create file name
     const std::string file_name = output_file_path + "gen_from_sparql_query_" +
-                                  Helper::getFormattedTimestampNow("%H", false, true) + ".json";
+                                  Helper::getFormattedTimestampNow("%H:%M:%S", true, true) +
+                                  ".json";
 
     // Write the file
     if (!file_handler) {

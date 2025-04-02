@@ -21,7 +21,7 @@ class TripleWriterIntegrationTest : public ::testing::Test {
     const std::string DATA_TIME = UtcDateUtils::formatCustomTimestampAsIso8601(TIMESTAMP);
 
     const std::string OBSERVATION_IDENTIFIER =
-        "Observation" + ObservationIdentifier::createObservationIdentifier(TIMESTAMP);
+        "ob_CurrentEnergy_" + ObservationIdentifier::createObservationIdentifier(TIMESTAMP);
 
     void SetUp() override {
         triple_writer = new TripleWriter();

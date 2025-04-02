@@ -10,6 +10,7 @@ add_library(data_objects
     bo/model_config.cpp
     bo/reasoner_settings.cpp
     bo/triple_assembler_helper.cpp
+    bo/set_message.cpp
 )
 
 # Include directories

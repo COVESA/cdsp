@@ -13,6 +13,7 @@
 #include "data_types.h"
 #include "get_message.h"
 #include "model_config.h"
+#include "set_message.h"
 #include "status_message_dto.h"
 #include "subscribe_message.h"
 
@@ -22,9 +23,7 @@ class MessageService {
    public:
     MessageService(const std::map<SchemaType, std::vector<std::string>>& system_data_point);
 
-    void addMessageToQueue(const GetMessage& message, std::vector<json>& reply_messages_queue);
-
-    void addMessageToQueue(const SubscribeMessage& message,
+    void addMessageToQueue(const std::variant<GetMessage, SubscribeMessage, SetMessage>& message,
                            std::vector<json>& reply_messages_queue);
 
     std::optional<DataMessage> getDataMessageOrLogStatus(const std::string& message);

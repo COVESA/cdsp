@@ -1,10 +1,11 @@
 #include "websocket_client.h"
 
-#include <iostream>
-#include <variant>
 #include <chrono>
+#include <iostream>
 #include <thread>
+#include <variant>
 
+#include "bo_service.h"
 #include "data_message.h"
 #include "helper.h"
 #include "real_websocket_connection.h"
@@ -36,8 +37,8 @@ void Fail(const boost::system::error_code& ec, const std::string& what) {
  * be used.
  */
 WebSocketClient::WebSocketClient(const SystemConfig& system_config,
-                                 std::shared_ptr<ReasonerService> reasoner_service,
                                  std::shared_ptr<ModelConfig> model_config,
+                                 std::shared_ptr<ReasonerService> reasoner_service,
                                  std::shared_ptr<WebSocketClientInterface> connection)
     : system_config_(system_config),
       reasoner_service_(std::move(reasoner_service)),
@@ -45,7 +46,8 @@ WebSocketClient::WebSocketClient(const SystemConfig& system_config,
       connection_(std::move(connection)),
       io_context_(),
       triple_assembler_(model_config_, *reasoner_service_, file_handler_, triple_writer_),
-      message_service_(model_config_->getInputs()) {
+      message_service_(model_config_->getInputs()),
+      reasoner_query_service_(std::make_shared<ReasoningQueryService>(reasoner_service_)) {
     triple_assembler_.initialize();
 }
 
@@ -87,11 +89,11 @@ const SystemConfig& WebSocketClient::getInitConfig() const { return system_confi
 void WebSocketClient::onConnect(boost::system::error_code ec,
                                 const boost::asio::ip::tcp::endpoint& endpoint) {
     if (ec) {
-        return Fail(ec, "Connection failed:");
+        return Fail(ec, " - Connection failed:");
     }
 
-    std::cout << "Connected to WebSocket server: " << endpoint.address() << ":" << endpoint.port()
-              << "\n";
+    std::cout << " - Connected to Websocket Server: " << endpoint.address() << ":"
+              << endpoint.port() << "\n";
     connection_->asyncHandshake();
 }
 
@@ -107,30 +109,25 @@ void WebSocketClient::onConnect(boost::system::error_code ec,
  */
 void WebSocketClient::handshake(boost::system::error_code ec) {
     if (ec) {
-        return Fail(ec, "Handshake failed:");
+        return Fail(ec, " - Handshake failed:");
     }
 
     for (const SchemaType& schema_type :
          model_config_->getReasonerSettings().getSupportedSchemaCollections()) {
         // Start subscribing to supported schemas
-        // TODO: Refactor to subscribe to each node in the schema collection
         const auto object_id = model_config_->getObjectId().at(schema_type);
-        MessageHeader subscribe_header(object_id, schema_type);
-        message_service_.addMessageToQueue(SubscribeMessage(subscribe_header, {}),
-                                           reply_messages_queue_);
+        auto subscribe_message = BoService::createSubscribeMessage(object_id, schema_type);
+        message_service_.addMessageToQueue(subscribe_message, reply_messages_queue_);
 
-        // Create a get message to retrieve all data points for the collection
-        std::vector<Node> nodes;
-
+        // TODO: Check if this block is needed
+        /*
         const auto data_point_list = model_config_->getInputs().at(schema_type);
-        for (const auto data_point : data_point_list) {
-            nodes.push_back(Node(data_point, std::nullopt, Metadata(), data_point_list));
-        }
-        std::cout << "Nodes: " << nodes.size() << "\n";
-
-        MessageHeader get_header(object_id, schema_type);
-        message_service_.addMessageToQueue(GetMessage(get_header, nodes), reply_messages_queue_);
+        auto get_message = BoService::createGetMessage(object_id, schema_type, data_point_list);
+        message_service_.addMessageToQueue(get_message, reply_messages_queue_);
+        */
     }
+
+    std::cout << " - Handshake succeeded!\n\n";
 
     writeReplyMessagesOnQueue();
 }
@@ -147,12 +144,6 @@ void WebSocketClient::onSendMessage(boost::system::error_code ec, std::size_t by
         return Fail(ec, "write");
     }
     std::cout << "Message sent! " << bytes_transferred << " bytes transferred\n\n";
-    // TODO: Remove the sleep code: temporary flag to await the open session in the Information
-    // Layer (Fix: ESSENCE-976)
-    if (temporary_messaging_sleep_flag_) {
-        temporary_messaging_sleep_flag_ = false;
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-    }
     connection_->asyncRead();
 }
 
@@ -184,6 +175,24 @@ void WebSocketClient::processMessage(const std::shared_ptr<const std::string>& m
     const auto data_message = message_service_.getDataMessageOrLogStatus(prio_message);
     if (data_message.has_value()) {
         triple_assembler_.transformMessageToTriple(data_message.value());
+
+        // Process reasoning query
+        for (const auto& reasoning_output_query : model_config_->getReasoningOutputQueries()) {
+            try {
+                json result = reasoner_query_service_->processReasoningQuery(
+                    reasoning_output_query, model_config_->getOutput() + "/reasoning_output/");
+
+                if (!result.empty()) {
+                    auto set_messages =
+                        BoService::createSetMessage(model_config_->getObjectId(), result);
+                    for (auto& set_message : set_messages) {
+                        message_service_.addMessageToQueue(set_message, reply_messages_queue_);
+                    }
+                }
+            } catch (const std::exception& e) {
+                std::cerr << "Error processing reasoning query: " << e.what() << std::endl;
+            }
+        }
     }
 
     if (!reply_messages_queue_.empty()) {

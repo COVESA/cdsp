@@ -14,8 +14,10 @@
  *                       representing the reasoner rules. This cannot be empty.
  * @param validation_shapes A vector of pairs, each containing a ReasonerSyntaxType and a string,
  *                          representing the validation shapes. This cannot be empty.
- * @param queries_config A TripleAssemblerHelper object containing the configuration for queries.
- *                       This cannot be empty.
+ * @param triple_assembler_helper A TripleAssemblerHelper object containing the
+ * queries to create triples. This cannot be empty.
+ * @param reasoning_output_queries A vector of pairs, each containing a ReasonerSyntaxType and a
+ * string, representing the query rules output. This cannot be empty.
  * @param reasoner_settings A ReasonerSettings object containing the settings for the reasoner.
  *                          It must have supported schema collections.
  *
@@ -23,12 +25,14 @@
  * @throws std::invalid_argument if the output path is empty.
  * @throws std::invalid_argument if the validation shapes are empty.
  * @throws std::invalid_argument if the reasoner rules are empty.
- * @throws std::invalid_argument if the queries_config does not contain any queries.
+ * @throws std::invalid_argument if the triple_assembler_helper does not contain any
+ * queries.
+ * @throws std::invalid_argument if the reasoning_output_queries is empty.
  * @throws std::invalid_argument if the supported schema collections in reasoner_settings are empty.
  * @throws std::invalid_argument if the inputs map does not contain all supported schema
  * collections.
- * @throws std::invalid_argument if the queries_config does not contain all supported schema
- * collections or a default query.
+ * @throws std::invalid_argument if the triple_assembler_helper does not contain all
+ * supported schema collections or a default query.
  */
 ModelConfig::ModelConfig(
     const std::map<SchemaType, std::vector<std::string>>& inputs,
@@ -36,13 +40,16 @@ ModelConfig::ModelConfig(
     const std::string& output_path,
     const std::vector<std::pair<RuleLanguageType, std::string>>& reasoner_rules,
     const std::vector<std::pair<ReasonerSyntaxType, std::string>>& validation_shapes,
-    const TripleAssemblerHelper& queries_config, const ReasonerSettings& reasoner_settings)
+    const TripleAssemblerHelper& triple_assembler_helper,
+    const std::vector<std::pair<QueryLanguageType, std::string>>& reasoning_output_queries,
+    const ReasonerSettings& reasoner_settings)
     : inputs_(inputs),
       ontologies_(ontologies),
       output_path_(output_path),
       reasoner_rules_(reasoner_rules),
       validation_shapes_(validation_shapes),
-      queries_config_(queries_config),
+      triple_assembler_helper_(triple_assembler_helper),
+      reasoning_output_queries_(reasoning_output_queries),
       reasoner_settings_(reasoner_settings) {
     if (inputs_.empty()) {
         throw std::invalid_argument("Inputs map cannot be empty");
@@ -56,10 +63,13 @@ ModelConfig::ModelConfig(
     if (reasoner_rules_.empty()) {
         throw std::invalid_argument("Reasoner rules cannot be empty");
     }
-    if (queries_config.getQueries().empty()) {
+    if (triple_assembler_helper.getQueries().empty()) {
         throw std::invalid_argument(
-            "Queries config cannot be empty. At least one query must be provided for each schema "
-            "or default");
+            "Queries for the triple assembler helper cannot be empty. At least one query must be "
+            "provided for each schema or default");
+    }
+    if (reasoning_output_queries_.empty()) {
+        throw std::invalid_argument("Reasoning output queries cannot be empty");
     }
     if (reasoner_settings_.getSupportedSchemaCollections().empty()) {
         throw std::invalid_argument("Supported schema collections cannot be empty");
@@ -69,9 +79,10 @@ ModelConfig::ModelConfig(
                 throw std::invalid_argument(
                     "Inputs map must contain all supported schema collections");
             }
-            if (queries_config.getQueries().find(schema) == queries_config.getQueries().end()) {
-                if (queries_config.getQueries().find(SchemaType::DEFAULT) ==
-                    queries_config.getQueries().end()) {
+            if (triple_assembler_helper.getQueries().find(schema) ==
+                triple_assembler_helper.getQueries().end()) {
+                if (triple_assembler_helper.getQueries().find(SchemaType::DEFAULT) ==
+                    triple_assembler_helper.getQueries().end()) {
                     throw std::invalid_argument(
                         "All supported schema collections must be in the queries map or there must "
                         "be a default query");
@@ -155,14 +166,31 @@ std::vector<std::pair<ReasonerSyntaxType, std::string>> ModelConfig::getValidati
 }
 
 /**
- * @brief Retrieves the queries configuration.
+ * @brief Retrieves the queries used by the triple assembler.
  *
- * This function returns the configuration settings related to queries
- * for the model.
+ * This function returns a TripleAssemblerHelper object containing the queries used by the
+ * triple assembler to construct the triples.
  *
- * @return TripleAssemblerHelper The current queries configuration.
+ * @return TripleAssemblerHelper The TripleAssemblerHelper object containing the queries.
  */
-TripleAssemblerHelper ModelConfig::getQueriesConfig() const { return queries_config_; }
+TripleAssemblerHelper ModelConfig::getQueriesTripleAssemblerHelper() const {
+    return triple_assembler_helper_;
+}
+
+/**
+ * @brief Retrieves the queries rules output configuration.
+ *
+ * This function returns a vector of pairs, where each pair consists of a
+ * QueryLanguageType and a corresponding string. These pairs represent the
+ * queries used to get the rules output associated with the model configuration.
+ *
+ * @return A vector of pairs containing QueryLanguageType and string,
+ * representing the queries of the rules output.
+ */
+std::vector<std::pair<QueryLanguageType, std::string>> ModelConfig::getReasoningOutputQueries()
+    const {
+    return reasoning_output_queries_;
+}
 
 /**
  * @brief Retrieves the current reasoner settings.
@@ -224,7 +252,7 @@ std::ostream& operator<<(std::ostream& os, const ModelConfig& config) {
     }
     os << "  ]\n";
     os << "  Queries Config: \n";
-    for (const auto& [schema, query_pair] : config.getQueriesConfig().getQueries()) {
+    for (const auto& [schema, query_pair] : config.getQueriesTripleAssemblerHelper().getQueries()) {
         if (schema == SchemaType::DEFAULT) {
             os << "    default: {\n";
         } else {
@@ -244,7 +272,14 @@ std::ostream& operator<<(std::ostream& os, const ModelConfig& config) {
         os << "         }\n";
         os << "    }\n";
     }
-    os << "    Query Output: " << config.getQueriesConfig().getOutput() << "\n";
+    os << "  Queries Rules Output: [\n";
+    for (const auto& [syntax, content] : config.getReasoningOutputQueries()) {
+        os << "    {\n";
+        os << "      Query Type: " << queryLanguageTypeToContentType(syntax) << ",\n";
+        os << "      Content: " << content << "\n";
+        os << "    }\n";
+    }
+    os << "  ]\n";
     os << "  Reasoner Settings:\n";
     os << "    Inference Engine: "
        << inferenceEngineTypeToString(config.getReasonerSettings().getInferenceEngine()) << "\n";

@@ -16,42 +16,30 @@ MessageService::MessageService(
 }
 
 /**
- * @brief Adds a `get` message to the reply messages queue.
+ * @brief Adds a message to the reply messages queue.
  *
- * This function converts a given message into a DTO (Data Transfer Object) and
- * then iterates over the DTO to convert each part into a JSON object. Each JSON
- * object is subsequently added to the reply messages queue.
+ * This function takes a message variant and adds it to the reply messages queue. The message is
+ * converted to a DTO and then to a JSON object before being added to the queue.
  *
- * @param message The message to be converted and added to the queue.
- * @param reply_messages_queue The queue where the converted JSON messages will be stored.
+ * @param message The message to be added to the queue.
+ * @param reply_messages_queue The queue to which the message will be added.
  */
-void MessageService::addMessageToQueue(const GetMessage& message,
-                                       std::vector<json>& reply_messages_queue) {
-    auto dto = BoToDto::convert(message, std::nullopt);
-    for (const auto& message_dto : dto) {
-        json json_message = message_dto;
-        reply_messages_queue.push_back(json_message);
-    }
-}
-
-/**
- * @brief Adds a `subscribe` message to the reply messages queue.
- *
- * This function converts a SubscribeMessage object into a DTO (Data Transfer Object)
- * and then serializes each DTO into a JSON object. The resulting JSON objects are
- * added to the provided reply messages queue.
- *
- * @param message The SubscribeMessage object to be converted and added to the queue.
- * @param reply_messages_queue A reference to the vector of JSON objects where the
- *        converted messages will be stored.
- */
-void MessageService::addMessageToQueue(const SubscribeMessage& message,
-                                       std::vector<json>& reply_messages_queue) {
-    auto dto = BoToDto::convert(message, std::nullopt);
-    for (const auto& message_dto : dto) {
-        json json_message = message_dto;
-        reply_messages_queue.push_back(json_message);
-    }
+void MessageService::addMessageToQueue(
+    const std::variant<GetMessage, SubscribeMessage, SetMessage>& message,
+    std::vector<json>& reply_messages_queue) {
+    std::visit(
+        [&reply_messages_queue](const auto& specific_message) {
+            auto dto = BoToDto::convert(specific_message);
+            json json_dto = dto;
+            if (json_dto.is_array()) {
+                for (const auto& message_dto : json_dto) {
+                    reply_messages_queue.push_back(message_dto);
+                }
+            } else {
+                reply_messages_queue.push_back(json_dto);
+            }
+        },
+        message);
 }
 
 /**
@@ -77,10 +65,10 @@ std::variant<DataMessageDTO, StatusMessageDTO> MessageService::displayAndParseMe
         if (type == "data") {
             // Parse and return a DataMessage
             std::cout << "Data message received: " << json_message.dump() << std::endl << std::endl;
-            return (DtoService::parseDataDto(json_message));
+            return (DtoService::parseDataJsonToDto(json_message));
         } else if (type == "status") {
             // Parse and return a StatusMessage
-            return DtoService::parseStatusDto(json_message);
+            return DtoService::parseStatusJsonToDto(json_message);
         } else {
             // Log and return an ErrorMessage for unknown message types
             throw std::runtime_error("Unknown message type: " + type);
@@ -92,6 +80,20 @@ std::variant<DataMessageDTO, StatusMessageDTO> MessageService::displayAndParseMe
     }
 }
 
+/**
+ * @brief Retrieves a DataMessage from a given message string or logs the status if the message is a
+ * StatusMessageDTO.
+ *
+ * This function attempts to parse the provided message string. If the parsed message is of type
+ * StatusMessageDTO, it converts it to a StatusMessage and logs its code and message. If the parsed
+ * message is of type DataMessageDTO, it converts it to a DataMessage and returns it. In case of
+ * any exceptions during the conversion process, an error message is logged.
+ *
+ * @param message A constant reference to a string containing the message to be parsed.
+ * @return std::optional<DataMessage> An optional containing the converted DataMessage if
+ * successful, or std::nullopt if the message is a StatusMessageDTO or an error occurs during
+ * conversion.
+ */
 std::optional<DataMessage> MessageService::getDataMessageOrLogStatus(const std::string& message) {
     const auto parsed_message = MessageService::displayAndParseMessage(message);
     DtoToBo dto_to_bo;

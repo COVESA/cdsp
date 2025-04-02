@@ -13,7 +13,7 @@ struct StatusMessageDTO {
     std::optional<std::string> requestId;
     struct {
         int seconds;
-        int nanoseconds;
+        int nanos;
     } timestamp;
 
     // Overload the << operator to print the DTO
@@ -23,7 +23,7 @@ struct StatusMessageDTO {
            << "  message: " << dto.message << "\n"
            << "  requestId: " << (dto.requestId ? *dto.requestId : "null") << "\n"
            << "  timestamp: { seconds: " << dto.timestamp.seconds
-           << ", nanoseconds: " << dto.timestamp.nanoseconds << " }\n"
+           << ", nanos: " << dto.timestamp.nanos << " }\n"
            << "}";
         return os;
     }

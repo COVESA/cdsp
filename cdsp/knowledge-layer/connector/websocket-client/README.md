@@ -41,10 +41,6 @@ client.sendMessage("Hello, WebSocket!");
 
 # Testing
 
-Several [test](../tests/) are provided to ensure functionality. Test cover the main components (`WebsocketClientIntegrationTest`) to verify the complete reasoning workflow, and (`DTOService`, `DTOToBO`, `BOToDTO`) to ensure data conversion between incoming messages from the external Websocket Server and the core system.
+Several [test](../tests/) are provided to ensure functionality. Test cover the main components (`WebsocketClientIntegrationTest`) to verify the complete reasoning workflow, and (`DTOService`, `DTOToBO`, `BOToDTO`, `BOService`) to ensure data conversion between incoming messages from the external Websocket Server and the core system.
 
-## Future Improvements
-- Implement reconnection logic for better resilience.
-- Extend message processing to support additional formats.
-- Optimize performance with asynchronous handling.
 

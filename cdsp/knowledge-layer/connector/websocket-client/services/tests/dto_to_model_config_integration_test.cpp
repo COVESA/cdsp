@@ -89,10 +89,10 @@ ModelConfigDTO createValidDto() {
     dto.output = "path/output/";
     dto.rules = {"path/rules.dlog"};
     dto.shacl_shapes = {"path/shapes.ttl"};
-    dto.queries_config.queries = {
+    dto.queries.triple_assembler_helper = {
         {"Vehicle", {"path/data_property.rq", "path/object_property.rq"}},
         {"default", {"path/data_property.rq", "path/object_property.rq"}}};
-    dto.queries_config.output = "path/output_queries/";
+    dto.queries.reasoning_output_queries_path = "path/output_queries/";
     dto.reasoner_settings.inference_engine = "rdfox";
     dto.reasoner_settings.output_format = "turtle";
     dto.reasoner_settings.supported_schema_collections = {"Vehicle"};
@@ -118,8 +118,10 @@ TEST_F(DtoToModelConfigIntegrationTest, ConvertModelConfigDtoToBo) {
             expected_bo_inputs[schema].push_back(DataPointsUtils::generateRandomKey());
             return_from_file += expected_bo_inputs[schema].back() + "\n";
         }
+
         dto_random_inputs[schemaTypeToString(schema, true) + ModelConfigConverter::INPUT_SUFFIX] =
             input_path;
+
         EXPECT_CALL(*mock_i_file_handler_,
                     readFile(::testing::StrEq(MODEL_CONFIG_PATH + input_path)))
             .WillOnce(testing::Return(return_from_file));
@@ -134,6 +136,7 @@ TEST_F(DtoToModelConfigIntegrationTest, ConvertModelConfigDtoToBo) {
         expected_bo_ontologies.push_back(
             std::make_pair(reasonerOutputFormatToReasonerSyntaxType(ontology_type_and_path.first),
                            RandomUtils::generateRandomString()));
+
         EXPECT_CALL(*mock_i_file_handler_,
                     readFile(::testing::StrEq(MODEL_CONFIG_PATH + ontology_type_and_path.second)))
             .WillOnce(testing::Return(expected_bo_ontologies.back().second));
@@ -144,13 +147,15 @@ TEST_F(DtoToModelConfigIntegrationTest, ConvertModelConfigDtoToBo) {
     std::string expected_bo_output = MODEL_CONFIG_PATH + dto_output;
 
     // Generate model config queries for schema types
-    TripleAssemblerHelperDTO dto_query_config;
-    std::map<SchemaType, TripleAssemblerHelper::QueryPair> expected_bo_queries;
+    QueriesDTO dto_queries;
+    std::map<SchemaType, TripleAssemblerHelper::QueryPair>
+        expected_bo_triple_assembler_helper_queries;
+
     for (const auto& schema : SCHEMAS_IN_TEST) {
         auto random_query_extension =
             getRandomTypeAndFileExtension(QUERY_LANGUAGE_TYPES_AND_EXTENSION_IN_TEST);
 
-        expected_bo_queries[schema] = TripleAssemblerHelper::QueryPair{
+        expected_bo_triple_assembler_helper_queries[schema] = TripleAssemblerHelper::QueryPair{
             std::make_pair(fileExtensionToQueryLanguageType("." + random_query_extension.second),
                            RandomUtils::generateRandomString()),
             std::make_pair(fileExtensionToQueryLanguageType("." + random_query_extension.second),
@@ -160,17 +165,21 @@ TEST_F(DtoToModelConfigIntegrationTest, ConvertModelConfigDtoToBo) {
             RandomUtils::generateRandomString() + "/data_property." + random_query_extension.second;
         EXPECT_CALL(*mock_i_file_handler_,
                     readFile(::testing::StrEq(MODEL_CONFIG_PATH + data_property_file_path)))
-            .WillOnce(testing::Return(expected_bo_queries[schema].data_property.second));
+            .WillOnce(testing::Return(
+                expected_bo_triple_assembler_helper_queries[schema].data_property.second));
 
         std::string object_property_file_path = RandomUtils::generateRandomString() +
                                                 "/object_property." + random_query_extension.second;
         EXPECT_CALL(*mock_i_file_handler_,
                     readFile(::testing::StrEq(MODEL_CONFIG_PATH + object_property_file_path)))
-            .WillOnce(testing::Return(expected_bo_queries[schema].object_property.second));
+            .WillOnce(testing::Return(
+                expected_bo_triple_assembler_helper_queries[schema].object_property.second));
 
-        std::vector<std::string> random_query_file_paths = {data_property_file_path,
-                                                            object_property_file_path};
-        dto_query_config.queries[schemaTypeToString(schema, true)] = random_query_file_paths;
+        std::vector<std::string> random_query_triple_helper_file_paths = {
+            data_property_file_path, object_property_file_path};
+
+        dto_queries.triple_assembler_helper[schemaTypeToString(schema, true)] =
+            random_query_triple_helper_file_paths;
     }
 
     // Generate model config queries for default schema type
@@ -180,35 +189,70 @@ TEST_F(DtoToModelConfigIntegrationTest, ConvertModelConfigDtoToBo) {
         auto random_query_extension =
             getRandomTypeAndFileExtension(QUERY_LANGUAGE_TYPES_AND_EXTENSION_IN_TEST);
 
-        expected_bo_queries[SchemaType::DEFAULT] = TripleAssemblerHelper::QueryPair{
-            std::make_pair(fileExtensionToQueryLanguageType("." + random_query_extension.second),
-                           RandomUtils::generateRandomString()),
-            std::make_pair(fileExtensionToQueryLanguageType("." + random_query_extension.second),
-                           RandomUtils::generateRandomString())};
+        expected_bo_triple_assembler_helper_queries[SchemaType::DEFAULT] =
+            TripleAssemblerHelper::QueryPair{
+                std::make_pair(
+                    fileExtensionToQueryLanguageType("." + random_query_extension.second),
+                    RandomUtils::generateRandomString()),
+                std::make_pair(
+                    fileExtensionToQueryLanguageType("." + random_query_extension.second),
+                    RandomUtils::generateRandomString())};
 
         std::string data_property_file_path =
             RandomUtils::generateRandomString() + "/data_property." + random_query_extension.second;
+
         EXPECT_CALL(*mock_i_file_handler_,
                     readFile(::testing::StrEq(MODEL_CONFIG_PATH + data_property_file_path)))
             .WillOnce(
-                testing::Return(expected_bo_queries[SchemaType::DEFAULT].data_property.second));
+                testing::Return(expected_bo_triple_assembler_helper_queries[SchemaType::DEFAULT]
+                                    .data_property.second));
 
         std::string object_property_file_path = RandomUtils::generateRandomString() +
                                                 "/object_property." + random_query_extension.second;
+
         EXPECT_CALL(*mock_i_file_handler_,
                     readFile(::testing::StrEq(MODEL_CONFIG_PATH + object_property_file_path)))
             .WillOnce(
-                testing::Return(expected_bo_queries[SchemaType::DEFAULT].object_property.second));
+                testing::Return(expected_bo_triple_assembler_helper_queries[SchemaType::DEFAULT]
+                                    .object_property.second));
 
-        std::vector<std::string> random_query_file_paths = {data_property_file_path,
-                                                            object_property_file_path};
-        dto_query_config.queries["default"] = random_query_file_paths;
+        std::vector<std::string> random_query_triple_helper_file_paths = {
+            data_property_file_path, object_property_file_path};
+
+        dto_queries.triple_assembler_helper["default"] = random_query_triple_helper_file_paths;
     } else {
-        dto_query_config.queries["default"] = {};
+        dto_queries.triple_assembler_helper["default"] = {};
     }
 
-    dto_query_config.output = RandomUtils::generateRandomString();
-    std::string expected_bo_query_output = MODEL_CONFIG_PATH + dto_query_config.output;
+    // Generate reasoning output queries
+    dto_queries.reasoning_output_queries_path = RandomUtils::generateRandomString();
+    std::vector<std::string> dto_reasoning_output_queries_paths;
+    std::vector<std::pair<QueryLanguageType, std::string>> expected_bo_reasoning_output_queries;
+
+    for (int i = 0; i < RandomUtils::generateRandomInt(1, 5); i++) {
+        auto random_query_extension =
+            getRandomTypeAndFileExtension(QUERY_LANGUAGE_TYPES_AND_EXTENSION_IN_TEST);
+
+        expected_bo_reasoning_output_queries.push_back(
+            std::make_pair(fileExtensionToQueryLanguageType("." + random_query_extension.second),
+                           RandomUtils::generateRandomString()));
+
+        dto_reasoning_output_queries_paths.push_back(RandomUtils::generateRandomString() + "." +
+                                                     random_query_extension.second);
+
+        std::string expected_bo_reasoning_output_query =
+            MODEL_CONFIG_PATH + dto_queries.reasoning_output_queries_path + "/" +
+            dto_reasoning_output_queries_paths.back();
+
+        EXPECT_CALL(*mock_i_file_handler_,
+                    readFile(::testing::StrEq(expected_bo_reasoning_output_query)))
+            .WillOnce(testing::Return(expected_bo_reasoning_output_queries.back().second));
+    }
+
+    EXPECT_CALL(*mock_i_file_handler_,
+                readDirectory(::testing::StrEq(MODEL_CONFIG_PATH +
+                                               dto_queries.reasoning_output_queries_path)))
+        .WillOnce(testing::Return(dto_reasoning_output_queries_paths));
 
     // Generate model config rules
     std::vector<std::string> dto_rules;
@@ -216,11 +260,14 @@ TEST_F(DtoToModelConfigIntegrationTest, ConvertModelConfigDtoToBo) {
     for (int i = 0; i < RandomUtils::generateRandomInt(1, 5); i++) {
         auto random_role_extension =
             getRandomTypeAndFileExtension(REASONER_RULES_AND_EXTENSIONS_IN_TEST);
+
         expected_bo_rules.push_back(
             std::make_pair(fileExtensionToRuleLanguageType("." + random_role_extension.second),
                            RandomUtils::generateRandomString()));
+
         dto_rules.push_back(RandomUtils::generateRandomString() + "." +
                             random_role_extension.second);
+
         EXPECT_CALL(*mock_i_file_handler_,
                     readFile(::testing::StrEq(MODEL_CONFIG_PATH + dto_rules.back())))
             .WillOnce(testing::Return(expected_bo_rules.back().second));
@@ -235,6 +282,7 @@ TEST_F(DtoToModelConfigIntegrationTest, ConvertModelConfigDtoToBo) {
         expected_bo_validation_shapes.push_back(
             std::make_pair(reasonerOutputFormatToReasonerSyntaxType(shacl_file_path.first),
                            RandomUtils::generateRandomString()));
+
         EXPECT_CALL(*mock_i_file_handler_,
                     readFile(::testing::StrEq(MODEL_CONFIG_PATH + shacl_file_path.second)))
             .WillOnce(testing::Return(expected_bo_validation_shapes.back().second));
@@ -244,13 +292,18 @@ TEST_F(DtoToModelConfigIntegrationTest, ConvertModelConfigDtoToBo) {
     ReasonerSettingsDTO dto_reasoner_settings;
     dto_reasoner_settings.inference_engine =
         ENGINES_IN_TEST[RandomUtils::generateRandomInt(0, ENGINES_IN_TEST.size() - 1)];
+
     InferenceEngineType expected_bo_reasoner_inference_engine =
         stringToInferenceEngineType(dto_reasoner_settings.inference_engine);
+
     dto_reasoner_settings.output_format =
         getRandomTypeAndFileExtension(SYNTAX_TYPES_AND_EXTENSION_IN_TEST).first;
+
     ReasonerSyntaxType expected_bo_reasoner_output_format =
         reasonerOutputFormatToReasonerSyntaxType(dto_reasoner_settings.output_format);
+
     std::vector<SchemaType> expected_bo_reasoner_supported_schema_collections;
+
     for (SchemaType schema : SCHEMAS_IN_TEST) {
         dto_reasoner_settings.supported_schema_collections.push_back(
             schemaTypeToString(schema, true));
@@ -262,7 +315,7 @@ TEST_F(DtoToModelConfigIntegrationTest, ConvertModelConfigDtoToBo) {
     dto.inputs = dto_random_inputs;
     dto.ontologies = dto_ontologies;
     dto.output = dto_output;
-    dto.queries_config = dto_query_config;
+    dto.queries = dto_queries;
     dto.rules = dto_rules;
     dto.shacl_shapes = dto_shacl_shapes;
     dto.reasoner_settings = dto_reasoner_settings;
@@ -279,18 +332,21 @@ TEST_F(DtoToModelConfigIntegrationTest, ConvertModelConfigDtoToBo) {
     EXPECT_EQ(bo.getReasonerRules(), expected_bo_rules);
     EXPECT_EQ(bo.getValidationShapes(), expected_bo_validation_shapes);
 
-    TripleAssemblerHelper bo_queries_config = bo.getQueriesConfig();
-    for (const auto& [expected_bo_schema, expected_bo_query_pair] : expected_bo_queries) {
+    TripleAssemblerHelper bo_queries_config = bo.getQueriesTripleAssemblerHelper();
+    for (const auto& [expected_bo_schema, expected_bo_query_pair] :
+         expected_bo_triple_assembler_helper_queries) {
         EXPECT_EQ(bo_queries_config.getQueries()[expected_bo_schema].data_property,
                   expected_bo_query_pair.data_property);
+
         EXPECT_EQ(bo_queries_config.getQueries()[expected_bo_schema].object_property,
                   expected_bo_query_pair.object_property);
     }
-    EXPECT_EQ(bo_queries_config.getOutput(), expected_bo_query_output);
+    EXPECT_EQ(bo.getReasoningOutputQueries(), expected_bo_reasoning_output_queries);
 
     ReasonerSettings bo_reasoner_settings = bo.getReasonerSettings();
     EXPECT_EQ(bo_reasoner_settings.getInferenceEngine(), expected_bo_reasoner_inference_engine);
     EXPECT_EQ(bo_reasoner_settings.getOutputFormat(), expected_bo_reasoner_output_format);
+
     for (const SchemaType& schema : expected_bo_reasoner_supported_schema_collections) {
         EXPECT_THAT(bo_reasoner_settings.getSupportedSchemaCollections(),
                     testing::Contains(schema));
@@ -313,14 +369,17 @@ TEST_F(DtoToModelConfigIntegrationTest,
                                                 "inference_engine",
                                                 "output_format",
                                                 "supported_schema_collections",
-                                                "queries_config",
-                                                "queries_output"};
+                                                "triple_assembler_helper",
+                                                "reasoning_output_queries"};
 
     // Arrange
 
     // For this test, the file handler is irrelevant and return a dummy string
     EXPECT_CALL(*mock_i_file_handler_, readFile(::testing::_))
         .WillRepeatedly(testing::Return("some_data"));
+
+    EXPECT_CALL(*mock_i_file_handler_, readDirectory(::testing::_))
+        .WillRepeatedly(testing::Return(std::vector<std::string>()));
 
     for (const auto& field : required_fields) {
         // Define the complete ModelConfigDTO
@@ -349,14 +408,14 @@ TEST_F(DtoToModelConfigIntegrationTest,
         } else if (field == "supported_schema_collections") {
             dto.reasoner_settings.supported_schema_collections.clear();
             error_message = "Supported schema collections cannot be empty";
-        } else if (field == "queries_config") {
-            dto.queries_config.queries.clear();
+        } else if (field == "triple_assembler_helper") {
+            dto.queries.triple_assembler_helper.clear();
             error_message =
-                "Queries config cannot be empty. At least one query must be provided for each "
-                "schema or default";
-        } else if (field == "queries_output") {
-            dto.queries_config.output = std::string();
-            error_message = "Output queries cannot be empty";
+                "Queries for the triple assembler helper cannot be empty. At least one query must "
+                "be provided for each schema or default";
+        } else if (field == "reasoning_output_queries") {
+            dto.queries.reasoning_output_queries_path = std::string();
+            error_message = "Reasoning output queries cannot be empty";
         }
 
         std::cout << "\nTesting with missing field: " << field << "\n";
@@ -389,13 +448,21 @@ TEST_F(DtoToModelConfigIntegrationTest, ConvertModelConfigDtoHandlesIncompleteQu
     std::vector<std::string> required_fields = {"data_property", "object_property"};
     std::vector<std::string> schema_types = {"Vehicle", "default"};
     std::string error_message;
+
+    // For this test, the file handler is irrelevant and return a dummy string
+    EXPECT_CALL(*mock_i_file_handler_, readFile(::testing::_))
+        .WillRepeatedly(testing::Return("some_data"));
+
+    EXPECT_CALL(*mock_i_file_handler_, readDirectory(::testing::_))
+        .WillRepeatedly(testing::Return(std::vector<std::string>({"some_file.rq"})));
+
     for (const auto& schema : schema_types) {
         for (const auto& field : required_fields) {
             // Define the complete ModelConfigDTO
             ModelConfigDTO dto = createValidDto();
 
             // Set the field to an empty value
-            auto& files = dto.queries_config.queries[schema];
+            auto& files = dto.queries.triple_assembler_helper[schema];
             if (field == "data_property") {
                 files.erase(files.begin());
             } else if (field == "object_property") {
@@ -404,9 +471,6 @@ TEST_F(DtoToModelConfigIntegrationTest, ConvertModelConfigDtoHandlesIncompleteQu
 
             error_message = "Failed to read data and object properties for `" + schema +
                             "` collection from the model config";
-
-            EXPECT_CALL(*mock_i_file_handler_, readFile(::testing::_))
-                .WillRepeatedly(testing::Return("some_data"));
 
             std::cout << "\nTesting with failing " + field + " queries for schema: " << schema
                       << "\n";
@@ -417,7 +481,7 @@ TEST_F(DtoToModelConfigIntegrationTest, ConvertModelConfigDtoHandlesIncompleteQu
                 ASSERT_NO_THROW({
                     auto bo = dto_to_bo_->convert(dto);
                     std::cout << "ModelConfig parsed: \n" << bo << std::endl;
-                    auto query = bo.getQueriesConfig().getQueries();
+                    auto query = bo.getQueriesTripleAssemblerHelper().getQueries();
                     for (const auto& [schema, query_pair] : query) {
                         std::cout << "Schema: " << schemaTypeToString(schema) << "\n";
                     }

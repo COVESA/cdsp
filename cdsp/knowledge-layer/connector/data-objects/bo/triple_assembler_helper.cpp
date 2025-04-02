@@ -8,15 +8,10 @@
  *
  * @param queries A map of SchemaType to QueryPair objects. Each QueryPair object contains
  *                a data property and an object property to construct the triples.
- * @param output The output string.
  * @throws std::invalid_argument if the output string is empty or if any of the queries are empty.
  */
-TripleAssemblerHelper::TripleAssemblerHelper(const std::map<SchemaType, QueryPair>& queries,
-                                             const std::string& output)
-    : queries_(queries), output_(output) {
-    if (output_.empty()) {
-        throw std::invalid_argument("Output queries cannot be empty");
-    }
+TripleAssemblerHelper::TripleAssemblerHelper(const std::map<SchemaType, QueryPair>& queries)
+    : queries_(queries) {
     for (const auto& query : queries_) {
         if (query.second.data_property.second.empty() ||
             query.second.object_property.second.empty()) {
@@ -37,12 +32,3 @@ TripleAssemblerHelper::TripleAssemblerHelper(const std::map<SchemaType, QueryPai
 std::map<SchemaType, TripleAssemblerHelper::QueryPair> TripleAssemblerHelper::getQueries() const {
     return queries_;
 }
-
-/**
- * @brief Retrieves the output string.
- *
- * This function returns the output string stored in the TripleAssemblerHelper object.
- *
- * @return A constant reference to the output string.
- */
-std::string TripleAssemblerHelper::getOutput() const { return output_; }

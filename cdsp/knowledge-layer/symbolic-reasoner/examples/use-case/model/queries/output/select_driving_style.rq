@@ -1,0 +1,36 @@
+prefix car: <http://example.ontology.com/car#>
+prefix sosa: <http://www.w3.org/ns/sosa/>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+select distinct  
+?Vehicle_DrivingStyle_segment
+?Vehicle_DrivingStyle_AvgAngleChange
+?Vehicle_DrivingStyle_Speed
+?Vehicle_DrivingStyle_Duration
+?Vehicle_DrivingStyle_Start_Latitude
+?Vehicle_DrivingStyle_Start_Longitude
+?Vehicle_DrivingStyle_Start_Timestamp
+?Vehicle_DrivingStyle_End_Latitude
+?Vehicle_DrivingStyle_End_Longitude
+?Vehicle_DrivingStyle_End_Timestamp
+where {
+?Vehicle_DrivingStyle_segment_iri a car:Segment;
+   car:hasStartFixPoint ?vehicle_segment_start_point;
+   car:startTime ?Vehicle_DrivingStyle_Start_Timestamp;
+   car:hasEndFixPoint ?vehicle_segment_end_point;
+   car:endTime ?Vehicle_DrivingStyle_End_Timestamp;
+   car:hasDrivingStyle ?vehicle_segment_driving_style;
+   car:avgAngleChange ?Vehicle_DrivingStyle_AvgAngleChange; #output
+   car:timeWindowSize ?Vehicle_DrivingStyle_Duration.#output
+?vehicle_segment_driving_style a ?Vehicle_DrivingStyle_Type; #output
+    car:hasHighSpeed ?Vehicle_highSpeed.
+?Vehicle_highSpeed  car:hasSpeed ?Vehicle_DrivingStyle_Speed.#output
+
+?vehicle_segment_start_point  car:latitude ?Vehicle_DrivingStyle_Start_Latitude; #output
+     car:longitude ?Vehicle_DrivingStyle_Start_Longitude.
+?vehicle_segment_end_point  car:latitude ?Vehicle_DrivingStyle_End_Latitude; #output
+     car:longitude ?Vehicle_DrivingStyle_End_Longitude.
+    BIND(STR(?Vehicle_DrivingStyle_segment_iri) AS ?s_Vehicle_DrivingStyle_segment).
+    BIND(REPLACE(REPLACE(?s_Vehicle_DrivingStyle_segment, "^.*#", ""), "[^a-zA-Z0-9]", "") AS ?Vehicle_DrivingStyle_segment)
+    BIND ((xsd:dateTime(?Vehicle_DrivingStyle_End_Timestamp)-xsd:dateTime(?Vehicle_DrivingStyle_Start_Timestamp)) as ?time_diff)
+    FILTER (?time_diff < "PT4S"^^xsd:duration)
+}

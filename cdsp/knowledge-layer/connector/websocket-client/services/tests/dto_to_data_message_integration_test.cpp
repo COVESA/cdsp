@@ -38,7 +38,7 @@ INSTANTIATE_TEST_SUITE_P(
  *
  * @param nodes_metadata A map where the key is a node identifier (string) and the value
  * is another map. This inner map has keys as tags ("generated" or "received") and values
- * as pairs of integers representing seconds and nanoseconds.
+ * as pairs of integers representing seconds and nanos.
  *
  * @return An optional MetadataDTO object containing the processed metadata. Returns
  * std::nullopt if no nodes are present in the input map.
@@ -52,10 +52,10 @@ std::optional<MetadataDTO> generateMetadataDTO(
         for (const auto& [tag, timestamp] : timestamps) {
             if (tag == "generated") {
                 node_metadata.generated.seconds = timestamp.first;
-                node_metadata.generated.nanoseconds = timestamp.second;
+                node_metadata.generated.nanos = timestamp.second;
             } else if (tag == "received") {
                 node_metadata.received.seconds = timestamp.first;
-                node_metadata.received.nanoseconds = timestamp.second;
+                node_metadata.received.nanos = timestamp.second;
             }
         }
         metadata_dto.nodes[node] = node_metadata;
@@ -64,34 +64,6 @@ std::optional<MetadataDTO> generateMetadataDTO(
         return std::nullopt;
     }
     return metadata_dto;
-}
-
-/**
- * @brief Converts a std::variant containing different types to a std::string.
- *
- * This function takes a std::variant that can hold a std::string, int, double, float, or bool,
- * and converts the contained value to a std::string. It uses std::visit to apply a lambda
- * function that handles each possible type:
- * - If the value is a std::string, it is returned directly.
- * - If the value is a bool, it is converted to "true" or "false".
- * - If the value is a numeric type (int, double, float), it is converted using std::to_string.
- *
- * @param var A std::variant containing a value of type std::string, int, double, float, or bool.
- *
- * @return A std::string representation of the value contained in the variant.
- */
-std::string variantToString(const std::variant<std::string, int, double, float, bool>& var) {
-    return std::visit(
-        [](const auto& value) -> std::string {
-            if constexpr (std::is_same_v<std::decay_t<decltype(value)>, std::string>) {
-                return value;  // Return string directly
-            } else if constexpr (std::is_same_v<std::decay_t<decltype(value)>, bool>) {
-                return value ? "true" : "false";  // Convert boolean to string
-            } else {
-                return std::to_string(value);  // Convert numbers using std::to_string
-            }
-        },
-        var);
 }
 
 /**
@@ -200,7 +172,8 @@ TEST_P(DtoToDataMessageIntegrationTest, ConvertDataMessageDTOToBo) {
                 (schemaTypeToString(SCHEMA_TYPE, true) + "." + random_metadata_node_name).size());
 
             ASSERT_TRUE(random_nodes.find(expected_random_node_name) != random_nodes.end());
-            ASSERT_EQ(variantToString(random_nodes[expected_random_node_name]), bo_node_value);
+            ASSERT_EQ(Helper::variantToString(random_nodes[expected_random_node_name]),
+                      bo_node_value);
         }
 
         std::string expected_random_metadata_node_name =
@@ -209,17 +182,17 @@ TEST_P(DtoToDataMessageIntegrationTest, ConvertDataMessageDTOToBo) {
             if (dto.metadata.value().nodes.find(expected_random_metadata_node_name) !=
                 dto.metadata.value().nodes.end()) {
                 auto dto_time = dto.metadata.value().nodes.at(expected_random_metadata_node_name);
-                if (dto_time.generated.seconds != 0 || dto_time.generated.nanoseconds != 0) {
-                    auto timestamp_from_dto = Helper::convertToTimestamp(
-                        dto_time.generated.seconds, dto_time.generated.nanoseconds);
+                if (dto_time.generated.seconds != 0 || dto_time.generated.nanos != 0) {
+                    auto timestamp_from_dto = Helper::convertToTimestamp(dto_time.generated.seconds,
+                                                                         dto_time.generated.nanos);
 
                     ASSERT_EQ(timestamp_from_dto, bo_node.getMetadata().getGenerated());
                 } else {
                     ASSERT_FALSE(bo_node.getMetadata().getGenerated().has_value());
                 }
-                if (dto_time.received.seconds != 0 || dto_time.received.nanoseconds != 0) {
-                    auto timestamp_from_dto = Helper::convertToTimestamp(
-                        dto_time.received.seconds, dto_time.received.nanoseconds);
+                if (dto_time.received.seconds != 0 || dto_time.received.nanos != 0) {
+                    auto timestamp_from_dto = Helper::convertToTimestamp(dto_time.received.seconds,
+                                                                         dto_time.received.nanos);
 
                     ASSERT_EQ(bo_node.getMetadata().getReceived(), timestamp_from_dto);
                 } else {
@@ -322,23 +295,23 @@ TEST_F(DtoToDataMessageIntegrationTest, ConvertDataMessageDTONotThrowExceptionWh
     // Define the complete DataMessageDTO
     auto [dto, system_data_points] = assembleValidFunctionArgs();
 
-    std::vector<std::string> required_fields = {"seconds", "nanoseconds"};
+    std::vector<std::string> required_fields = {"seconds", "nanos"};
     std::string time_type = RandomUtils::generateRandomBool() ? "generated" : "received";
 
     for (const auto& field : required_fields) {
         dto.metadata->nodes["node_name"].generated.seconds = 0;
-        dto.metadata->nodes["node_name"].generated.nanoseconds = 0;
+        dto.metadata->nodes["node_name"].generated.nanos = 0;
         dto.metadata->nodes["node_name"].received.seconds = 0;
-        dto.metadata->nodes["node_name"].received.nanoseconds = 0;
-        dto.metadata->nodes["node_name"].generated.nanoseconds = 0;
+        dto.metadata->nodes["node_name"].received.nanos = 0;
+        dto.metadata->nodes["node_name"].generated.nanos = 0;
 
         // Set wrong field value
         if (field == "seconds") {
             time_type == "generated" ? dto.metadata->nodes["node_name"].generated.seconds = -1
                                      : dto.metadata->nodes["node_name"].received.seconds = -1;
-        } else if (field == "nanoseconds") {
-            time_type == "generated" ? dto.metadata->nodes["node_name"].generated.nanoseconds = -1
-                                     : dto.metadata->nodes["node_name"].received.nanoseconds = -1;
+        } else if (field == "nanos") {
+            time_type == "generated" ? dto.metadata->nodes["node_name"].generated.nanos = -1
+                                     : dto.metadata->nodes["node_name"].received.nanos = -1;
         }
 
         std::cout << "\nTesting with missing field: " << field << "\n";
@@ -405,7 +378,7 @@ TEST_F(DtoToDataMessageIntegrationTest, ConvertStatusMessageDtoToBo) {
     dto.code = random_code;
     dto.message = random_message;
     dto.timestamp.seconds = random_timestamps.first;
-    dto.timestamp.nanoseconds = random_timestamps.second;
+    dto.timestamp.nanos = random_timestamps.second;
     dto.requestId = random_requestId;
 
     std::cout << "StatusMessageDTO to parse:\n" << dto << std::endl;
@@ -419,7 +392,7 @@ TEST_F(DtoToDataMessageIntegrationTest, ConvertStatusMessageDtoToBo) {
     ASSERT_EQ(bo.getMessage(), dto.message);
     ASSERT_EQ(bo.getRequestId(), dto.requestId);
     ASSERT_EQ(bo.getTimestamp(),
-              Helper::convertToTimestamp(dto.timestamp.seconds, dto.timestamp.nanoseconds));
+              Helper::convertToTimestamp(dto.timestamp.seconds, dto.timestamp.nanos));
 }
 
 /**
@@ -438,13 +411,13 @@ TEST_F(DtoToDataMessageIntegrationTest,
         dto.code = 200;
         dto.message = "OK";
         dto.timestamp.seconds = 1234567890;
-        dto.timestamp.nanoseconds = 123456789;
+        dto.timestamp.nanos = 123456789;
 
         if (field == "message") {
             dto.message = std::string();
         } else if (field == "timestamp") {
             dto.timestamp.seconds = 0;
-            dto.timestamp.nanoseconds = 0;
+            dto.timestamp.nanos = 0;
         }
 
         std::cout << "\nTesting with missing field: " << field << "\n";

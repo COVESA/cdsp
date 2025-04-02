@@ -18,8 +18,8 @@ class WebSocketClientIntegrationTest : public WebSocketClientBaseIntegrationTest
             PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
             ASK {
-                car:Observation)" +
-               observation_id + R"( a sosa:Observation ;
+                car:ob_)" +
+               observed_property + "_" + observation_id + R"( a sosa:Observation ;
                     sosa:hasFeatureOfInterest car:)" +
                class_name + vin + R"( ;
                     sosa:hasSimpleResult ")" +

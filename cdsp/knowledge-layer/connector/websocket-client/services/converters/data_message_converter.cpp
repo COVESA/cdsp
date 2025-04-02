@@ -103,14 +103,14 @@ Metadata DataMessageConverter::extractBoMetadata(const std::optional<MetadataDTO
     }
 
     const auto& node_metadata = metadata_dto.value().nodes.at(path);
-    if (node_metadata.received.seconds == 0 && node_metadata.received.nanoseconds == 0 &&
-        node_metadata.generated.seconds == 0 && node_metadata.generated.nanoseconds == 0) {
+    if (node_metadata.received.seconds == 0 && node_metadata.received.nanos == 0 &&
+        node_metadata.generated.seconds == 0 && node_metadata.generated.nanos == 0) {
         return Metadata();
     }
 
     auto received = ConverterHelper::parseTimestamp(node_metadata.received.seconds,
-                                                    node_metadata.received.nanoseconds);
+                                                    node_metadata.received.nanos);
     auto generated = ConverterHelper::parseTimestamp(node_metadata.generated.seconds,
-                                                     node_metadata.generated.nanoseconds);
+                                                     node_metadata.generated.nanos);
     return Metadata(received, generated);
 }

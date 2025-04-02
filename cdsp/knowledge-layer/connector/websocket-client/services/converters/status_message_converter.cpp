@@ -9,8 +9,7 @@
  * @return A StatusMessage object initialized with the data from the dto.
  */
 StatusMessage StatusMessageConverter::convert(const StatusMessageDTO& dto) {
-    auto timestamp =
-        ConverterHelper::parseTimestamp(dto.timestamp.seconds, dto.timestamp.nanoseconds);
+    auto timestamp = ConverterHelper::parseTimestamp(dto.timestamp.seconds, dto.timestamp.nanos);
     if (!timestamp.has_value()) {
         throw std::invalid_argument("Invalid timestamp");
     }

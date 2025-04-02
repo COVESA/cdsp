@@ -32,7 +32,7 @@ TEST_F(DtoToStatusMessageIntegrationTest, ConvertStatusMessageDtoToBo) {
     dto.code = random_code;
     dto.message = random_message;
     dto.timestamp.seconds = random_timestamps.first;
-    dto.timestamp.nanoseconds = random_timestamps.second;
+    dto.timestamp.nanos = random_timestamps.second;
     dto.requestId = random_requestId;
 
     std::cout << "StatusMessageDTO to parse:\n" << dto << std::endl;
@@ -46,7 +46,7 @@ TEST_F(DtoToStatusMessageIntegrationTest, ConvertStatusMessageDtoToBo) {
     ASSERT_EQ(bo.getMessage(), dto.message);
     ASSERT_EQ(bo.getRequestId(), dto.requestId);
     ASSERT_EQ(bo.getTimestamp(),
-              Helper::convertToTimestamp(dto.timestamp.seconds, dto.timestamp.nanoseconds));
+              Helper::convertToTimestamp(dto.timestamp.seconds, dto.timestamp.nanos));
 }
 
 /**
@@ -65,13 +65,13 @@ TEST_F(DtoToStatusMessageIntegrationTest,
         dto.code = 200;
         dto.message = "OK";
         dto.timestamp.seconds = 1234567890;
-        dto.timestamp.nanoseconds = 123456789;
+        dto.timestamp.nanos = 123456789;
 
         if (field == "message") {
             dto.message = std::string();
         } else if (field == "timestamp") {
             dto.timestamp.seconds = 0;
-            dto.timestamp.nanoseconds = 0;
+            dto.timestamp.nanos = 0;
         }
 
         std::cout << "\nTesting with missing field: " << field << "\n";

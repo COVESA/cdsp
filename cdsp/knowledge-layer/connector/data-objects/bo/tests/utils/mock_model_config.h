@@ -20,8 +20,11 @@ class MockModelConfig : public ModelConfig {
                   {ReasonerSyntaxType::NQUADS, "mocked_validation_shapes"}},  // validation_shapes
               TripleAssemblerHelper({{SchemaType::VEHICLE,
                                       {{QueryLanguageType::SPARQL, "mocked_query_object"},
-                                       {QueryLanguageType::SPARQL, "mocked_query_data"}}}},
-                                    "mocked_queries_output"),  // queries_config
+                                       {QueryLanguageType::SPARQL,
+                                        "mocked_query_data"}}}}),  // triple_assembler_helper
+              std::vector<std::pair<QueryLanguageType, std::string>>{
+                  {QueryLanguageType::SPARQL,
+                   "mocked_reasoning_output_queries"}},  // reasoning_output_queries
               ReasonerSettings(InferenceEngineType::RDFOX, ReasonerSyntaxType::TURTLE,
                                {SchemaType::VEHICLE}  // reasoner_settings
                                )) {}
@@ -35,7 +38,9 @@ class MockModelConfig : public ModelConfig {
                 (const, override));
     MOCK_METHOD((std::vector<std::pair<ReasonerSyntaxType, std::string>>), getValidationShapes, (),
                 (const, override));
-    MOCK_METHOD((TripleAssemblerHelper), getQueriesConfig, (), (const, override));
+    MOCK_METHOD((TripleAssemblerHelper), getQueriesTripleAssemblerHelper, (), (const, override));
+    MOCK_METHOD((std::vector<std::pair<QueryLanguageType, std::string>>), getReasoningOutputQueries,
+                (), (const, override));
     MOCK_METHOD((ReasonerSettings), getReasonerSettings, (), (const, override));
 };
 

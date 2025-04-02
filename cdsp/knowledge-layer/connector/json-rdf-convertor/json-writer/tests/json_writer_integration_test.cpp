@@ -21,9 +21,11 @@ class JSONWriterIntegrationTest : public ::testing::Test {
         const std::string some_string_2 = RandomUtils::generateRandomString(4);
         const std::string some_string_3 = RandomUtils::generateRandomString(4);
         const std::string some_string_4 = RandomUtils::generateRandomString(4);
+        const std::string some_string_5 = RandomUtils::generateRandomString(4);
+        const std::string some_string_6 = RandomUtils::generateRandomString(4);
         data_point_1_ = some_string_1 + "_" + some_string_2 + "_" + some_string_3;
         data_point_2_ = some_string_1 + "_" + some_string_4;
-        data_point_3_ = some_string_3;
+        data_point_3_ = some_string_5 + "_" + some_string_6;
         value_dp_1_row_1_ = RandomUtils::generateRandomInt(0, 100);
         value_dp_1_row_2_ = RandomUtils::generateRandomFloat(0, 10);
         value_dp_2_row_1_ = RandomUtils::generateRandomString(10);
@@ -31,29 +33,46 @@ class JSONWriterIntegrationTest : public ::testing::Test {
         value_dp_3_row_1_ = RandomUtils::generateRandomInt(0, 1);
         value_dp_3_row_2_ = RandomUtils::generateRandomDouble(0, 10);
 
-        expected_json_ = nlohmann::json::array(
-            {{{some_string_1 + "." + some_string_2 + "." + some_string_3, value_dp_1_row_1_},
-              {some_string_1 + "." + some_string_4, value_dp_2_row_1_},
-              {some_string_3, value_dp_3_row_1_}},
-             {{some_string_1 + "." + some_string_2 + "." + some_string_3, value_dp_1_row_2_},
-              {some_string_1 + "." + some_string_4, value_dp_2_row_2_},
-              {some_string_3, value_dp_3_row_2_}}});
+        expected_json_ =
+            nlohmann::json::array({{{some_string_1,
+                                     {{some_string_2 + "." + some_string_3, value_dp_1_row_1_},
+                                      {some_string_4, value_dp_2_row_1_}}},
+                                    {some_string_5, {{some_string_6, value_dp_3_row_1_}}}},
+                                   {{some_string_1,
+                                     {{some_string_2 + "." + some_string_3, value_dp_1_row_2_},
+                                      {some_string_4, value_dp_2_row_2_}}},
+                                    {some_string_5, {{some_string_6, value_dp_3_row_2_}}}}});
     }
 
     // Helper function to validate the JSON output
     void validateJsonOutput(const nlohmann::json& actual_json) {
-        ASSERT_TRUE(actual_json.contains("created_at"));
-        ASSERT_TRUE(actual_json["created_at"].is_string());
+        ASSERT_EQ(actual_json.size(), expected_json_.size());
 
-        for (size_t i = 0; i < expected_json_.size(); i++) {
-            for (auto& [key, expected_value] : expected_json_[i].items()) {
-                auto actual_value = actual_json["results"][i][key];
+        for (size_t i = 0; i < expected_json_.size(); ++i) {
+            const auto& expected_group = expected_json_[i];
+            const auto& actual_group = actual_json[i];
+            ASSERT_EQ(expected_group.size(), actual_group.size());
 
-                if (expected_value.is_number_float() && actual_value.is_number_float()) {
-                    ASSERT_NEAR(actual_value.get<double>(), expected_value.get<double>(), 1e-6)
-                        << "Mismatch in key: " << key;
-                } else {
-                    ASSERT_EQ(actual_value, expected_value) << "Mismatch in key: " << key;
+            for (const auto& [expected_schema, expected_data_points] : expected_group.items()) {
+                ASSERT_TRUE(actual_group.contains(expected_schema))
+                    << "Missing domain: " << expected_schema;
+
+                const auto& actual_data_points = actual_group[expected_schema];
+                ASSERT_EQ(expected_data_points.size(), actual_data_points.size());
+                for (const auto& [expected_data_point, expected_value] :
+                     expected_data_points.items()) {
+                    ASSERT_TRUE(actual_data_points.contains(expected_data_point))
+                        << "Missing key: " << expected_schema << "." << expected_data_point;
+
+                    const auto& actual_value = actual_data_points[expected_data_point];
+
+                    if (expected_value.is_number_float() && actual_value.is_number_float()) {
+                        ASSERT_NEAR(actual_value.get<double>(), expected_value.get<double>(), 1e-6)
+                            << "Mismatch in key: " << expected_schema << "." << expected_data_point;
+                    } else {
+                        ASSERT_EQ(actual_value, expected_value)
+                            << "Mismatch in key: " << expected_schema << "." << expected_data_point;
+                    }
                 }
             }
         }

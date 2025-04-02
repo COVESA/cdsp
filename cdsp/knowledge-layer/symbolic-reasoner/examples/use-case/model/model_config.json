@@ -2,7 +2,7 @@
   "inputs": {
     "vehicle_data": "inputs/vehicle_data_required.txt"
   },
-  "ontologies": ["ontologies/example_ontology.ttl"],
+  "ontologies": ["ontologies/sliding_window_config.ttl"],
   "output": "output/",
   "queries": {
     "triple_assembler_helper": {

@@ -24,7 +24,7 @@ void WebSocketClientBaseIntegrationTest::SetUp() {
     // Initialize Reasoner Service
     reasoner_service_ = ReasonerFactory::initReasoner(
         model_config_->getReasonerSettings().getInferenceEngine(), system_config.reasoner_server,
-        model_config_->getReasonerRules());
+        model_config_->getReasonerRules(), model_config_->getOntologies(), false);
     if (!reasoner_service_) {
         throw std::runtime_error("Failed to initialize the reasoner service.");
     }
@@ -32,7 +32,7 @@ void WebSocketClientBaseIntegrationTest::SetUp() {
     // Initialize WebSocket Client
     mock_connection_ = std::make_shared<MockWebSocketConnection>();
 
-    client_ = std::make_shared<WebSocketClient>(system_config, reasoner_service_, model_config_,
+    client_ = std::make_shared<WebSocketClient>(system_config, model_config_, reasoner_service_,
                                                 mock_connection_);
 }
 
@@ -50,12 +50,12 @@ void WebSocketClientBaseIntegrationTest::TearDown() {
  */
 void WebSocketClientBaseIntegrationTest::mockWebSocketBehavior() {
     mock_connection_->setOnResolveCallback([&]() {
-        std::cout << "Mock: Resolved WebSocket server." << std::endl;
+        std::cout << "Mock: Resolved WebSocket Server." << std::endl;
         mock_connection_->asyncConnect();
     });
 
     mock_connection_->setOnConnectCallback([&]() {
-        std::cout << "Mock: Connected to WebSocket server." << std::endl;
+        std::cout << "Mock: Connected to Websocket server." << std::endl;
         mock_connection_->asyncHandshake();
     });
 
@@ -134,7 +134,7 @@ const std::string WebSocketClientBaseIntegrationTest::createDataJsonMessage(
                                generated_time.time_since_epoch())
                                .count()
                         << R"(,
-                "nanoseconds": )"
+                "nanos": )"
                         << std::stoi(Helper::extractNanoseconds(generated_time)) << R"(})";
             }
 
@@ -150,7 +150,7 @@ const std::string WebSocketClientBaseIntegrationTest::createDataJsonMessage(
                                received_time.time_since_epoch())
                                .count()
                         << R"(,
-                "nanoseconds": )"
+                "nanos": )"
                         << std::stoi(Helper::extractNanoseconds(received_time)) << R"(})";
             }
 

@@ -29,7 +29,9 @@ This directory contains lightweight objects designed for data exchange, typicall
 
 ### How We Use DTO-BO Conversion
 
-To ensure smooth interaction between DTOs and BOs, we implement conversion functions (see [DTO and BO services](../websocket-client/README.md#2-service)). These functions transform incoming DTOs into BOs before processing business logic and convert BOs back into DTOs when sending responses.
-
+To ensure smooth interaction between DTOs and BOs, we implement conversion functions (see [DTO and BO services](../websocket-client/README.md#2-service)). These functions handle both directions of transformation:
+  
+- **DTO to BO**: Incoming DTOs are transformed into BOs before any business logic is processed.
+- **BO to DTO**: After processing, BOs are converted back into DTOs when sending responses or external messages.
 
 

@@ -3,6 +3,7 @@ data/
 logs/
 test-model/
 rdfox/
+scripts/
 
 # Enviroment variables containing secrets
 .env

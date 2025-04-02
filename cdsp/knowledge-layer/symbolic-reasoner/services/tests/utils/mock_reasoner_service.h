@@ -7,7 +7,8 @@
 
 class MockReasonerService : public ReasonerService {
    public:
-    MockReasonerService(std::shared_ptr<IReasonerAdapter> adapter) : ReasonerService(adapter) {}
+    MockReasonerService(std::shared_ptr<IReasonerAdapter> adapter)
+        : ReasonerService(adapter, false) {}
 
     MOCK_METHOD(bool, checkDataStore, (), (override));
     MOCK_METHOD(bool, loadData, (const std::string& data, const ReasonerSyntaxType& content_type),

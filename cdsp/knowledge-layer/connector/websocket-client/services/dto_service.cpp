@@ -11,7 +11,7 @@
  *             and optionally "path", "metadata", and "requestId".
  * @return A DataMessageDTO object populated with data extracted from the JSON object.
  */
-DataMessageDTO DtoService::parseDataDto(const nlohmann::json& json) {
+DataMessageDTO DtoService::parseDataJsonToDto(const nlohmann::json& json) {
     try {
         if (!json.contains("type") || !json.contains("schema") || !json.contains("instance") ||
             !json.contains("data")) {
@@ -27,7 +27,7 @@ DataMessageDTO DtoService::parseDataDto(const nlohmann::json& json) {
                        : std::nullopt;
         dto.data = json["data"];
         dto.metadata = json.contains("metadata")
-                           ? std::optional<MetadataDTO>(parseMetadataDTO(json["metadata"]))
+                           ? std::optional<MetadataDTO>(parseMetadataJsonToDto(json["metadata"]))
                            : std::nullopt;
 
         dto.requestId = json.contains("requestId")
@@ -48,10 +48,10 @@ DataMessageDTO DtoService::parseDataDto(const nlohmann::json& json) {
  * @param json The JSON object containing the status message data.
  * @return A StatusMessageDTO object populated with data from the JSON object.
  */
-StatusMessageDTO DtoService::parseStatusDto(const nlohmann::json& json) {
+StatusMessageDTO DtoService::parseStatusJsonToDto(const nlohmann::json& json) {
     try {
         if (!json.contains("code") || !json.contains("message") || !json.contains("timestamp") ||
-            !json["timestamp"].contains("seconds") || !json["timestamp"].contains("nanoseconds")) {
+            !json["timestamp"].contains("seconds") || !json["timestamp"].contains("nanos")) {
             throw std::invalid_argument("Missing required fields in StatusMessageDTO");
         }
         StatusMessageDTO dto;
@@ -62,7 +62,7 @@ StatusMessageDTO DtoService::parseStatusDto(const nlohmann::json& json) {
                             : std::nullopt;
 
         dto.timestamp.seconds = json["timestamp"]["seconds"];
-        dto.timestamp.nanoseconds = json["timestamp"]["nanoseconds"];
+        dto.timestamp.nanos = json["timestamp"]["nanos"];
         return dto;
     } catch (const nlohmann::json::exception& e) {
         throw std::invalid_argument("Failed to parse StatusMessageDTO: " + std::string(e.what()));
@@ -75,7 +75,7 @@ StatusMessageDTO DtoService::parseStatusDto(const nlohmann::json& json) {
  * @param metadata_json The JSON object containing the metadata data.
  * @return A MetadataDTO object populated with data from the JSON object.
  */
-MetadataDTO DtoService::parseMetadataDTO(const nlohmann::json& metadata_json) {
+MetadataDTO DtoService::parseMetadataJsonToDto(const nlohmann::json& metadata_json) {
     MetadataDTO dto;
     try {
         for (const auto& [node, timestamps] : metadata_json.items()) {
@@ -85,24 +85,22 @@ MetadataDTO DtoService::parseMetadataDTO(const nlohmann::json& metadata_json) {
             if (timestamps.contains("timestamps") &&
                 timestamps["timestamps"].contains("received")) {
                 if (!timestamps["timestamps"]["received"].contains("seconds") ||
-                    !timestamps["timestamps"]["received"].contains("nanoseconds")) {
+                    !timestamps["timestamps"]["received"].contains("nanos")) {
                     throw std::invalid_argument("Missing required fields in MetadataDTO");
                 }
                 node_metadata.received.seconds = timestamps["timestamps"]["received"]["seconds"];
-                node_metadata.received.nanoseconds =
-                    timestamps["timestamps"]["received"]["nanoseconds"];
+                node_metadata.received.nanos = timestamps["timestamps"]["received"]["nanos"];
             }
 
             // Check and parse generated timestamps
             if (timestamps.contains("timestamps") &&
                 timestamps["timestamps"].contains("generated")) {
                 if (!timestamps["timestamps"]["generated"].contains("seconds") ||
-                    !timestamps["timestamps"]["generated"].contains("nanoseconds")) {
+                    !timestamps["timestamps"]["generated"].contains("nanos")) {
                     throw std::invalid_argument("Missing required fields in MetadataDTO");
                 }
                 node_metadata.generated.seconds = timestamps["timestamps"]["generated"]["seconds"];
-                node_metadata.generated.nanoseconds =
-                    timestamps["timestamps"]["generated"]["nanoseconds"];
+                node_metadata.generated.nanos = timestamps["timestamps"]["generated"]["nanos"];
             }
             dto.nodes[node] = node_metadata;
         }
@@ -118,14 +116,14 @@ MetadataDTO DtoService::parseMetadataDTO(const nlohmann::json& metadata_json) {
  * @param json The JSON object containing the model configuration data.
  * @return A ModelConfigDTO object populated with data from the JSON object.
  */
-ModelConfigDTO DtoService::parseModelConfigDto(const nlohmann::json& json) {
+ModelConfigDTO DtoService::parseModelConfigJsonToDto(const nlohmann::json& json) {
     try {
         if (!json.contains("inputs") || !json.contains("ontologies") || !json.contains("output") ||
             !json.contains("rules") || !json.contains("shacl") || !json.contains("queries") ||
             !json.contains("reasoner_settings")) {
             throw std::invalid_argument("Missing required fields in ModelConfigDTO");
         }
-        TripleAssemblerHelperDTO triple_assembler_helper_dto;
+        QueriesDTO queries_dto;
         ReasonerSettingsDTO reasoner_settings_dto;
         ModelConfigDTO model_config_dto;
 
@@ -136,11 +134,11 @@ ModelConfigDTO DtoService::parseModelConfigDto(const nlohmann::json& json) {
         model_config_dto.shacl_shapes = json["shacl"];
 
         for (const auto& [key, value] : json["queries"]["triple_assembler_helper"].items()) {
-            triple_assembler_helper_dto.queries[key] = value;
+            queries_dto.triple_assembler_helper[key] = value;
         }
 
-        triple_assembler_helper_dto.output = json["queries"]["output"];
-        model_config_dto.queries_config = triple_assembler_helper_dto;
+        queries_dto.reasoning_output_queries_path = json["queries"]["output"];
+        model_config_dto.queries = queries_dto;
 
         reasoner_settings_dto.inference_engine = json["reasoner_settings"]["inference_engine"];
         reasoner_settings_dto.output_format = json["reasoner_settings"]["output_format"];

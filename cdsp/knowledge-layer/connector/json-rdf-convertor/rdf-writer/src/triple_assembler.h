@@ -17,7 +17,7 @@
 #include "reasoner_service.h"
 #include "triple_writer.h"
 
-using chrono_time_nanoseconds = std::chrono::nanoseconds;
+using chrono_time_nanos = std::chrono::nanoseconds;
 
 struct CoordinateNodes {
     Node latitude;
@@ -49,9 +49,9 @@ class TripleAssembler {
     IFileHandler& file_handler_;
     TripleWriter& triple_writer_;
     const std::vector<std::map<std::string, std::string>> json_data_;
-    chrono_time_nanoseconds coordinates_last_time_stamp_{chrono_time_nanoseconds(0)};
+    chrono_time_nanos coordinates_last_time_stamp_{chrono_time_nanos(0)};
 
-    std::map<chrono_time_nanoseconds, std::unordered_map<std::string, Node>>
+    std::map<chrono_time_nanos, std::unordered_map<std::string, Node>>
         timestamp_coordinates_messages_map_{};
 
     std::pair<std::vector<std::string>, std::string> extractObjectsAndDataElements(
