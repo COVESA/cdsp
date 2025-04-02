@@ -36,12 +36,12 @@ services:
       start_interval: 5s
 
 
-# WebSocket server service
-  websocket-service:
+# Information Layer Server exposing websocket API
+  information-layer:
     build:
       context: ../cdsp/information-layer
       dockerfile: Dockerfile
-    container_name: websocket-service
+    container_name: information-layer
     ports:
       - "8080:8080" 
     volumes:

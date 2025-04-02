@@ -1,10 +1,10 @@
 # RemotiveLabs Bridge/Feeder
 This a simple example of using the [RemotiveLabs virtual signal platform](https://remotivelabs.com/) as a feeder of vehicle data into the playground [Apache IoTDB](https://covesa.github.io/cdsp/manuals/apache-iotdb/) data store.
 
-It is implemented as a bridge between an RemotiveLabs Broker as the data source and the IoTDB server or the websocket server on the information-layer. You specify the signals you wish to subscribe too. The bridge waits for the subscribed signals to be sent from the
+It is implemented as a bridge between an RemotiveLabs Broker as the data source and the IoTDB server or the Information Layer Server. You specify the signals you wish to subscribe too. The bridge waits for the subscribed signals to be sent from the
 RemotiveLabs broker, formats them and then writes them 
 * to IoTDB using the specified IoTDB path or
-* the websocket server on the information-layer. Depending on the websocket server configuration the data is written to IoTDB or RealmDB.
+* the websocket API on the Information Layer Server. Depending on the server configuration the data is written to IoTDB or RealmDB.
 
 For IoTDB the code assumes the timeseries into which the data will be written already exists in IoTDB. See the setup section for an example.
 
@@ -62,6 +62,9 @@ options:
   -o, --output_mode {iotdb,information-layer}
                         Output sent to iotdb or information-layer
   -i, --id ID           ID to which signals are related to (only information-layer mode)
+  -ilu, --information_layer_url INFORMATION_LAYER_URL
+                        URL of the information layer. If not provided ws://localhost:8080 will be used.
+
 ```
 Tip: To avoid displaying RemotiveLabs Broker secrets on the command line you can pass them using export variables, e.g:
 ```
@@ -111,7 +114,7 @@ Execute the bridge and subscribe to all supported VSS signals in the RemotiveLab
 python3 rl-bridge.py --url $RL_BROKER_URL --x_api_key $RL_API_KEY -o iotdb --signals vss:Vehicle.Speed vss:Vehicle.Chassis.Accelerator.PedalPosition vss:Vehicle.Powertrain.Transmission.CurrentGear vss:Vehicle.Powertrain.TractionBattery.NominalVoltage vss:Vehicle.Powertrain.TractionBattery.StateOfCharge.CurrentEnergy vss:Vehicle.Chassis.SteeringWheel.Angle vss:Vehicle.CurrentLocation.Longitude vss:Vehicle.CurrentLocation.Latitude
 ```
 
-#### Single signal to websocket (Information Layer)
+#### Single signal to Information Layer Server via websocket
 ```
 python3 rl-bridge.py --url $RL_BROKER_URL --x_api_key $RL_API_KEY -o information-layer --signals vss:Vehicle.Speed -i TEST_VEHICLE
 ```

@@ -21,7 +21,7 @@ In this use case, we have implemented an AI-powered solution to detect aggressiv
 
 ## How?
 
-Live VSS data from the current drive made accesible in the [Information Layer](../../cdsp/information-layer/README.md) via [Websocket](../../cdsp/information-layer/router/src/websocket-server.js) are converted by a [JSON-RDF-Convertor](../../cdsp/knowledge-layer/connector/README.md) in real-time into a graph data format ([RDF](https://www.w3.org/RDF/)) and stored within the Knowledge Layer in a [Knowledge Graph](https://en.wikipedia.org/wiki/Knowledge_Graph). At any point, every data point (needed for the use case) in the Information Layer has a graph representation. This data representation allows us to attach a [symbolic reasoner](../../cdsp/knowledge-layer/symbolic-reasoner/README.md) ([RDFox](../../cdsp/knowledge-layer/symbolic-reasoner/rdfox/README.md)) to the Knowledge Graph, which can link, evaluate, and infer new facts based on rules, such as deriving the driving style. As soon as an aggressive driving style is detected, the result is converted back from the graph data format to an Informtion Layer tree format in real time and, in our case, stored in the appropriate data field in the VSS tree.  The information "aggressive driving style" can then be shared with other interested applications for example via a data sync middleware.
+Live VSS data from the current drive made accesible in the [Information Layer](../../cdsp/information-layer/README.md) via [Websocket](../../cdsp/information-layer/router/src/websocket-server.ts) are converted by a [JSON-RDF-Convertor](../../cdsp/knowledge-layer/connector/README.md) in real-time into a graph data format ([RDF](https://www.w3.org/RDF/)) and stored within the Knowledge Layer in a [Knowledge Graph](https://en.wikipedia.org/wiki/Knowledge_Graph). At any point, every data point (needed for the use case) in the Information Layer has a graph representation. This data representation allows us to attach a [symbolic reasoner](../../cdsp/knowledge-layer/symbolic-reasoner/README.md) ([RDFox](../../cdsp/knowledge-layer/symbolic-reasoner/rdfox/README.md)) to the Knowledge Graph, which can link, evaluate, and infer new facts based on rules, such as deriving the driving style. As soon as an aggressive driving style is detected, the result is converted back from the graph data format to an Informtion Layer tree format in real time and, in our case, stored in the appropriate data field in the VSS tree.  The information "aggressive driving style" can then be shared with other interested applications for example via a data sync middleware.
 
 ### Implementation Details
 
@@ -29,7 +29,7 @@ Live VSS data from the current drive made accesible in the [Information Layer](.
 - **Data Model:** [VSS](https://github.com/COVESA/vehicle_signal_specification/) - Describes vehicle data in a standardized format
 - **Feeder/Simulator:** [Remotive Labs](../../examples/remotivelabs-feeder/README.md) - Provides raw data for a test drive
 - **Data Storage:** [RealmDB](../../cdsp/information-layer/handlers/src/realmdb/README.md) - Stores live data
-- **Data Access:** [WebSocket Interface](../../cdsp/information-layer/router/src/websocket-server.js) - Read,
+- **Data Access:** [WebSocket Interface](../../cdsp/information-layer/router/src/websocket-server.ts) - Read,
 write, subscribe to VSS data
 - **Knowledge Layer Connector:** [RDFConvertor](../../cdsp/knowledge-layer/connector/README.md) - Converts VSS JSON format into RDF Graph format and vice versa
 - **Graph Data Storage:** [RDFox](../../cdsp/knowledge-layer/symbolic-reasoner/rdfox/README.md) - Stores the transformed and newly generated graph data
@@ -59,7 +59,7 @@ Derived output data:
 ## Installation and Running
 
 1. Create `Remotive Labs` account
-2. Fill the [.env](.env) file with your Remotive Labs broker url and api key, you can see find them in the `Brokers` section
+2. Fill the [.env](.env) file with your Remotive Labs broker url and api key, you can see find them in the `Brokers` section. This credentials will be used by the `RemotiveLabs Bridge` script to access the VSS data and send it to `Information Layer Server`.
 3. Select `Night drive to Luftkastellet` in the `recordings`section, open the tab `Files` and drag and drop the zip file `examples/shared-config/remotive-labs/config_vss_aggressive_driving.zip` in the `Signal Transformations` section.
 4. Navigate to `Playback` tab and select `config_vss_aggressive_driving` as `signal transformation` and press the `Play` button.
 5. If the recording starts playing, stop it for now.

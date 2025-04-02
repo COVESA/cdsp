@@ -111,7 +111,7 @@ $ sudo docker compose -f docker-compose-cdsp.yml up -d iotdb-service
 ```
 
 ## Websocket-Server (CDSP - information layer) docker image build setup
-This guide provides instructions for deploying the Websocket-Server using Docker Compose. You can choose to deploy the server with either RealmDB or IoTDB as the backend service.
+This guide provides instructions for deploying the Information Layer Server using Docker Compose. You can choose to deploy the server with either RealmDB or IoTDB as the backend service.
 
 ### Prerequisites
 
@@ -126,32 +126,32 @@ The `.env` file contains environment variables that need to be configured depend
 
 ### Using RealmDB
 
-To deploy the Websocket-Server with RealmDB, use the following command:
+To deploy the information-layer with RealmDB, use the following command:
 
 ```shell
-$ sudo docker compose -f docker-compose-cdsp.yml up -d websocket-service
+$ sudo docker compose -f docker-compose-cdsp.yml up -d information-layer
 # [+] Running 1/1                                                                                                                                                                                                                                          
-# ✔ Container websocket-service      Started     0.4s  
+# ✔ Container information-layer      Started     0.4s  
 ```
 ### Using IoTDB
 
-When deploying with IoTDB, ensure that the iotdb-service is up and running before starting the Websocket-Server.
+When deploying with IoTDB, ensure that the iotdb-service is up and running before starting the Information Layer Server.
 
 > [!IMPORTANT] 
->  If required, ensure that the iotdb-service container is started before running the Websocket-Server. You can also configure your own IoTDB connection.
+>  If required, ensure that the iotdb-service container is started before running the Information Layer Server. You can also configure your own IoTDB connection.
 
-#### Start IoTDB and Websocket-Server
+#### Start IoTDB and Information Layer Server
 
-To start both the iotdb-service and websocket-service, use the following commands:
+To start both the iotdb-service and information-layer, use the following commands:
 
 ```shell
 $ sudo docker compose -f docker-compose-cdsp.yml up -d iotdb-service
 # [+] Running 1/1
 #  ✔ Container iotdb-service         Started     0.4s                                                                                                                                                                                                             0.4s 
 
-$ sudo docker compose -f docker-compose-cdsp.yml up -d websocket-service
+$ sudo docker compose -f docker-compose-cdsp.yml up -d information-layer
 # [+] Running 1/1                                                                                                                                                                                                                                          
-# ✔ Container websocket-service      Started     0.4s  
+# ✔ Container information-layer      Started     0.4s  
 ```
 
 ### Expected result
@@ -163,7 +163,7 @@ $ sudo docker ps
 
 ```
 CONTAINER ID   IMAGE                           COMMAND                  CREATED          STATUS          PORTS                                       NAMES
-025b5dd05c56   cdsp-websocket-service          "docker-entrypoint.s…"   16 minutes ago   Up 16 minutes   0.0.0.0:8080->8080/tcp, :::8080->8080/tcp   websocket-service
+025b5dd05c56   cdsp-information-layer          "docker-entrypoint.s…"   16 minutes ago   Up 16 minutes   0.0.0.0:8080->8080/tcp, :::8080->8080/tcp   information-layer
 e16c8ed4ed42   apache/iotdb:1.2.2-standalone   "/usr/bin/dumb-init …"   23 minutes ago   Up 19 minutes   0.0.0.0:6667->6667/tcp, :::6667->6667/tcp   iotdb-service
 ```
 
@@ -175,7 +175,7 @@ In order to get access to `RDFox RESTfull API` it is required to build two Docke
 
 ### Prerequisites
 
-- **Running Websocket-Server:** See how to start the information layer [here](#websocket-server-cdsp---information-layer-docker-image-build-setup).
+- **Running Information Layer Server:** See how to start the information layer [here](#websocket-server-cdsp---information-layer-docker-image-build-setup).
 - **RDFox.lic:** this is the license file required by RDFox, containing information that authorizes the use of RDFox, expiry time and usage. **The license file must be provided when running RDFox images to activate the software.**. The path of the file should be provided using the environment variable `RDFOX_LIC_PATH="<your_path>/RDFox.lic"` in the `.env` file in this folder. The file is generally provided when you acquire a license from [Oxford Semantic Technologies](https://www.oxfordsemantic.tech/).
 
 #### 1. **Initialization (`rdfox-init` Image)**:

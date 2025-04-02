@@ -1,5 +1,6 @@
 services:
-  iotdb-local:
+  # Timeseries Data Server
+  iotdb-service:
     extends:
       service: iotdb-service
       file: ../../docker/docker-compose-cdsp.yml
@@ -7,22 +8,22 @@ services:
       - ./iotdb-data:/iotdb/data
       - ./iotdb-logs:/iotdb/logs
   
-  # WebSocket server service
-  websocket-service:
+  # Information Layer Server exposing websocket API
+  information-layer:
     extends:
-      service: websocket-service
+      service: information-layer
       file: ../../docker/docker-compose-cdsp.yml
-    container_name: websocket-service
+    container_name: information-layer
     volumes:
       - ./IL-config/schema-files:/app/dist/handlers/config/schema-files
     depends_on:
-      iotdb-local:
+      iotdb-service:
         condition: service_healthy
     environment:
       - IOTDB_POLL_INTERVAL_LEN_IN_SEC=0.2 # Time between messages to subscribers on changed data point values
       - HANDLER_TYPE=iotdb
 
-  # Remotive Labs adapter
+  # Remotive Labs Bridge
   rl-bridge:
     build: ../remotivelabs-feeder
     container_name: rl-bridge
@@ -34,7 +35,7 @@ services:
       - "-o"
       - "information-layer"
       - "-ilu"
-      - "ws://websocket-service:8080"
+      - "ws://information-layer:8080"
       - "-i"
       - "WBY11CF080CH47083"
       - "--signals"
@@ -46,8 +47,8 @@ services:
       - "vss:Vehicle.Powertrain.Transmission.CurrentGear"
       - "vss:Vehicle.Speed"
     depends_on:
-     - websocket-service
-     - iotdb-local
+     - information-layer
+     - iotdb-service
     env_file:
      - .env
 
