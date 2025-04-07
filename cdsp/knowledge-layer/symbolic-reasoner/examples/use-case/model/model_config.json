@@ -18,6 +18,7 @@
   "shacl": ["shacl/vehicle_shacl.ttl", "shacl/observation_shacl.ttl"],
   "reasoner_settings": {
     "inference_engine": "RDFox",
+    "is_ai_reasoner_inference_results": true,
     "output_format": "turtle",
     "supported_schema_collections": ["vehicle"]
   }

@@ -55,7 +55,9 @@ ReasonerSettings ModelConfigConverter::convertReasonerSettings(const ReasonerSet
     for (const auto& schema : dto.supported_schema_collections) {
         supported_schema_collections.push_back(stringToSchemaType(schema));
     }
-    return ReasonerSettings(inference_engine, output_format, supported_schema_collections);
+    bool is_ai_reasoner_inference_results = dto.is_ai_reasoner_inference_results;
+    return ReasonerSettings(inference_engine, output_format, supported_schema_collections,
+                            is_ai_reasoner_inference_results);
 }
 
 /**

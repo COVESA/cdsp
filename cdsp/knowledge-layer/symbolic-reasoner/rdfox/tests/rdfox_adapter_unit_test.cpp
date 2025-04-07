@@ -11,7 +11,7 @@
 class RDFoxAdapterTest : public ::testing::Test {
    protected:
     const std::string DATASTORE = "ds-test";
-    const ServerData server_data_{"localhost", "8080", "auth", DATASTORE};
+    const ReasonerServerData server_data_{"localhost", "8080", "auth", DATASTORE};
 
     void SetUp() override {
         mock_rdfox_adapter_ = std::make_shared<MockRDFoxAdapter>(server_data_);

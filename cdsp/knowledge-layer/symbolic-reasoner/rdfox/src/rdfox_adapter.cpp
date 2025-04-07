@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-RDFoxAdapter::RDFoxAdapter(const ServerData& server_data)
+RDFoxAdapter::RDFoxAdapter(const ReasonerServerData& server_data)
     : host_(server_data.host),
       port_(server_data.port),
       auth_header_base64_("Basic " + server_data.auth_base64) {

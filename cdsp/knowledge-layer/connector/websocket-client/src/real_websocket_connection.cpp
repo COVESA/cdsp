@@ -40,7 +40,8 @@ void RealWebSocketConnection::asyncHandshake() {
     if (auto client = client_.lock()) {
         auto shared_client = client;  // Ensure shared_ptr is captured
         ws_.async_handshake(
-            client->getInitConfig().websocket_server.host, "/",
+            client->getInitConfig().websocket_server.host,
+            "/" + client->getInitConfig().websocket_server.target,
             [shared_client](boost::system::error_code ec) { shared_client->handshake(ec); });
     } else {
         std::cerr << "Failed to lock WebSocketClient. Client may have been destroyed.\n";

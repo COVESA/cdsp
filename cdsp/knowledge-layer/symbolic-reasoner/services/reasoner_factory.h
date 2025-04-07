@@ -11,7 +11,7 @@
 class ReasonerFactory {
    public:
     static std::shared_ptr<ReasonerService> initReasoner(
-        const InferenceEngineType& inference_engine, const ServerData& server_data,
+        const InferenceEngineType& inference_engine, const ReasonerServerData& server_data,
         const std::vector<std::pair<RuleLanguageType, std::string>>& reasoner_rules,
         const std::vector<std::pair<ReasonerSyntaxType, std::string>>& ontologies,
         const bool reset_datastore);

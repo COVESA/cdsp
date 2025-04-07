@@ -2,6 +2,7 @@
 
 #include <iostream>
 
+#include "helper.h"
 #include "metadata_dto.h"
 
 /**
@@ -64,8 +65,13 @@ StatusMessageDTO DtoService::parseStatusJsonToDto(const nlohmann::json& json) {
         dto.timestamp.seconds = json["timestamp"]["seconds"];
         dto.timestamp.nanos = json["timestamp"]["nanos"];
         return dto;
-    } catch (const nlohmann::json::exception& e) {
-        throw std::invalid_argument("Failed to parse StatusMessageDTO: " + std::string(e.what()));
+    } catch (const std::exception& e) {
+        std::cout << Helper::getFormattedTimestampNow("%Y-%m-%dT%H:%M:%S", true, true)
+                  << " Status message received:\n"
+                  << json.dump() << std::endl
+                  << std::endl;
+        std::cerr << " Failed to parse StatusMessageDTO: " << e.what() << std::endl;
+        return StatusMessageDTO();
     }
 }
 
@@ -141,6 +147,8 @@ ModelConfigDTO DtoService::parseModelConfigJsonToDto(const nlohmann::json& json)
         model_config_dto.queries = queries_dto;
 
         reasoner_settings_dto.inference_engine = json["reasoner_settings"]["inference_engine"];
+        reasoner_settings_dto.is_ai_reasoner_inference_results =
+            json["reasoner_settings"]["is_ai_reasoner_inference_results"];
         reasoner_settings_dto.output_format = json["reasoner_settings"]["output_format"];
         reasoner_settings_dto.supported_schema_collections =
             json["reasoner_settings"]["supported_schema_collections"];

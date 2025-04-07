@@ -6,7 +6,7 @@
 
 class MockRDFoxAdapter : public RDFoxAdapter {
    public:
-    MockRDFoxAdapter(const ServerData& server_data) : RDFoxAdapter(server_data) {}
+    MockRDFoxAdapter(const ReasonerServerData& server_data) : RDFoxAdapter(server_data) {}
 
     MOCK_METHOD(void, initialize, (), (override));
     MOCK_METHOD(std::unique_ptr<RequestBuilder>, createRequestBuilder, (), (const, override));

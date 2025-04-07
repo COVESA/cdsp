@@ -8,15 +8,19 @@
  * @param output_format The RDF syntax type for the output format.
  * @param supported_schema_collections A vector of schema types that are supported. Must not be
  * empty.
+ * @param is_ai_reasoner_inference_results A boolean indicating whether the reasoning query results
+ * should be grouped as inference.
  *
  * @throws std::invalid_argument if the supported schema collections vector is empty.
  */
 ReasonerSettings::ReasonerSettings(const InferenceEngineType& inference_engine,
                                    const ReasonerSyntaxType& output_format,
-                                   std::vector<SchemaType> supported_schema_collections)
+                                   std::vector<SchemaType> supported_schema_collections,
+                                   const bool is_ai_reasoner_inference_results)
     : inference_engine_(inference_engine),
       output_format_(output_format),
-      supported_schema_collections_(supported_schema_collections) {
+      supported_schema_collections_(supported_schema_collections),
+      is_ai_reasoner_inference_results_(is_ai_reasoner_inference_results) {
     if (supported_schema_collections_.empty()) {
         throw std::invalid_argument("Supported schema collections cannot be empty");
     }
@@ -52,4 +56,16 @@ ReasonerSyntaxType ReasonerSettings::getOutputFormat() const { return output_for
  */
 std::vector<SchemaType> ReasonerSettings::getSupportedSchemaCollections() const {
     return supported_schema_collections_;
+}
+
+/**
+ * @brief Checks if the inference of the reasoning query results.
+ *
+ * This function returns a boolean indicating whether the reasoning query results
+ * should be grouped as inference.
+ *
+ * @return true if the reasoning query results should be inference, false otherwise.
+ */
+bool ReasonerSettings::isIsAiReasonerInferenceResults() const {
+    return is_ai_reasoner_inference_results_;
 }

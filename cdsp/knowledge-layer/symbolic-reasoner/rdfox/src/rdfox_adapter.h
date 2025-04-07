@@ -19,7 +19,7 @@ using tcp = net::ip::tcp;
 
 class RDFoxAdapter : public IReasonerAdapter {
    public:
-    explicit RDFoxAdapter(const ServerData& server_data);
+    explicit RDFoxAdapter(const ReasonerServerData& server_data);
 
     virtual void initialize();
     virtual bool loadData(const std::string& data, const std::string& content_type = "text/turtle");

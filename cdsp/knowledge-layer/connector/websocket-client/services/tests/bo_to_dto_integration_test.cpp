@@ -174,7 +174,6 @@ TEST_F(BoToDtoIntegrationTest, ConvertSetMessageToDto) {
     ASSERT_EQ(dto.schema, schemaTypeToString(bo.getHeader().getSchemaType(), true));
     ASSERT_EQ(dto.instance, bo.getHeader().getId());
     ASSERT_EQ(dto.data.size(), bo.getNodes().size());
-
     const auto& nodes = bo.getNodes();
     for (size_t i = 0; i < dto.data.size(); ++i) {
         const DataDTO& data = dto.data[i];

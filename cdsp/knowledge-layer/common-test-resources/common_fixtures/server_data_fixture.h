@@ -4,8 +4,8 @@
 #include "data_types.h"
 class ServerDataFixture {
    public:
-    static ServerData getValidWebsocketServerData();
-    static ServerData getValidRDFoxServerData();
+    static WSServerData getValidWebsocketServerData();
+    static ReasonerServerData getValidRDFoxServerData();
 };
 
 #endif  // SERVER_DATA_FIXTURE_H

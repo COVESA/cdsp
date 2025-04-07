@@ -14,6 +14,7 @@ class ReasoningQueryService {
 
     nlohmann::json processReasoningQuery(
         const std::pair<QueryLanguageType, std::string>& reasoning_output_query,
+        const bool is_ai_reasoner_inference_results = false,
         const std::optional<std::string>& output_file_path = std::nullopt);
 
    private:

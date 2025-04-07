@@ -12,7 +12,7 @@
 
 SystemConfig SystemConfigurationService::loadSystemConfig(
     std::optional<std::string> ws_server_host, std::optional<std::string> ws_server_port,
-    std::optional<std::string> reasoner_server_host,
+    std::optional<std::string> ws_server_target, std::optional<std::string> reasoner_server_host,
     std::optional<std::string> reasoner_server_port,
     std::optional<std::string> reasoner_server_auth_base64,
     std::optional<std::string> reasoner_server_data_store_name) {
@@ -21,6 +21,8 @@ SystemConfig SystemConfigurationService::loadSystemConfig(
         Helper::getEnvVariable("HOST_WEBSOCKET_SERVER", ws_server_host);
     system_config.websocket_server.port =
         Helper::getEnvVariable("PORT_WEBSOCKET_SERVER", ws_server_port);
+    system_config.websocket_server.target =
+        Helper::getEnvVariable("TARGET_WEBSOCKET_SERVER", ws_server_target);
     system_config.reasoner_server.host =
         Helper::getEnvVariable("HOST_REASONER_SERVER", reasoner_server_host);
     system_config.reasoner_server.port =

@@ -17,6 +17,8 @@
  *
  * @param query_result A string containing the result of a query.
  * @param result_format_type The format of the query result.
+ * @param is_ai_reasoner_inference_results A boolean indicating whether the reasoning results are
+ * inferred.
  * @param output_file_path An optional file path to store the JSON object.
  * @param file_handler An optional file handler to use for writing the JSON object to a file.
  * @return A JSON object containing the query result data and metadata.
@@ -24,6 +26,7 @@
  */
 nlohmann::json JSONWriter::writeToJson(const std::string& query_result,
                                        const DataQueryAcceptType& result_format_type,
+                                       const bool is_ai_reasoner_inference_results,
                                        std::optional<std::string> output_file_path,
                                        std::shared_ptr<IFileHandler> file_handler) {
     nlohmann::json flat_result;
@@ -53,10 +56,24 @@ nlohmann::json JSONWriter::writeToJson(const std::string& query_result,
             if (dot_pos != std::string::npos) {
                 std::string schema = key.substr(0, dot_pos);
                 std::string flat_data_point = key.substr(dot_pos + 1);
-                grouped[schema][flat_data_point] = value;
+                if (is_ai_reasoner_inference_results) {
+                    grouped[schema]["AI.Reasoner.InferenceResults"][flat_data_point] = value;
+                } else {
+                    grouped[schema][flat_data_point] = value;
+                }
             } else {
                 std::cerr << "Warning parsing reasoning query to JSON - No schema found for key: "
                           << key << std::endl;
+            }
+        }
+
+        if (is_ai_reasoner_inference_results) {
+            // Convert the nested object to a JSON string
+            for (auto& [schema, section] : grouped.items()) {
+                if (section.contains("AI.Reasoner.InferenceResults")) {
+                    section["AI.Reasoner.InferenceResults"] =
+                        section["AI.Reasoner.InferenceResults"].dump();
+                }
             }
         }
 

@@ -86,7 +86,8 @@ nlohmann::json generateValidModelConfigJson() {
             {"reasoner_settings",
              {{"inference_engine", "RDFox"},
               {"output_format", "turtle"},
-              {"supported_schema_collections", {"vehicle"}}}}};
+              {"supported_schema_collections", {"vehicle"}},
+              {"is_ai_reasoner_inference_results", true}}}};
 }
 
 /**
@@ -111,6 +112,7 @@ TEST_F(ModelConfigDtoServiceUnitTest, ParseModelConfigWithRandomValues) {
     auto random_inference_engine = RandomUtils::generateRandomString(10);
     auto random_output_format = RandomUtils::generateRandomString(10);
     auto random_supported_schema_collections = generateRandomVector(1, "schema_");
+    bool random_is_ai_reasoner_inference_results = RandomUtils::generateRandomBool();
 
     // Build the expected JSON structure with random values
     nlohmann::json json_message = {
@@ -125,7 +127,8 @@ TEST_F(ModelConfigDtoServiceUnitTest, ParseModelConfigWithRandomValues) {
         {"reasoner_settings",
          {{"inference_engine", random_inference_engine},
           {"output_format", random_output_format},
-          {"supported_schema_collections", random_supported_schema_collections}}}};
+          {"supported_schema_collections", random_supported_schema_collections},
+          {"is_ai_reasoner_inference_results", random_is_ai_reasoner_inference_results}}}};
 
     std::cout << "Incoming random message: \n" << json_message.dump(4) << std::endl;
 
@@ -148,6 +151,9 @@ TEST_F(ModelConfigDtoServiceUnitTest, ParseModelConfigWithRandomValues) {
     ASSERT_EQ(dto.reasoner_settings.output_format, random_output_format);
     ASSERT_EQ(dto.reasoner_settings.supported_schema_collections,
               random_supported_schema_collections);
+
+    ASSERT_EQ(dto.reasoner_settings.is_ai_reasoner_inference_results,
+              random_is_ai_reasoner_inference_results);
 }
 
 /**

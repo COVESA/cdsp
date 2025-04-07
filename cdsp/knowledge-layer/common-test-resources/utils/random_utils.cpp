@@ -85,7 +85,12 @@ std::variant<std::string, int, double, float, bool> RandomUtils::generateRandomV
 /**
  * @brief Generates a random boolean value.
  */
-bool RandomUtils::generateRandomBool() { return static_cast<bool>(rand() % 2); }
+bool RandomUtils::generateRandomBool() {
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    static std::bernoulli_distribution d(0.5);  // 50% true, 50% false
+    return d(gen);
+}
 
 /**
  * @brief Generates a random UTC date as an ISO 8601 string with fractional seconds.

@@ -15,7 +15,6 @@
 
 class Helper {
    public:
-    // TODO: Should be a more generic geographical point?
     static std::string getFormattedTimestampNow(const std::string& format,
                                                 bool include_nanoseconds = false,
                                                 bool use_utc = true);

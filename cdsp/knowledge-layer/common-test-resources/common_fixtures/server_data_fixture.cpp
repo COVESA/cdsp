@@ -1,18 +1,17 @@
 #include "server_data_fixture.h"
 
-ServerData ServerDataFixture::getValidWebsocketServerData() {
+WSServerData ServerDataFixture::getValidWebsocketServerData() {
     // Set default values for the fixture
-    ServerData data;
+    WSServerData data;
     data.host = "127.0.0.1";
     data.port = "8080";
-    data.auth_base64 = "";
-    data.data_store_name = std::nullopt;
+    data.target = "";
     return data;
 }
 
-ServerData ServerDataFixture::getValidRDFoxServerData() {
+ReasonerServerData ServerDataFixture::getValidRDFoxServerData() {
     // Set default values for the fixture
-    ServerData data;
+    ReasonerServerData data;
     data.host = "127.0.0.1";
     data.port = "12110";
     data.auth_base64 = "cm9vdDphZG1pbg==";  // Base64 encoded authorization string

@@ -64,7 +64,10 @@ std::variant<DataMessageDTO, StatusMessageDTO> MessageService::displayAndParseMe
 
         if (type == "data") {
             // Parse and return a DataMessage
-            std::cout << "Data message received: " << json_message.dump() << std::endl << std::endl;
+            std::cout << Helper::getFormattedTimestampNow("%Y-%m-%dT%H:%M:%S", true, true)
+                      << " Data message received:\n"
+                      << json_message.dump() << std::endl
+                      << std::endl;
             return (DtoService::parseDataJsonToDto(json_message));
         } else if (type == "status") {
             // Parse and return a StatusMessage
@@ -102,8 +105,10 @@ std::optional<DataMessage> MessageService::getDataMessageOrLogStatus(const std::
         StatusMessageDTO status_message_dto = std::get<StatusMessageDTO>(parsed_message);
         try {
             StatusMessage status_message = dto_to_bo.convert(status_message_dto);
-            std::cout << "Status message received(" << status_message.getCode()
-                      << "): " << status_message.getMessage() << std::endl
+
+            std::cout << Helper::getFormattedTimestampNow("%Y-%m-%dT%H:%M:%S", true, true)
+                      << " Status message received(" << status_message.getCode() << "):\n"
+                      << status_message.getMessage() << std::endl
                       << std::endl;
         } catch (const std::exception& e) {
             std::cerr << "Error parsing status message: " << e.what() << std::endl;

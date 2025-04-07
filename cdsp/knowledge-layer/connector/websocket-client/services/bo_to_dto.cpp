@@ -91,6 +91,7 @@ SetMessageDTO BoToDto::convert(const SetMessage& bo) {
     dto.instance = bo.getHeader().getId();
     dto.requestId = std::nullopt;
     dto.schema = schemaTypeToString(bo.getHeader().getSchemaType(), true);
+
     for (const auto& node : bo.getNodes()) {
         DataDTO data;
         data.name = node.getName();

@@ -81,6 +81,7 @@ The `model_config.json` is structured to provide:
 ```json
 "reasoner_settings": {
   "inference_engine": "RDFox",
+  "is_ai_reasoner_inference_results": true,
   "output_format": "turtle",
   "supported_schema_collections": ["vehicle"]
 }
@@ -90,9 +91,17 @@ The `model_config.json` is structured to provide:
     > [!NOTE] Supported engines in this repository
     > - `RDFox`
 
+  - **is_ai_reasoner_inference_results**: A boolean flag indicating whether the reasoner should return inference results. If set to `true`, the reasoner will provide the inferred reasoning query results into a data point called `<SCHEMA_COLLECTION>.AI.Reasoner.InferenceResults`.
+    > [!NOTE] Supported inference results in this repository
+    > - `true` for inference results
+    > - `false` for no inference results
+
   - **output_format**: Defines the format in which the output will be serialized. The current setting is `turtle` for Turtle format.
     > [!NOTE] Supported formats in this repository
     > - `turtle` for .ttl files
+    > - `ntriples` for .nt files
+    > - `nquads` for .nq files
+    > - `trig` for .trig files
 
   - **supported_schema_collections**: This field defines the types of schema collections that the reasoner application can handle. For the communication with the WebSocket server and definition of the input data, it is required to specify how the schema type will be represented. This schema type will be sent as part of the message header during data transfer and is crucial for reading, interpreting the [input data](#inputs) for the reasoner model, and if exist, specific [triple assembler helpers](#queries). With this schema type definition, the reasoner can ensure compatibility with the input data and properly interpret the data points being processed.
     > [!NOTE] Supported schema types this repository

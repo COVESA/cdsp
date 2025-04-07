@@ -7,7 +7,7 @@
 
 class ReasonerFactoryIntegrationTest : public ::testing::Test {
    protected:
-    const ServerData server_data_ = ServerDataFixture::getValidRDFoxServerData();
+    const ReasonerServerData server_data_ = ServerDataFixture::getValidRDFoxServerData();
     std::shared_ptr<ReasonerService> reasoner_service_;
 
     void SetUp() override {}
@@ -143,8 +143,8 @@ TEST_F(ReasonerFactoryIntegrationTest, InitializeReasonerWithInvalidServerDataFa
     const std::vector<std::pair<RuleLanguageType, std::string>> reasoner_rules = {};
     const std::vector<std::pair<ReasonerSyntaxType, std::string>> ontologies = {};
 
-    ServerData invalid_server_data = {"invalid_host", "invalid_port", "invalid_auth",
-                                      "some_datastore"};
+    ReasonerServerData invalid_server_data = {"invalid_host", "invalid_port", "invalid_auth",
+                                              "some_datastore"};
 
     // Act & Assert
     EXPECT_THROW(

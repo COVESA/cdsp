@@ -11,7 +11,7 @@ class RDFoxAdapterIntegrationTest : public ::testing::Test {
    protected:
     RDFoxAdapter* adapter_;
 
-    const ServerData rdfox_server_ = ServerDataFixture::getValidRDFoxServerData();
+    const ReasonerServerData rdfox_server_ = ServerDataFixture::getValidRDFoxServerData();
     const std::string triple_subject_ = RandomUtils::generateRandomString(8);
     const std::string triple_object_ = RandomUtils::generateRandomString(6);
 

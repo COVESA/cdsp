@@ -33,8 +33,9 @@ struct DataDTO {
  * @param dto The DataDTO object containing the data to be serialized.
  */
 inline void to_json(nlohmann::json& j, const DataDTO& dto) {
-    j = nlohmann::json{{"name", dto.name}, {"value", dto.value}};
+    j = nlohmann::json{{dto.name, dto.value}};
 }
+
 /**
  * @brief Data Transfer Object for SetMessage.
  */
@@ -75,10 +76,15 @@ struct SetMessageDTO {
  * @param dto The SetMessageDTO object containing the data to be serialized.
  */
 inline void to_json(nlohmann::json& j, const SetMessageDTO& dto) {
+    nlohmann::json data_obj = nlohmann::json::object();
+    for (const auto& item : dto.data) {
+        data_obj[item.name] = item.value;
+    }
+
     j = nlohmann::json{{"type", "set"},
                        {"schema", dto.schema},
                        {"instance", dto.instance},
-                       {"data", dto.data},
+                       {"data", data_obj},
                        {"metadata", dto.metadata}};
     if (dto.path)
         j["path"] = *dto.path;

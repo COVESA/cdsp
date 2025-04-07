@@ -36,6 +36,7 @@ struct QueriesDTO {
  */
 struct ReasonerSettingsDTO {
     std::string inference_engine;
+    bool is_ai_reasoner_inference_results;
     std::string output_format;
     std::vector<std::string> supported_schema_collections;
 
@@ -43,6 +44,8 @@ struct ReasonerSettingsDTO {
     friend std::ostream& operator<<(std::ostream& os, const ReasonerSettingsDTO& dto) {
         os << "    ReasonerSettingsDTO {\n"
            << "      inference_engine: " << dto.inference_engine << "\n"
+           << "      is_ai_reasoner_inference_results: " << dto.is_ai_reasoner_inference_results
+           << "\n"
            << "      output_format: " << dto.output_format << "\n"
            << "      supported_schema_collections: [\n";
         for (const auto& schema : dto.supported_schema_collections) {

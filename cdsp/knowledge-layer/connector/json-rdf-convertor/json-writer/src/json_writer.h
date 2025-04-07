@@ -12,6 +12,7 @@ class JSONWriter {
    public:
     static nlohmann::json writeToJson(const std::string& query_result,
                                       const DataQueryAcceptType& result_format_type,
+                                      const bool is_ai_reasoner_inference_results = false,
                                       std::optional<std::string> output_file_path = std::nullopt,
                                       std::shared_ptr<IFileHandler> file_handler = nullptr);
 

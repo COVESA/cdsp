@@ -20,6 +20,7 @@ boost::uuids::random_generator uuidGenerator;
 
 constexpr char DEFAULT_HOST_WEB_SOCKET_SERVER[] = "127.0.0.1";
 constexpr char DEFAULT_PORT_WEB_SOCKET_SERVER[] = "8080";
+const std::string DEFAULT_TARGET_WEB_SOCKET_SERVER = "";
 const std::string MODEL_CONFIGURATION_FILE =
     std::string(PROJECT_ROOT) + "/symbolic-reasoner/examples/use-case/model/model_config.json";
 constexpr char DEFAULT_REASONER_SERVER[] = "127.0.0.1";
@@ -100,6 +101,11 @@ void displayEnvVariables() {
               << Helper::getEnvVariable("PORT_WEBSOCKET_SERVER", DEFAULT_PORT_WEB_SOCKET_SERVER)
               << "\n";
 
+    std::cout << std::left << std::setw(35) << "TARGET_WEBSOCKET_SERVER" << std::setw(65)
+              << "Target URL of the WebSocket server" << std::setw(40)
+              << Helper::getEnvVariable("TARGET_WEBSOCKET_SERVER", DEFAULT_TARGET_WEB_SOCKET_SERVER)
+              << "\n";
+
     std::cout << std::left << std::setw(35) << "HOST_REASONER_SERVER" << std::setw(65)
               << "IP address of the reasoner server" << std::setw(40)
               << Helper::getEnvVariable("HOST_REASONER_SERVER", DEFAULT_REASONER_SERVER) << "\n";
@@ -175,9 +181,9 @@ int main(int argc, char* argv[]) {
     try {
         // Initialize System Configuration
         SystemConfig system_config = SystemConfigurationService::loadSystemConfig(
-            DEFAULT_HOST_WEB_SOCKET_SERVER, DEFAULT_PORT_WEB_SOCKET_SERVER, DEFAULT_REASONER_SERVER,
-            DEFAULT_PORT_REASONER_SERVER, DEFAULT_AUTH_REASONER_SERVER_BASE64,
-            DEFAULT_REASONER_DATASTORE_NAME);
+            DEFAULT_HOST_WEB_SOCKET_SERVER, DEFAULT_PORT_WEB_SOCKET_SERVER,
+            DEFAULT_TARGET_WEB_SOCKET_SERVER, DEFAULT_REASONER_SERVER, DEFAULT_PORT_REASONER_SERVER,
+            DEFAULT_AUTH_REASONER_SERVER_BASE64, DEFAULT_REASONER_DATASTORE_NAME);
 
         // Initialize Model Configuration
         std::shared_ptr<ModelConfig> model_config = std::make_shared<ModelConfig>(

@@ -9,25 +9,29 @@ class MockModelConfig : public ModelConfig {
    public:
     MockModelConfig()
         : ModelConfig(
+              // Supported data points
               std::map<SchemaType, std::vector<std::string>>{
-                  {SchemaType::VEHICLE,
-                   {"mocked_supported_data_points"}}},                    // supported_data_points
-              std::vector<std::pair<ReasonerSyntaxType, std::string>>{},  // ontologies
-              "mocked_output_path",                                       // output_path
+                  {SchemaType::VEHICLE, {"mocked_supported_data_points"}}},
+              // Ontologies
+              std::vector<std::pair<ReasonerSyntaxType, std::string>>{},
+              // Output path
+              "mocked_output_path",
+              // Reasoner rules
               std::vector<std::pair<RuleLanguageType, std::string>>{
-                  {RuleLanguageType::DATALOG, "mocked_rule"}},  // reasoner_rules
+                  {RuleLanguageType::DATALOG, "mocked_rule"}},
+              // Validation shapes
               std::vector<std::pair<ReasonerSyntaxType, std::string>>{
-                  {ReasonerSyntaxType::NQUADS, "mocked_validation_shapes"}},  // validation_shapes
+                  {ReasonerSyntaxType::NQUADS, "mocked_validation_shapes"}},
+              // Triple assembler helper
               TripleAssemblerHelper({{SchemaType::VEHICLE,
                                       {{QueryLanguageType::SPARQL, "mocked_query_object"},
-                                       {QueryLanguageType::SPARQL,
-                                        "mocked_query_data"}}}}),  // triple_assembler_helper
+                                       {QueryLanguageType::SPARQL, "mocked_query_data"}}}}),
+              // Reasoning output queries
               std::vector<std::pair<QueryLanguageType, std::string>>{
-                  {QueryLanguageType::SPARQL,
-                   "mocked_reasoning_output_queries"}},  // reasoning_output_queries
+                  {QueryLanguageType::SPARQL, "mocked_reasoning_output_queries"}},
+              // Reasoner settings
               ReasonerSettings(InferenceEngineType::RDFOX, ReasonerSyntaxType::TURTLE,
-                               {SchemaType::VEHICLE}  // reasoner_settings
-                               )) {}
+                               {SchemaType::VEHICLE}, true)) {}
 
     MOCK_METHOD((std::map<SchemaType, std::string>), getObjectId, (), (const, override));
     MOCK_METHOD((std::map<SchemaType, std::vector<std::string>>), getInputs, (), (const, override));

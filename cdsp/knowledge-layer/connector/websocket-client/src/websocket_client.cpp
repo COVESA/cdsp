@@ -180,7 +180,9 @@ void WebSocketClient::processMessage(const std::shared_ptr<const std::string>& m
         for (const auto& reasoning_output_query : model_config_->getReasoningOutputQueries()) {
             try {
                 json result = reasoner_query_service_->processReasoningQuery(
-                    reasoning_output_query, model_config_->getOutput() + "/reasoning_output/");
+                    reasoning_output_query,
+                    model_config_->getReasonerSettings().isIsAiReasonerInferenceResults(),
+                    model_config_->getOutput() + "/reasoning_output/");
 
                 if (!result.empty()) {
                     auto set_messages =
@@ -214,6 +216,8 @@ void WebSocketClient::writeReplyMessagesOnQueue() {
     }
     json reply_message = reply_messages_queue_.front();
     reply_messages_queue_.erase(reply_messages_queue_.begin());
-    std::cout << "Sending queue message: " << reply_message.dump() << std::endl;
+    std::cout << Helper::getFormattedTimestampNow("%Y-%m-%dT%H:%M:%S", true, true)
+              << " Sending queue message:\n"
+              << reply_message.dump() << std::endl;
     sendMessage(reply_message);
 }

@@ -80,9 +80,18 @@ enum class MessageStructureFormat {
 };
 
 /**
- * @brief Configuration structure for the servers
+ * @brief Configuration structure for the websocket servers
  */
-struct ServerData {
+struct WSServerData {
+    std::string host;
+    std::string port;
+    std::string target;
+};
+
+/**
+ * @brief Configuration structure for the reasoner servers
+ */
+struct ReasonerServerData {
     std::string host;
     std::string port;
     std::string auth_base64;
@@ -94,8 +103,8 @@ struct ServerData {
  */
 struct SystemConfig {
     std::string uuid;
-    ServerData websocket_server;
-    ServerData reasoner_server;
+    WSServerData websocket_server;
+    ReasonerServerData reasoner_server;
 };
 
 /**

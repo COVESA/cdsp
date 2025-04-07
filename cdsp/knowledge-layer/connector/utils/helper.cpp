@@ -10,6 +10,7 @@
 #include "coordinate_transform.h"
 
 // Define the static constant
+// TODO: Should be a more generic geographical point?
 const Wgs84Coord Helper::ZONE_ORIGIN{11.579144, 48.137416, 0.0};
 
 /**

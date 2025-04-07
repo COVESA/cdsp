@@ -235,7 +235,7 @@ car:Observation20181116155027123456789
         .Times(2)
         .WillRepeatedly(
             testing::Return(ReasonerSettings(InferenceEngineType::RDFOX, ReasonerSyntaxType::TURTLE,
-                                             std::vector<SchemaType>{SchemaType::VEHICLE})));
+                                             std::vector<SchemaType>{SchemaType::VEHICLE}, true)));
     EXPECT_CALL(*mock_model_config_, getOutput()).Times(1).WillOnce(testing::Return("output/"));
     EXPECT_CALL(mock_triple_writer_, generateTripleOutput(ReasonerSyntaxType::TURTLE))
         .Times(1)
@@ -335,7 +335,7 @@ TEST_F(TripleAssemblerUnitTest,
         .Times(2)
         .WillRepeatedly(
             testing::Return(ReasonerSettings(InferenceEngineType::RDFOX, ReasonerSyntaxType::TURTLE,
-                                             std::vector<SchemaType>{SchemaType::VEHICLE})));
+                                             std::vector<SchemaType>{SchemaType::VEHICLE}, true)));
     EXPECT_CALL(*mock_model_config_, getOutput()).Times(1).WillOnce(testing::Return("output/"));
 
     EXPECT_CALL(mock_triple_writer_, generateTripleOutput(::testing::_))
@@ -484,7 +484,7 @@ TEST_F(TripleAssemblerUnitTest, TransformMessageToRDFTripleWithCoordinatesSucces
         .Times(2)
         .WillRepeatedly(
             testing::Return(ReasonerSettings(InferenceEngineType::RDFOX, ReasonerSyntaxType::TURTLE,
-                                             std::vector<SchemaType>{SchemaType::VEHICLE})));
+                                             std::vector<SchemaType>{SchemaType::VEHICLE}, true)));
     EXPECT_CALL(*mock_model_config_, getOutput()).Times(1).WillOnce(testing::Return("output/"));
     EXPECT_CALL(mock_triple_writer_, generateTripleOutput(ReasonerSyntaxType::TURTLE))
         .Times(1)
@@ -541,7 +541,7 @@ TEST_F(TripleAssemblerUnitTest, TransformMessageToTripleFailsWhenCoordinatesAreN
         .Times(2)
         .WillRepeatedly(
             testing::Return(ReasonerSettings(InferenceEngineType::RDFOX, ReasonerSyntaxType::TURTLE,
-                                             std::vector<SchemaType>{SchemaType::VEHICLE})));
+                                             std::vector<SchemaType>{SchemaType::VEHICLE}, true)));
     EXPECT_CALL(*mock_model_config_, getOutput()).Times(1).WillOnce(testing::Return("output/"));
     EXPECT_CALL(mock_triple_writer_, generateTripleOutput(::testing::_))
         .Times(1)
