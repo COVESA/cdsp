@@ -314,7 +314,7 @@ export abstract class HandlerBase {
     });
 
     if (unknownFields.length > 0) {
-      return "Could not find node: " + unknownFields.join(", ");
+      return "Could not find node: " + replaceUnderscoresWithDots(unknownFields.join(", "));
     }
     return null;
   }

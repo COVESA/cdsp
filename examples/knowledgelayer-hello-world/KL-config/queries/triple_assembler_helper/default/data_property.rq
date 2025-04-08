@@ -1,0 +1,13 @@
+prefix sh: <http://www.w3.org/ns/shacl#>
+prefix val: <http://example.ontology.com/validation#>
+
+ SELECT ?class1 ?data_property ?datatype
+ WHERE {
+    val:ObservationShape  sh:targetClass ?class1;
+      sh:property [ 
+                    sh:path ?data_property;
+                    sh:datatype  ?datatype
+                   ].
+  }
+
+

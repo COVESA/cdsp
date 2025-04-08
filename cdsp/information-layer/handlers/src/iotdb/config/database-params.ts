@@ -43,7 +43,7 @@ const getDatabaseConfig = (): Readonly<IotDBConfig> => {
     timeZoneId:
       getEnvValue("IOTDB_TIME_ZONE_ID") ||
       Intl.DateTimeFormat().resolvedOptions().timeZone,
-    pollIntervalLenInSec: Number(getEnvValue("IOTDB_POLL_INTERVAL_LEN_IN_SEC")) || 5,   
+    pollIntervalLenInSec: Number(getEnvValue("IOTDB_POLL_INTERVAL_LEN_IN_SEC")) || 0.2,   
   };
 
   return iotdb_config;

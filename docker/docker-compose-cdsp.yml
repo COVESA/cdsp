@@ -70,7 +70,8 @@ services:
     container_name: rdfox-service
     platform: linux/amd64
     depends_on:
-      - rdfox-init
+      rdfox-init:
+        condition: service_completed_successfully
     ports:
       - "12110:12110"
     volumes:
@@ -130,6 +131,14 @@ services:
      - ./logs/vssr:/app/logs
    volumes_from:
      - tmp
+
+# Knowledge Layer Server 
+  knowledge-layer:
+    build:
+      context: ../cdsp/knowledge-layer
+      dockerfile: Dockerfile
+    container_name: knowledge-layer
+    entrypoint: ["/src/build/bin/reasoner_client"]
 
 volumes:
   rdfox-server-directory:

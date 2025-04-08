@@ -5,9 +5,19 @@ import {removeSuffixFromString, replaceUnderscoresWithDots} from "../../../utils
 
 const METADATA_SUFFIX_IOTDB = ".Metadata";
 
-// Valid data point is of type number
+// Valid data point is of type number or string
 function isValidDatapoint(value: any) {
-  return value !== null && !isNaN(value);
+  if (value === null || value === undefined) return false;
+
+  if (typeof value === 'number') {
+    return !isNaN(value);
+  }
+
+  if (typeof value === 'string') {
+    return true;
+  }
+
+  return false;
 }
 
 // Valid metadata is of type object 
@@ -52,16 +62,16 @@ function deepMerge(target: Record<string, any>, source: Record<string, any>): Re
 function insertMetadataReceivedTimestamp(transformedObject: Record<string, any>, timestampMilliseconds: number) {
   const metadataTimestamp = convertToMetadataTimestamp(timestampMilliseconds);
   let dataPointsNames = Object.keys(transformedObject).filter(value => !value.endsWith(METADATA_SUFFIX_IOTDB));
-  
+
   dataPointsNames.forEach(dataPoints => {
-      let metadataForDataPoints = transformedObject[dataPoints + METADATA_SUFFIX_IOTDB];
-      // create new metadata with received timestamp
-      if (!metadataForDataPoints) {
-        transformedObject[dataPoints + METADATA_SUFFIX_IOTDB] = metadataTimestamp
-      } else { // append received timestamp to existing metadata
-        transformedObject[dataPoints + METADATA_SUFFIX_IOTDB] = deepMerge(JSON.parse(metadataForDataPoints), metadataTimestamp);
-      }
-    })
+    let metadataForDataPoints = transformedObject[dataPoints + METADATA_SUFFIX_IOTDB];
+    // create new metadata with received timestamp
+    if (!metadataForDataPoints) {
+      transformedObject[dataPoints + METADATA_SUFFIX_IOTDB] = metadataTimestamp
+    } else { // append received timestamp to existing metadata
+      transformedObject[dataPoints + METADATA_SUFFIX_IOTDB] = deepMerge(JSON.parse(metadataForDataPoints), metadataTimestamp);
+    }
+  })
 
   return transformedObject;
 }

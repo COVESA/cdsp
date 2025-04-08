@@ -1,0 +1,25 @@
+@prefix car: <http://example.ontology.com/car#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sosa: <http://www.w3.org/ns/sosa/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+ 
+# Test the rule
+# syntax issue
+# semantic issue
+ 
+car:SlidingWindow1Min a car:1minSlideWindow ;
+    car:hasWindowSize "PT1M"^^xsd:duration ;
+    rdfs:label "60".
+    
+ 
+car:SlidingWindow3Sec a car:3SecSlideWindow ;
+    car:hasWindowSize "PT3S"^^xsd:duration;
+    rdfs:label "3".
+ 
+car:SlidingWindow6Sec a car:6SecSlideWindow ;
+    car:hasWindowSize "PT6S"^^xsd:duration;
+    rdfs:label "6".
+ 
+car:SlidingWindow5Min a car:5MinSlideWindow ;
+    car:hasWindowSize "PT5M"^^xsd:duration ;
+    rdfs:label "300".

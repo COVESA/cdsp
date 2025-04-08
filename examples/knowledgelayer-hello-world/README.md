@@ -58,22 +58,32 @@ Derived output data:
 
 ## Installation and Running
 
-1. Create `Remotive Labs` account
-2. Fill the [.env](.env) file with your Remotive Labs broker url and api key, you can see find them in the `Brokers` section. This credentials will be used by the `RemotiveLabs Bridge` script to access the VSS data and send it to `Information Layer Server`.
-3. Select `Night drive to Luftkastellet` in the `recordings`section, open the tab `Files` and drag and drop the zip file `examples/shared-config/remotive-labs/config_vss_aggressive_driving.zip` in the `Signal Transformations` section.
-4. Navigate to `Playback` tab and select `config_vss_aggressive_driving` as `signal transformation` and press the `Play` button.
-5. If the recording starts playing, stop it for now.
-6. TODO next Steps: Get RDFOX license and place it in provided folder and Other KL config
-..
-X. start all services with single command
-```bash
-docker compose up
-```
-Y. Play the recording on Remotive Labs webpage
+### Remotive Labs and RDFOX Credentials Setup
 
+1. Create a [Remotive Labs](https://remotivelabs.com/) account.
+2. Navigate to `Recordings`, select `Night drive to Luftkastellet`, and start the recording with the `Play` button. Wait until it starts playing, then stop the recording for now. This creates a broker for you, and we need its credentials next.
+3. Navigate to the `Brokers` section and open `My personal broker`.
+4. Copy the URL and API key to the environment variables in the [.env](.env) file: `REMOTIVE_LABS_BROKER_URL` and `REMOTIVE_LABS_BROKER_API_KEY`.
+5. You need to acquire the `RDFox.lic` license file from [Oxford Semantic Technologies](https://www.oxfordsemantic.tech/).
+6. Place it in the folder [examples/shared-config/rdfox](../shared-config/rdfox).
 
-To be determined (TBD).
+### Run Use Case
 
+1. Log in to [Remotive Labs](https://remotivelabs.com/).
+2. Select `Night drive to Luftkastellet` in the `Recordings` section, open the `Files` tab, and drag and drop the zip file `examples/shared-config/remotive-labs/config_vss_aggressive_driving.zip` into the `Signal Transformations` section.
+3. Navigate to the `Playback` tab, select `config_vss_aggressive_driving` as the `signal transformation`, and press the `Play` button.
+4. If the recording starts playing, stop it for now to proceed with setup.
+5. Start all services with a single terminal command from the current folder ([knowledgelayer-hello-world]()). Make sure you have installed `Docker` and `Docker Compose`.
+   ```bash
+   docker compose up
+   ```
+6. Wait until all containers are created and started.
+7. Continue playing the `Night drive to Luftkastellet` on `Remotive Labs` page. You should see a lot of logs in the terminal indicating that data is flowing. 
+8. Knowledge Layer will generate triples in [KL-config/output/triples](KL-config/output/triples) folder and the reasoner responses that are send to Information Layer in [KL-config/output/reasoning_output](KL-config/output/reasoning_output)
+9. To stop and delete the docker containers you can use
+  ```bash
+  docker compose down
+  ```
 ---
 
 Feel free to explore the components and rules used in this "Hello World" example to understand the basic implementation of the Knowledge Layer. You can extend this use case to more complex scenarios and even adapt it to different domains.

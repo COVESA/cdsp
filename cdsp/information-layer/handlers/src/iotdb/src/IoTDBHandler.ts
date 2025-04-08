@@ -244,11 +244,13 @@ export class IoTDBHandler extends HandlerBase {
     const latestDataPoints: Array<{ name: string; value: any }> = [];
     const latestMetadata: Array<{ name: string; value: any }> = [];
     try {
-      for (const field of [...dataPoints, ...metadataPoints]) {
-        const fieldSQL = `SELECT ${field}
+      for (let i = 0; i < dataPoints.length; i++) {
+        const dataPoint = dataPoints[i];
+        const metadataPoint = metadataPoints[i];
+        const fieldSQL = `SELECT ${dataPoint + "," + metadataPoint}
                           FROM ${databaseName}
                           WHERE ${dataPointId} = '${vin}'
-                            AND ${field} IS NOT NULL
+                            AND ${dataPoint} IS NOT NULL
                           ORDER BY time DESC
                               LIMIT 1`;
         const sessionDataSet = await this.session.executeQueryStatement(fieldSQL);

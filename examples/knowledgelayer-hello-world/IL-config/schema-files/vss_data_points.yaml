@@ -59,7 +59,7 @@ Vehicle.Powertrain.TractionBattery.StateOfCharge.CurrentEnergy:
   comment: Current energy could be calculated as .StateOfCharge.Current * .NetCapacity.
   datatype: float
   description: Physical state of charge of high voltage battery expressed in kWh.
-  type: sensorw
+  type: sensor
   unit: kWh
 
 Vehicle.Powertrain.Transmission:
@@ -84,6 +84,11 @@ Vehicle.VehicleIdentification:
 Vehicle.VehicleIdentification.VIN:
   datatype: string
   description: 17-character Vehicle Identification Number (VIN) as defined by ISO 3779.
+  type: attribute
+
+Vehicle.AI.Reasoner.InferenceResults:
+  datatype: string
+  description: Inference results from the reasoner
   type: attribute
 
 # This is a custom new datapoint for this specific example
