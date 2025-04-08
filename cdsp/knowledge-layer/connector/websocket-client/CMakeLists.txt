@@ -1,5 +1,6 @@
 # Define the websocket_client library
 add_library(websocket_client
+    common/globals.cpp
     src/websocket_client.cpp
     src/real_websocket_connection.cpp
     services/bo_service.cpp
@@ -16,6 +17,7 @@ add_library(websocket_client
 # Include directories
 target_include_directories(websocket_client 
     PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/common
         ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${CMAKE_CURRENT_SOURCE_DIR}/services
         ${CMAKE_CURRENT_SOURCE_DIR}/services/converters

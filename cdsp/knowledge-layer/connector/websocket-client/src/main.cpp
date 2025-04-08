@@ -7,6 +7,7 @@
 #include <nlohmann/json.hpp>
 
 #include "data_types.h"
+#include "globals.h"
 #include "helper.h"
 #include "model_config.h"
 #include "reasoner_factory.h"
@@ -22,7 +23,7 @@ constexpr char DEFAULT_HOST_WEB_SOCKET_SERVER[] = "127.0.0.1";
 constexpr char DEFAULT_PORT_WEB_SOCKET_SERVER[] = "8080";
 const std::string DEFAULT_TARGET_WEB_SOCKET_SERVER = "";
 const std::string MODEL_CONFIGURATION_FILE =
-    std::string(PROJECT_ROOT) + "/symbolic-reasoner/examples/use-case/model/model_config.json";
+    getProjectRoot() + "/symbolic-reasoner/examples/use-case/model/model_config.json";
 constexpr char DEFAULT_REASONER_SERVER[] = "127.0.0.1";
 constexpr char DEFAULT_PORT_REASONER_SERVER[] = "12110";
 constexpr char DEFAULT_AUTH_REASONER_SERVER_BASE64[] =

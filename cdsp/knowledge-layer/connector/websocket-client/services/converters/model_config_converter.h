@@ -1,6 +1,7 @@
 #ifndef MODEL_CONFIG_CONVERTER_H
 #define MODEL_CONFIG_CONVERTER_H
 
+#include "globals.h"
 #include "i_file_handler.h"
 #include "model_config.h"
 #include "model_config_dto.h"
@@ -15,7 +16,7 @@ class ModelConfigConverter {
 
    private:
     const std::string PATH_TO_MODEL_FILES =
-        std::string(PROJECT_ROOT) + "/symbolic-reasoner/examples/use-case/model/";
+        getProjectRoot() + "/symbolic-reasoner/examples/use-case/model/";
     std::shared_ptr<IFileHandler> file_handler_;
 
     ReasonerSettings convertReasonerSettings(const ReasonerSettingsDTO& dto);

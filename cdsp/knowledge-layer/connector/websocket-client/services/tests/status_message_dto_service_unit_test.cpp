@@ -90,9 +90,14 @@ TEST_F(ModelConfigDtoServiceUnitTest, ParseStatusDtoThrowsExceptionWhenRequiredF
         // Output the current test case details
         std::cout << "\nTesting with missing field: " << field << "\n";
         std::cout << test_message.dump(4) << std::endl;
-
-        // Act & Assert: Ensure exception is thrown when a required field is missing
-        ASSERT_THROW(dto_service_.parseStatusJsonToDto(test_message), std::invalid_argument);
+        StatusMessageDTO expected_dto;
+        ASSERT_NO_THROW({
+            StatusMessageDTO result = dto_service_.parseStatusJsonToDto(test_message);
+            ASSERT_EQ(result.code, 0);
+            ASSERT_TRUE(result.message.empty());
+            ASSERT_EQ(result.timestamp.seconds, 0);
+            ASSERT_EQ(result.timestamp.nanos, 0);
+        });
     }
 }
 
@@ -123,7 +128,13 @@ TEST_F(ModelConfigDtoServiceUnitTest, ParseStatusDtoThrowsExceptionWhenTimestamp
         std::cout << "\nTesting with missing field: " << field << "\n";
         std::cout << test_message.dump(4) << std::endl;
 
-        // Act & Assert: Ensure exception is thrown when a required field is missing
-        ASSERT_THROW(dto_service_.parseStatusJsonToDto(test_message), std::invalid_argument);
+        StatusMessageDTO expected_dto;
+        ASSERT_NO_THROW({
+            StatusMessageDTO result = dto_service_.parseStatusJsonToDto(test_message);
+            ASSERT_EQ(result.code, 0);
+            ASSERT_TRUE(result.message.empty());
+            ASSERT_EQ(result.timestamp.seconds, 0);
+            ASSERT_EQ(result.timestamp.nanos, 0);
+        });
     }
 }

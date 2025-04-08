@@ -3,6 +3,7 @@
 
 #include "data_points_utils.h"
 #include "dto_to_bo.h"
+#include "globals.h"
 #include "mock_i_file_handler.h"
 #include "model_config_converter.h"
 #include "random_utils.h"
@@ -24,7 +25,7 @@ class DtoToModelConfigIntegrationTest : public ::testing::Test {
         {"datalog", "dlog"}};
 
     const std::string MODEL_CONFIG_PATH =
-        std::string(PROJECT_ROOT) + "/symbolic-reasoner/examples/use-case/model/";
+        getProjectRoot() + "/symbolic-reasoner/examples/use-case/model/";
 
     void SetUp() override {
         // ** Initialize Main Services **

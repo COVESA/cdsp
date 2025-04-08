@@ -7,6 +7,7 @@
 #include <memory>
 
 #include "file_handler_impl.h"
+#include "globals.h"
 #include "mock_websocket_connection.h"
 #include "reasoner_service.h"
 #include "triple_assembler.h"
@@ -16,7 +17,7 @@
 class WebSocketClientBaseIntegrationTest : public ::testing::Test {
    protected:
     const std::string MODEL_CONFIGURATION_FILE =
-        std::string(PROJECT_ROOT) + "/symbolic-reasoner/examples/use-case/model/model_config.json";
+        getProjectRoot() + "/symbolic-reasoner/examples/use-case/model/model_config.json";
     struct MessageNodeData {
         std::string name;
         std::string value;
