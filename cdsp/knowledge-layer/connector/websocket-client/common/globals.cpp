@@ -1,10 +1,6 @@
 #include "globals.h"
 
-#ifdef PROJECT_ROOT  // fallback to CMake version
-static const std::string DEFAULT_ROOT = PROJECT_ROOT;
-#else
-static const std::string DEFAULT_ROOT = "";
-#endif
+#include <iostream>
 
 namespace {
 std::string PROJECT_ROOT_RUNTIME;
@@ -20,7 +16,10 @@ bool isSet = false;
  *
  * @return const std::string& A constant reference to the project root string.
  */
-const std::string& getProjectRoot() { return isSet ? PROJECT_ROOT_RUNTIME : DEFAULT_ROOT; }
+const std::string& getProjectRoot() {
+    static const std::string default_root = std::string(PROJECT_ROOT);
+    return isSet ? PROJECT_ROOT_RUNTIME : default_root;
+}
 
 /**
  * @brief Sets the project root directory.
