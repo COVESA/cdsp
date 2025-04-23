@@ -6,7 +6,7 @@ This repository demonstrates a simple "Hello World" application of the Knowledge
 
 ### Key Aspects Illustrated:
 - **Standardized Data Models:** Using models like [VSS](https://github.com/COVESA/vehicle_signal_specification/) and associated tools enables scalable, generic transformation of data into other formats, like graph data formats.
-- **Logic Mapping in Data-Driven Rules:** Instead of hardcoded IF-ELSE logic, data-driven rules like [Datalog](https://de.wikipedia.org/wiki/Datalog) offer:
+- **Logic Mapping in Data-Driven Rules:** Instead of hardcoded IF-ELSE logic, data-driven rules like [Datalog](https://en.wikipedia.org/wiki/Datalog) offer:
   - Easier maintenance of logic
   - Functional logic without the need for compilation
   - Smaller size for necessary updates
@@ -33,7 +33,7 @@ Live VSS data from the current drive made accesible in the [Information Layer](.
 write, subscribe to VSS data
 - **Knowledge Layer Connector:** [RDFConvertor](../../cdsp/knowledge-layer/connector/README.md) - Converts VSS JSON format into RDF Graph format and vice versa
 - **Graph Data Storage:** [RDFox](../../cdsp/knowledge-layer/symbolic-reasoner/rdfox/README.md) - Stores the transformed and newly generated graph data
-- **Rules Language:** [Datalog](https://de.wikipedia.org/wiki/Datalog) - Allows describing IF-ELSE like rules in data-near language
+- **Rules Language:** [Datalog](https://en.wikipedia.org/wiki/Datalog) - Allows describing IF-ELSE like rules in data-near language
 - **Data-Reasoner:** [RDFox](../../cdsp/knowledge-layer/symbolic-reasoner/rdfox/README.md) - Reasons based on rules and graph data, potentially inferring new graph data
 
 ![The Use Case in a DIKW,logical and implementation view](KL-example-readme-graphic.png)
