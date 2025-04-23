@@ -71,7 +71,7 @@ Tip: To avoid displaying RemotiveLabs Broker secrets on the command line you can
 export RL_BROKER_URL=<broker URL>
 export RL_API_KEY=<key>
 
-python3 rl-iotdb-bridge.py --url $RL_BROKER_URL --x_api_key $RL_API_KEY
+python3 rl-bridge.py --url $RL_BROKER_URL --x_api_key $RL_API_KEY
 ```
 The bridge needs to be configured so it knows where to find the RemotiveLabs Broker and the Apache IoTDB database server and how to make the connections.
 
