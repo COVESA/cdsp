@@ -17,24 +17,25 @@ This repository demonstrates a simple "Hello World" application of the Knowledge
 
 ## What?
 
-In this use case, we have implemented an AI-powered solution to detect aggressive driving behaviors. Rather than relying on complex, maintenance-intensive IF-ELSE logic in code or overly sophisticated machine learning models, the detection is achieved through straightforward, data-driven rules.
+In this use case, we have implemented an AI-powered solution to detect aggressive driving behaviours. Rather than relying on complex, maintenance-intensive IF-ELSE logic in code or overly sophisticated machine learning models, the detection is achieved through straightforward, data-driven rules.
 
 ## How?
 
-Live VSS data from the current drive made accesible in the [Information Layer](../../cdsp/information-layer/README.md) via [Websocket](../../cdsp/information-layer/router/src/websocket-server.ts) are converted by a [JSON-RDF-Convertor](../../cdsp/knowledge-layer/connector/README.md) in real-time into a graph data format ([RDF](https://www.w3.org/RDF/)) and stored within the Knowledge Layer in a [Knowledge Graph](https://en.wikipedia.org/wiki/Knowledge_Graph). At any point, every data point (needed for the use case) in the Information Layer has a graph representation. This data representation allows us to attach a [symbolic reasoner](../../cdsp/knowledge-layer/symbolic-reasoner/README.md) ([RDFox](../../cdsp/knowledge-layer/symbolic-reasoner/rdfox/README.md)) to the Knowledge Graph, which can link, evaluate, and infer new facts based on rules, such as deriving the driving style. As soon as an aggressive driving style is detected, the result is converted back from the graph data format to an Informtion Layer tree format in real time and, in our case, stored in the appropriate data field in the VSS tree.  The information "aggressive driving style" can then be shared with other interested applications for example via a data sync middleware.
+Live VSS data from the current drive made accessible in the [Information Layer Server](../../cdsp/information-layer/README.md) via [Websocket](../../cdsp/information-layer/router/src/websocket-server.ts) are converted by a [JSON-RDF-Convertor](../../cdsp/knowledge-layer/connector/README.md) in real-time into a graph data format ([RDF](https://www.w3.org/RDF/)) and stored within the Knowledge Layer in a [Knowledge Graph](https://en.wikipedia.org/wiki/Knowledge_Graph). At any point, every data point (needed for the use case) in the Information Layer has a graph representation. This data representation allows us to attach a [symbolic reasoner](../../cdsp/knowledge-layer/symbolic-reasoner/README.md) ([RDFox](../../cdsp/knowledge-layer/symbolic-reasoner/rdfox/README.md)) to the Knowledge Graph, which can link, evaluate, and infer new facts based on rules, such as deriving the driving style. As soon as an aggressive driving style is detected, the result is converted back from the graph data format to an Information Layer tree format in real time and, in our case, stored in the appropriate data field in the VSS tree.  The information "aggressive driving style" can then be shared with other interested applications for example via a data sync middleware.
 
 ### Implementation Details
 
 #### Logical Components and Implementation Decisions:
 - **Data Model:** [VSS](https://github.com/COVESA/vehicle_signal_specification/) - Describes vehicle data in a standardized format
-- **Feeder/Simulator:** [Remotive Labs](../../examples/remotivelabs-feeder/README.md) - Provides raw data for a test drive
-- **Data Storage:** [RealmDB](../../cdsp/information-layer/handlers/src/realmdb/README.md) - Stores live data
-- **Data Access:** [WebSocket Interface](../../cdsp/information-layer/router/src/websocket-server.ts) - Read,
-write, subscribe to VSS data
-- **Knowledge Layer Connector:** [RDFConvertor](../../cdsp/knowledge-layer/connector/README.md) - Converts VSS JSON format into RDF Graph format and vice versa
-- **Graph Data Storage:** [RDFox](../../cdsp/knowledge-layer/symbolic-reasoner/rdfox/README.md) - Stores the transformed and newly generated graph data
+- **Simulator:** [Remotive Labs](../../examples/remotivelabs-feeder/README.md) - Provides raw data for a test drive
+- **DB Handler:** [RealmDB](../../cdsp/information-layer/handlers/src/realmdb/README.md), [IoTDB](../../cdsp/information-layer/handlers/src/iotdb/README.md) - Abstracts data store details
+- **DB Router:** [WebSocket Server](../../cdsp/information-layer/router/src/websocket-server.ts) - Provides read,
+write and subscribe capabilities to VSS data via a websocket server
+- **Connector:** [Knowledge Layer Connector](../../cdsp/knowledge-layer/connector/README.md) - Connects Knowledge Layer to Information Layer via websocket client and manages data tasks within Knowledge Layer
+- **Convertor:** [JSON-RDF-Converter](../../cdsp/knowledge-layer/connector/json-rdf-convertor/README.md) - Converts tree-like data (json) into graph data (RDF) and vice versa
+- **Reasoner Adapter:** [RDFox Adaptor](../../cdsp/knowledge-layer/symbolic-reasoner/README.md) - Converts tree-like data (json) into graph data (RDF) and vice versa
 - **Rules Language:** [Datalog](https://en.wikipedia.org/wiki/Datalog) - Allows describing IF-ELSE like rules in data-near language
-- **Data-Reasoner:** [RDFox](../../cdsp/knowledge-layer/symbolic-reasoner/rdfox/README.md) - Reasons based on rules and graph data, potentially inferring new graph data
+- **Knowledge Graph and Reasoner:** [RDFox](../../cdsp/knowledge-layer/symbolic-reasoner/rdfox/README.md) - Stores the transformed and newly generated graph data, reasons based on rules and graph data, potentially inferring new graph data
 
 ![The Use Case in a DIKW,logical and implementation view](KL-example-readme-graphic.png)
 
@@ -44,9 +45,6 @@ Our input data for the use case includes:
 - `Vehicle.Chassis.SteeringWheel.Angle`: The current angle of the steering wheel.
 - `Vehicle.CurrentLocation.Latitude`: The latitude of the vehicle's current location.
 - `Vehicle.CurrentLocation.Longitude`: The longitude of the vehicle's current location.
-- `Vehicle.Powertrain.TractionBattery.NominalVoltage`: The nominal voltage of the vehicle's traction battery.
-- `Vehicle.Powertrain.TractionBattery.StateOfCharge.CurrentEnergy`: The current energy level of the traction battery.
-- `Vehicle.Powertrain.Transmission.CurrentGear`: The current gear of the vehicle's transmission.
 - `Vehicle.Speed`: The current speed of the vehicle.
 
 The core logic of our use case is represented by the following rule (here in natural language for better readability):
@@ -54,7 +52,7 @@ The core logic of our use case is represented by the following rule (here in nat
 <pre data-toolbar-order="disclaimer,copy-code,show-language" class="language-plaintext" style="border-radius: 0.5rem;"><code class="language-plaintext">If Vehicle.Chassis.SteeringWheel.Angle changes by more than 90 degrees in less than 3 seconds and Vehicle.Speed is greater than 50 km/h, then flag as aggressive driving.</code></pre>
 
 Derived output data:
-- `Vehicle.drivingStyle`: True, when driving style is aggressive, otherwise false
+- `Vehicle.AI.Reasoner.InferenceResults`: Infered driving style details are written into this data node
 
 ## Installation and Running
 
