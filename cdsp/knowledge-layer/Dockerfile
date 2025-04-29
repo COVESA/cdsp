@@ -17,7 +17,6 @@ RUN wget https://archives.boost.io/release/1.87.0/source/boost_1_87_0.tar.gz \
 WORKDIR /src
 
 COPY connector connector
-COPY numeric-analyzer numeric-analyzer
 COPY symbolic-reasoner symbolic-reasoner
 COPY third_party third_party
 COPY common-test-resources common-test-resources
