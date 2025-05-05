@@ -57,13 +57,6 @@ There is a current issue with the upstream VISSR VISS Server Dockerfile in which
 
 If your project requires Access Grant support please discuss enabling it with the VISSR community.
 
-### Generate `vss_vissv2.binary`
-The VISSR server component requires a file called `vss_vissv2.binary` to understand the VSS tree it must work with. Unfortunately, VISSR provides no default file and you must therefore generate it yourself.
-
-Instructions for doing that can be found in the VISSR documentation site [here](https://covesa.github.io/vissr/server/#vss-tree-configuration)
-
-Tip: The playground maintainers have found that the method involving running `make binary` in a git clone of the VSS source tree to generate the file is straight forward. Note: check the VSS readme for the python requirements for the tooling.
-
 ### Tip: Corporate CA security (download error "tls: failed to verify certificate:")
 If you are working behind a corporate security system that places a _man-in-the-middle_ between your host and the internet you may see security errors when artifacts are downloaded as part of the build process.
 
@@ -238,12 +231,13 @@ $ sudo docker compose -f docker-compose-cdsp.yml down
 Listing should show three running containers as shown below:
 ```shell
 $ sudo docker ps
-```
-```
-NAME            IMAGE                           COMMAND                  SERVICE         CREATED          STATUS          PORTS
-app_redis       redis                           "docker-entrypoint.s…"   redis           10 minutes ago   Up 10 minutes   6379/tcp
-iotdb-service   apache/iotdb:1.2.2-standalone   "/usr/bin/dumb-init …"   iotdb-service   10 minutes ago   Up 10 minutes   0.0.0.0:6667->6667/tcp, :::6667->6667/tcp
-vissv2server    cdsp-vissv2server               "/app/vissv2server -…"   vissv2server    10 minutes ago   Up 4 seconds    0.0.0.0:8081->8081/tcp, 0.0.0.0:8600->8600/tcp, 0.0.0.0:8887->8887/tcp, 127.0.0.1:8888->8888/tcp
+
+
+CONTAINER ID   IMAGE                COMMAND                  CREATED              STATUS              PORTS                                                                                              NAMES
+f43ed0c6ba0a   cdsp-iotdb-service   "/usr/bin/dumb-init …"   About a minute ago   Up About a minute   0.0.0.0:6667->6667/tcp, :::6667->6667/tcp                                                          iotdb-service
+7829813bdcb8   cdsp-vissv2server    "/app/vissv2server -…"   5 days ago           Up 8 seconds        0.0.0.0:8081->8081/tcp, 0.0.0.0:8600->8600/tcp, 0.0.0.0:8887->8887/tcp, 127.0.0.1:8888->8888/tcp   vissv2server
+8e21a556e398   redis                "docker-entrypoint.s…"   5 days ago           Up 5 days           6379/tcp                                                                                           app_redis
+
 ```
 #### Apache IoTDB
 You can confirm the Apache IoTDB server is running by connecting to it with the IoTDB CLI client (_quit_ to exit the client):
@@ -284,5 +278,3 @@ The following example uses the javascript HTML client from `vissr/client/client-
   Server: readyState=3, status=200
   Server: {"data":{"dp":{"ts":"2024-01-10T14:56:48Z","value":"Data-not-found"},"path":"Vehicle.Speed"},"ts":"2024-01-10T14:56:48Z"}
 ```
-
-You can query what VSS nodes the server understands by asking for the VSS path list using the URL `http://localhost:8081/vsspathlist`. Entering that URL in your web browser will typically give you a graphical rendering of the JSON data returned.

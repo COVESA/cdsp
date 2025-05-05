@@ -10,7 +10,7 @@ For further information please see the
 ## Getting started
 A good place to start is the overview in the documentation which introduces why the project exists, the logical concept and its implementation.
 
-Once you are ready to jump into some code the docker deployment readme explains building and starting the playground. Whilst the hello-world example provides simple examples of accessing the data store directly and using the data server to get/set data using the [Vehicle Information Service Specification (VISS)](https://github.com/COVESA/vehicle-information-service-specification) API. Hello-world can also be used as a sanity test that the playground is operating as expected.
+Once you are ready to jump into some code the docker deployment readme explains building and starting the playground. Whilst the [examples](https://github.com/COVESA/cdsp/tree/main/examples) folder contains a variety of examples to explore.
 
 ### Cloning the source repository
 The playground git source repository contains git submodules which need to be initialized either during the clone or afterwords as shown below.
@@ -35,7 +35,11 @@ git submodule update --init --recursive
 See the github issues for this project with the `bug` label.
 
 ## Project resources
-The project originated in the COVESA [data architecture team](https://wiki.covesa.global/display/WIK4/Central+Data+Service+Playground).
+The project originated in the COVESA [data architecture team](https://wiki.covesa.global/display/WIK4/Data+Expert+Group%3A+Architecture+and+Infrastructure).
+
+The project maintainers are:
++ Stephen Lawrence, Renesas Electronics
++ Christian Muehlbauer, BMW AG
 
 |Resource|Notes|
 |---|---|
