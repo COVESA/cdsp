@@ -1,6 +1,5 @@
 import { getHandlerType } from "../config/config";
 import { HandlerBase } from "./HandlerBase";
-import { RealmDBHandler } from "./realmdb/src/RealmDbHandler";
 import { IoTDBHandler } from "./iotdb/src/IoTDBHandler";
 import { logWithColor, COLORS } from "../../utils/logger";
 
@@ -12,9 +11,6 @@ export function createHandler() : HandlerBase {
 
     // Instantiate the correct handler based on the handler type
     switch (handlerType) {
-      case "realmdb":
-        handler = new RealmDBHandler();
-        break;
       case "iotdb":
         handler = new IoTDBHandler();
         break;
