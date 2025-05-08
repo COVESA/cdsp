@@ -1,0 +1,96 @@
+services:
+  # Timeseries Data Server
+  iotdb-service:
+    extends:
+      service: iotdb-service
+      file: ../../docker/docker-compose-cdsp.yml
+    volumes:
+      - ./iotdb-data:/iotdb/data
+      - ./iotdb-logs:/iotdb/logs
+
+  # RDFox Initialization (run once)
+  rdfox-init:
+    extends:
+      service: rdfox-init
+      file: ../../docker/docker-compose-cdsp.yml
+    volumes:
+      - ${RDFOX_LIC_PATH}:/opt/RDFox/RDFox.lic  # License file on host
+
+  # RDFox Daemon (persistent service)
+  rdfox-service:
+    extends:
+      service: rdfox-service
+      file: ../../docker/docker-compose-cdsp.yml
+    container_name: rdfox-service
+    volumes:
+      - ${RDFOX_LIC_PATH}:/opt/RDFox/RDFox.lic  # License file on host
+    depends_on:
+      # Depends on rdfox-init successfully created working directory. Docker compose extend function does not take depends_on config over.
+      rdfox-init:
+        condition: service_completed_successfully
+
+
+  # Information Layer Server exposing websocket API
+  information-layer:
+    extends:
+      service: information-layer
+      file: ../../docker/docker-compose-cdsp.yml
+    container_name: information-layer
+    volumes:
+      - ./IL-config/schema-files:/app/dist/handlers/config/schema-files
+    depends_on:
+      iotdb-service:
+        condition: service_healthy
+    environment:
+      - IOTDB_POLL_INTERVAL_LEN_IN_SEC=0.2 # Time between messages to subscribers on changed data point values
+      - HANDLER_TYPE=iotdb
+
+  # Remotive Labs Bridge
+  rl-bridge:
+    build: ../remotivelabs-feeder
+    container_name: rl-bridge
+    command:
+      - "--url"
+      - "${REMOTIVE_LABS_BROKER_URL}"
+      - "--x_api_key"
+      - "${REMOTIVE_LABS_BROKER_API_KEY}"
+      - "-o"
+      - "information-layer"
+      - "-ilu"
+      - "ws://information-layer:8080"
+      - "-i"
+      - "${VEHICLE_OBJECT_ID}"
+      - "--signals"
+      - "vss:Vehicle.Chassis.SteeringWheel.Angle"
+      - "vss:Vehicle.CurrentLocation.Latitude"
+      - "vss:Vehicle.CurrentLocation.Longitude"
+      - "vss:Vehicle.Powertrain.TractionBattery.NominalVoltage"
+      - "vss:Vehicle.Powertrain.TractionBattery.StateOfCharge.CurrentEnergy"
+      - "vss:Vehicle.Powertrain.Transmission.CurrentGear"
+      - "vss:Vehicle.Speed"
+    depends_on:
+     - information-layer
+     - iotdb-service
+     - knowledge-layer
+    env_file:
+     - .env
+
+  # Knowledge Layer Server 
+  knowledge-layer:
+    extends:
+      service: knowledge-layer
+      file: ../../docker/docker-compose-cdsp.yml
+    container_name: knowledge-layer
+    volumes:
+      - ./KL-config:/src/symbolic-reasoner/examples/use-case/model:rshared
+    depends_on:
+      rdfox-service:
+        condition: service_started
+      information-layer:
+        condition: service_started
+    env_file:
+      - .env
+    command: -X reset_ds
+
+volumes:
+  rdfox-server-directory:

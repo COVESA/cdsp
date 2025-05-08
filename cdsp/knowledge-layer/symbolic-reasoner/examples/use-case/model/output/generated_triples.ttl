@@ -1,0 +1,72 @@
+car:VehicleWBY11CF080CH470711 a car:Vehicle.
+
+
+car:ChassisWBY11CF080CH470711 a car:Chassis.
+
+car:VehicleWBY11CF080CH470711 car:hasPart car:ChassisWBY11CF080CH470711.
+
+car:SteeringWheelWBY11CF080CH470711 a car:SteeringWheel.
+car:VehicleWBY11CF080CH470711 car:hasPart car:SteeringWheelWBY11CF080CH470711.
+   
+car:CurrentLocationWBY11CF080CH470711 a car:CurrentLocation.
+car:VehicleWBY11CF080CH470711 car:hasSignal car:CurrentLocationWBY11CF080CH470711.
+
+
+car:PowertrainWBY11CF080CH470711 a car:Powertrain.
+
+car:VehicleWBY11CF080CH470711 car:hasPart car:PowertrainWBY11CF080CH470711.
+
+car:TransmissionWBY11CF080CH470711 a car:Transmission.
+
+car:PowertrainWBY11CF080CH470711 car:hasPart car:TransmissionWBY11CF080CH470711.
+
+car:TractionBatteryWBY11CF080CH470711 a car:TractionBattery.
+
+car:PowertrainWBY11CF080CH470711 car:hasPart car:TractionBatteryWBY11CF080CH470711.
+
+car:StateOfChargeWBY11CF080CH470711 a car:StateOfCharge.
+
+car:TractionBatteryWBY11CF080CH470711 car:hasSignal car:StateOfChargeWBY11CF080CH470711.
+
+
+car:Observation20181116155027 a sosa:Observation ; # observation_dateTime
+    sosa:hasFeatureOfInterest car:CurrentLocationWBY11CF080CH470711 ; #last second element of the the data point 
+    sosa:hasSimpleResult "30"^^xsd:double ; # value
+    sosa:observedProperty car:latitude ;    #last  element of the data point 
+    sosa:phenomenonTime "2018-11-16 15:50:27"^^xsd:dateTime .#dateTime
+
+car:Observation20181116155027 a sosa:Observation ;
+    sosa:hasFeatureOfInterest car:CurrentLocationWBY11CF080CH470711 ;
+    sosa:hasSimpleResult "50"^^xsd:double ;
+    sosa:observedProperty car:longitude ;
+    sosa:phenomenonTime "2018-11-16 15:50:27"^^xsd:dateTime .
+
+car:Observation20181116155027 a sosa:Observation ;
+    sosa:hasFeatureOfInterest car:VehicleWBY11CF080CH470711 ;
+    sosa:hasSimpleResult "50"^^xsd:int ;
+    sosa:observedProperty car:speed ;
+    sosa:phenomenonTime "2018-11-16 15:50:27"^^xsd:dateTime .
+
+car:Observation20181116155027 a sosa:Observation ;
+    sosa:hasFeatureOfInterest car:SteeringWheelWBY11CF080CH470711 ;
+    sosa:hasSimpleResult "10"^^xsd:int ;
+    sosa:observedProperty car:angle ;
+    sosa:phenomenonTime "2018-11-16 15:50:27"^^xsd:dateTime .
+
+car:Observation20181116155027 a sosa:Observation ;
+    sosa:hasFeatureOfInterest car:TransmissionWBY11CF080CH470711 ;
+    sosa:hasSimpleResult "10"^^xsd:int ;
+    sosa:observedProperty car:currentGear ;
+    sosa:phenomenonTime "2018-11-16 15:50:27"^^xsd:dateTime .
+
+car:Observation20181116155027 a sosa:Observation ;
+    sosa:hasFeatureOfInterest car:StateOfChargeWBY11CF080CH470711 ;
+    sosa:hasSimpleResult "98.6"^^xsd:float ;
+    sosa:observedProperty car:CurrentEnergy ;
+    sosa:phenomenonTime "2018-11-16 15:50:27"^^xsd:dateTime .
+
+car:Observation20181116155027 a sosa:Observation ;
+    sosa:hasFeatureOfInterest car:TractionBatteryWBY11CF080CH470711 ;
+    sosa:hasSimpleResult "55"^^xsd:int ;
+    sosa:observedProperty car:NominalVoltage ;
+    sosa:phenomenonTime "2018-11-16 15:50:27"^^xsd:dateTime .

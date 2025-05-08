@@ -27,10 +27,70 @@ services:
       - dn_data_region_consensus_port=10760
       - dn_seed_config_node=iotdb-service:10710
     volumes:
-        - ./iotdb-data:/iotdb/data
-        - ./iotdb-logs:/iotdb/logs
+      - ./iotdb-data:/iotdb/data
+      - ./iotdb-logs:/iotdb/logs
+    healthcheck: 
+      test: [ "CMD", "./start-cli.sh", "-h", "iotdb-service", "-p", "6667", "-u", "root", "-pw", "root", "-e", "SHOW DATABASES;" ]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+      start_interval: 5s
 
-# VISSR acting as VISS Data Server
+
+# Information Layer Server exposing websocket API
+  information-layer:
+    build:
+      context: ../cdsp/information-layer
+      dockerfile: Dockerfile
+    container_name: information-layer
+    ports:
+      - "8080:8080" 
+    volumes:
+      - ./logs/information-layer:/app/logs
+    env_file:
+      - .env
+
+  # RDFox Initialization (run once)
+  rdfox-init:
+    image: oxfordsemantic/rdfox-init:latest
+    container_name: rdfox-init
+    platform: linux/amd64
+    volumes:
+      - ${RDFOX_LIC_PATH}:/opt/RDFox/RDFox.lic  # License file on host
+      - rdfox-server-directory:/home/rdfox/.RDFox
+    environment:
+      - RDFOX_ROLE=root
+      - RDFOX_PASSWORD=admin
+    command: |
+      -persistence file
+    restart: "no"
+
+  # RDFox Daemon (persistent service)
+  rdfox-service:
+    image: oxfordsemantic/rdfox:latest
+    container_name: rdfox-service
+    platform: linux/amd64
+    depends_on:
+      rdfox-init:
+        condition: service_completed_successfully
+    ports:
+      - "12110:12110"
+    volumes:
+      - ${RDFOX_LIC_PATH}:/opt/RDFox/RDFox.lic  # License file on host
+      - rdfox-server-directory:/home/rdfox/.RDFox
+    environment:
+      - RDFOX_ROLE=root
+      - RDFOX_PASSWORD=admin
+    command: daemon
+    deploy:
+      resources:
+        limits:
+          memory: 8g
+          cpus: "2.0"
+    restart: "always"
+
+ # VISSR acting as VISS Data Server
 
   tmp:
     image: busybox
@@ -73,3 +133,14 @@ services:
       - ./vissr-logs:/app/logs
     volumes_from:
       - tmp
+
+# Knowledge Layer Server 
+  knowledge-layer:
+    build:
+      context: ../cdsp/knowledge-layer
+      dockerfile: Dockerfile
+    container_name: knowledge-layer
+    entrypoint: ["/src/build/bin/reasoner_client"]
+
+volumes:
+  rdfox-server-directory:
