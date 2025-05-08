@@ -62,8 +62,9 @@ Derived output data:
 2. Navigate to `Recordings`, select `Night drive to Luftkastellet`, and start the recording with the `Play` button. Wait until it starts playing, then stop the recording for now. This creates a broker for you, and we need its credentials next.
 3. Navigate to the `Brokers` section and open `My personal broker`.
 4. Copy the URL and API key to the environment variables in the [.env](.env) file: `REMOTIVE_LABS_BROKER_URL` and `REMOTIVE_LABS_BROKER_API_KEY`.
-5. You need to acquire the `RDFox.lic` license file from [Oxford Semantic Technologies](https://www.oxfordsemantic.tech/).
-6. Place it in the folder [examples/shared-config/rdfox](../shared-config/rdfox).
+5. Configure the Information Layer with the respective database you want to use, e.g. IoTDB, by adding another `.env` file like described [here](../../cdsp/information-layer/handlers/src/README.md).
+6. You need to acquire the `RDFox.lic` license file from [Oxford Semantic Technologies](https://www.oxfordsemantic.tech/).
+7. Place it in the folder [examples/shared-config/rdfox](../shared-config/rdfox).
 
 ### Run Use Case
 
