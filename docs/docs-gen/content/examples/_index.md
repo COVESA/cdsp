@@ -34,6 +34,7 @@ Topic examples: Virtual signal platforms, VISSR etc.
 | Name | Relationship to the category |
 |------|-------------|
 | [RemotiveLabs feeder](https://github.com/COVESA/cdsp/tree/main/examples/remotivelabs-feeder) | Example bridge that streams vehicle data from the RemotiveLabs cloud platform into the IoTDB data store |
+| [KUKSA CAN Provider feeder](https://github.com/COVESA/cdsp/tree/main/examples/kuksa-can-feeder) | Using the KUKSA CAN Provider as a feeder of CAN data translated to the VSS data model into the IoTDB data store |
 
 ## COVESA Touchpoints
 Topic examples: Low level vehicle abstraction, Mobile devices, Car2Cloud / Cloud etc. 
