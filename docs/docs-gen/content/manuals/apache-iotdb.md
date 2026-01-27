@@ -14,7 +14,7 @@ The IoTDB project [website](https://iotdb.apache.org/) has extensive documentati
 Info: The intention is to add more information such as a guide for feeder integration as the project progresses.
 
 ## Integrating VSS data into the IoTDB data model
-The ["Basic Functions"](https://iotdb.apache.org/UserGuide/V1.3.3/Basic-Concept/Data-Model-and-Terminology.html) section of the IoTDB documentation introduces the IoTDB data model, data types, encoding and compression.
+The ["Background Knowledge"](https://iotdb.apache.org/UserGuide/latest/Background-knowledge/Data-Model-and-Terminology_apache.html) section of the IoTDB documentation introduces the IoTDB data model, data types, encoding and compression.
 
 In IoTDB terminology *measurement* is the key in a key/value pair. In VSS terms the leaf node name. The timeseries is the record of the measurement on the time axis. A timeseries is a series of time/value data points.
 
@@ -50,7 +50,7 @@ Note: IoTDB has data type detection so creating a schema for the timeseries in s
 IoTDB has a very extensive collection of integrations, tools, clients and APIs that could be used to achieve this.
 
 ### Example using the IoTDB CLI client
-The following tutorial shows an example using the [IoTDB CLI client](https://iotdb.apache.org/UserGuide/V1.3.3/Tools-System/CLI.html), using two methods. Firstly, in interactive mode where you type the commands and then sending the same commands in batch command mode.
+The following tutorial shows an example using the [IoTDB CLI client](https://iotdb.apache.org/UserGuide/latest/Tools-System/CLI.html), using two methods. Firstly, in interactive mode where you type the commands and then sending the same commands in batch command mode.
 
 
 1. Connect to the CLI client from your host:
@@ -127,7 +127,7 @@ IoTDB has an extensive collection of built-in data processing functions covering
 - Sampling Functions, such as `M4`.
 - Change Points Function, such as `CHANGE_POINTS`.
 
-A full function list with examples can be found in the upstream [IoTDB Function reference manual](https://iotdb.apache.org/UserGuide/V1.3.3/SQL-Manual/Function-and-Expression.html).
+A full function list with examples can be found in the upstream [IoTDB Function reference manual](https://iotdb.apache.org/UserGuide/latest/SQL-Manual/Operator-and-Expression.html#_2-built-in-functions).
 
 ### Data Quality Library functions
 The IoTDB project also maintains a Data Quality Library which provides an additional collection of functions covering:
@@ -140,7 +140,7 @@ The IoTDB project also maintains a Data Quality Library which provides an additi
 - Series Discovery, such as `ConsecutiveSequences`.
 - Machine Learning, such as `AR`.
 
-A full function list with examples can be found in the upstream [IoTDB UDF Data Quality Library reference manual](https://iotdb.apache.org/UserGuide/V1.3.3/SQL-Manual/UDF-Libraries_apache.html).
+A full function list with examples can be found in the upstream [IoTDB UDF Data Quality Library reference manual](https://iotdb.apache.org/UserGuide/latest/SQL-Manual/UDF-Libraries_apache.html).
 
 #### Setup
 In the upstream IoTDB project the library is an optional install.
@@ -157,7 +157,7 @@ Steps:
 
 
 ### User Defined functions
-IoTDB also allows you to integrate your own functions as User Defined Functions (UDF). The [UDF development section](https://iotdb.apache.org/UserGuide/V1.3.3/User-Manual/UDF-development.html) of the IoTDB documentation explains how to develop and register your own.
+IoTDB also allows you to integrate your own functions as User Defined Functions (UDF). The [UDF development section](https://iotdb.apache.org/UserGuide/latest/User-Manual/User-defined-function_apache.html) of the IoTDB documentation explains how to develop and register your own.
 
 ## VISSR (VISS) integration
 As part of the initial development of the playground the team extended VISSR to support connections to Apache IoTDB as a VISSR data store backend and upstreamed the support.
