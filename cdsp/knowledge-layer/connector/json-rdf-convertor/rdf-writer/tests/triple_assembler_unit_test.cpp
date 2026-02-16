@@ -14,7 +14,6 @@
 #include "mock_reasoner_adapter.h"
 #include "mock_reasoner_service.h"
 #include "mock_triple_writer.h"
-#include "model_config.h"
 #include "triple_assembler.h"
 #include "vin_utils.h"
 
@@ -56,7 +55,7 @@ class TripleAssemblerUnitTest : public ::testing::Test {
         const std::string data_point =
             "Vehicle.Powertrain.TractionBattery.StateOfCharge.CurrentEnergy";
 
-        nodes_.emplace_back(data_point, "98.6", Metadata(), std::vector<std::string>{data_point});
+        nodes_.emplace_back(data_point, "98.6", Metadata());
     }
 
     /**
@@ -268,15 +267,8 @@ TEST_F(TripleAssemblerUnitTest,
     setUpMessage();
 
     // Add two nodes more to the `message_feature`
-    nodes_.emplace_back(
-        "Vehicle.FuelLevel", "75", Metadata(),
-        std::vector<std::string>{"Vehicle.FuelLevel"});  // Add data point as supported, `Node`
-                                                         // validation should not fail for this
-                                                         // test
-    nodes_.emplace_back(
-        "InvalidNode", "error_value", Metadata(),
-        std::vector<std::string>{"InvalidNode"});  // Add data point as supported, `Node`
-                                                   // validation should not fail for this test
+    nodes_.emplace_back("Vehicle.FuelLevel", "75", Metadata());
+    nodes_.emplace_back("InvalidNode", "error_value", Metadata());
 
     auto message_header = MessageHeader(VIN, SchemaType::VEHICLE);
     DataMessage message_feature(message_header, nodes_);
@@ -455,14 +447,9 @@ TEST_F(TripleAssemblerUnitTest, TransformMessageToTripleFailsWhenAnyDataStoreIsS
 TEST_F(TripleAssemblerUnitTest, TransformMessageToRDFTripleWithCoordinatesSuccess) {
     // Set up the initial message and model base for the test
 
-    std::vector<std::string> supported_data_points = {"Vehicle.CurrentLocation.Latitude",
-                                                      "Vehicle.CurrentLocation.Longitude"};
-
     // Set up the message with coordinates
-    nodes_.emplace_back("Vehicle.CurrentLocation.Latitude", "40.0", Metadata(),
-                        supported_data_points);
-    nodes_.emplace_back("Vehicle.CurrentLocation.Longitude", "50.0", Metadata(),
-                        supported_data_points);
+    nodes_.emplace_back("Vehicle.CurrentLocation.Latitude", "40.0", Metadata());
+    nodes_.emplace_back("Vehicle.CurrentLocation.Longitude", "50.0", Metadata());
 
     auto message_header = MessageHeader(VIN, SchemaType::VEHICLE);
     DataMessage message_feature(message_header, nodes_);
@@ -516,10 +503,8 @@ TEST_F(TripleAssemblerUnitTest, TransformMessageToTripleFailsWhenCoordinatesAreN
                                                       "Vehicle.CurrentLocation.Longitude"};
 
     // Add two nodes more to the `message_feature_` with a wrong coordinate
-    nodes_.emplace_back("Vehicle.CurrentLocation.Latitude", "", Metadata(),
-                        supported_data_points);  // Invalid value
-    nodes_.emplace_back("Vehicle.CurrentLocation.Longitude", "50.0", Metadata(),
-                        supported_data_points);
+    nodes_.emplace_back("Vehicle.CurrentLocation.Latitude", "", Metadata());  // Invalid value
+    nodes_.emplace_back("Vehicle.CurrentLocation.Longitude", "50.0", Metadata());
 
     auto message_header = MessageHeader(VIN, SchemaType::VEHICLE);
     DataMessage message_feature(message_header, nodes_);

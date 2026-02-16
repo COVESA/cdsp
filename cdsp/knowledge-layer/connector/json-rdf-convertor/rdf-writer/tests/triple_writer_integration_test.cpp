@@ -17,7 +17,7 @@ class TripleWriterIntegrationTest : public ::testing::Test {
     const std::string VIN = VinUtils::getRandomVinString();
     const std::string OBSERVATION_VALUE = std::to_string(RandomUtils::generateRandomFloat(0, 300));
     const std::chrono::system_clock::time_point TIMESTAMP =
-        RandomUtils::generateRandomTimestamp(2000, 2030, true);
+        RandomUtils::generateRandomTimestamp({2000, 2030}, true);
     const std::string DATA_TIME = UtcDateUtils::formatCustomTimestampAsIso8601(TIMESTAMP);
 
     const std::string OBSERVATION_IDENTIFIER =

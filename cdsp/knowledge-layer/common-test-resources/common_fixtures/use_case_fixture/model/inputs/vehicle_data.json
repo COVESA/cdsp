@@ -1,0 +1,4 @@
+{
+  "subscribe": ["Chassis.SteeringWheel.Angle", "CurrentLocation", "Speed"],
+  "callback": []
+}

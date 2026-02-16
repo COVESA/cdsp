@@ -6,6 +6,14 @@
 #include <string>
 #include <variant>
 
+constexpr int DEFAULT_START_YEAR = 2000;
+constexpr int DEFAULT_END_YEAR = 2030;
+
+struct TimestampRange {
+    int start_year = DEFAULT_START_YEAR;
+    int end_year = DEFAULT_END_YEAR;
+};
+
 /**
  * @brief Provides utility functions to generate random values.
  */
@@ -18,8 +26,7 @@ class RandomUtils {
     static double generateRandomDouble(double min, double max);
     static std::variant<std::string, int, double, float, bool> generateRandomValue();
     static bool generateRandomBool();
-    static std::chrono::system_clock::time_point generateRandomTimestamp(int start_year = 2000,
-                                                                         int end_year = 2030,
+    static std::chrono::system_clock::time_point generateRandomTimestamp(TimestampRange range,
                                                                          bool includeNanos = false);
 };
 

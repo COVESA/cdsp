@@ -3,18 +3,16 @@
 
 #include <optional>
 #include <string>
-#include <vector>
 
 #include "metadata.h"
 
 class Node {
    public:
-    Node(const std::string& name, const std::optional<std::string>& value, const Metadata& metadata,
-         const std::vector<std::string>& supported_data_points);
+    Node(std::string name, std::optional<std::string> value, Metadata metadata);
 
-    std::string getName() const;
-    std::optional<std::string> getValue() const;
-    Metadata getMetadata() const;
+    [[nodiscard]] std::string getName() const;
+    [[nodiscard]] std::optional<std::string> getValue() const;
+    [[nodiscard]] Metadata getMetadata() const;
 
    private:
     std::string name_;

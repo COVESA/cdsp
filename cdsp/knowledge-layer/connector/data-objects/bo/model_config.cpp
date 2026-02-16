@@ -1,25 +1,27 @@
 #include "model_config.h"
 
+#include "data_types.h"
 #include "helper.h"
 
 /**
  * @brief Constructs a ModelConfig object with the specified parameters.
  *
- * @param inputs A map of SchemaType to a vector of strings representing the inputs.
- *               This map cannot be empty.
+ * @param supported_data_points A map of SchemaType to a SchemaInput object representing the
+ * supported data points. This cannot be empty and must contain all supported schema
+ * collections.
  * @param ontologies A vector of pairs, each containing a ReasonerSyntaxType and a string,
- *                   representing the ontologies.
+ * representing the ontologies.
  * @param output_path A string specifying the path for the output. This cannot be empty.
  * @param reasoner_rules A vector of pairs, each containing a RuleLanguageType and a string,
- *                       representing the reasoner rules. This cannot be empty.
+ * representing the reasoner rules. This cannot be empty.
  * @param validation_shapes A vector of pairs, each containing a ReasonerSyntaxType and a string,
- *                          representing the validation shapes. This cannot be empty.
+ * representing the validation shapes. This cannot be empty.
  * @param triple_assembler_helper A TripleAssemblerHelper object containing the
  * queries to create triples. This cannot be empty.
- * @param reasoning_output_queries A vector of pairs, each containing a ReasonerSyntaxType and a
- * string, representing the query rules output. This cannot be empty.
+ * @param reasoning_output_queries A vector of ReasoningOutputQuery objects
+ * representing the reasoning output queries. This cannot be empty.
  * @param reasoner_settings A ReasonerSettings object containing the settings for the reasoner.
- *                          It must have supported schema collections.
+ * It must have supported schema collections.
  *
  * @throws std::invalid_argument if the inputs map is empty.
  * @throws std::invalid_argument if the output path is empty.
@@ -35,15 +37,15 @@
  * supported schema collections or a default query.
  */
 ModelConfig::ModelConfig(
-    const std::map<SchemaType, std::vector<std::string>>& inputs,
+    const std::map<SchemaType, SchemaInputList>& supported_data_points,
     const std::vector<std::pair<ReasonerSyntaxType, std::string>>& ontologies,
     const std::string& output_path,
     const std::vector<std::pair<RuleLanguageType, std::string>>& reasoner_rules,
     const std::vector<std::pair<ReasonerSyntaxType, std::string>>& validation_shapes,
     const TripleAssemblerHelper& triple_assembler_helper,
-    const std::vector<std::pair<QueryLanguageType, std::string>>& reasoning_output_queries,
+    const std::vector<ReasoningOutputQuery>& reasoning_output_queries,
     const ReasonerSettings& reasoner_settings)
-    : inputs_(inputs),
+    : inputs_(supported_data_points),
       ontologies_(ontologies),
       output_path_(output_path),
       reasoner_rules_(reasoner_rules),
@@ -113,12 +115,14 @@ std::map<SchemaType, std::string> ModelConfig::getObjectId() const { return obje
 /**
  * @brief Retrieves the input configurations for the model.
  *
- * This function returns a map where each key is a SchemaType and the corresponding value
- * is a vector of strings representing the inputs associated with that schema type.
+ * This function returns a map where each key is a SchemaType and the
+ * corresponding value is a SchemaInput object representing the inputs
+ * associated with that schema type.
  *
- * @return A map of SchemaType to a vector of input strings.
+ * @return A map of SchemaType to a SchemaInput object representing the
+ * inputs.
  */
-std::map<SchemaType, std::vector<std::string>> ModelConfig::getInputs() const { return inputs_; }
+std::map<SchemaType, SchemaInputList> ModelConfig::getInputs() const { return inputs_; }
 
 /**
  * @brief Retrieves the list of ontologies.
@@ -178,17 +182,15 @@ TripleAssemblerHelper ModelConfig::getQueriesTripleAssemblerHelper() const {
 }
 
 /**
- * @brief Retrieves the queries rules output configuration.
+ * @brief Retrieves the reasoning output queries stored in the model
+ * configuration.
  *
- * This function returns a vector of pairs, where each pair consists of a
- * QueryLanguageType and a corresponding string. These pairs represent the
- * queries used to get the rules output associated with the model configuration.
+ * This function returns a vector of ReasoningOutputQuery objects that
+ * represent the reasoning output queries stored in the model configuration.
  *
- * @return A vector of pairs containing QueryLanguageType and string,
- * representing the queries of the rules output.
+ * @return A vector of ReasoningOutputQuery objects.
  */
-std::vector<std::pair<QueryLanguageType, std::string>> ModelConfig::getReasoningOutputQueries()
-    const {
+std::vector<ReasoningOutputQuery> ModelConfig::getReasoningOutputQueries() const {
     return reasoning_output_queries_;
 }
 
@@ -220,8 +222,9 @@ std::ostream& operator<<(std::ostream& os, const ModelConfig& config) {
     os << "  Inputs: {\n";
     for (const auto& [schema, data_points] : config.getInputs()) {
         os << "    " << schemaTypeToString(schema) << ": [\n";
-        for (const auto& data_point : data_points) {
-            os << "      " << data_point << ",\n";
+        os << "      Subscribe: [\n";
+        for (const auto& sub : data_points.subscribe) {
+            os << "        " << sub << ",\n";
         }
         os << "    ]\n";
     }
@@ -273,10 +276,11 @@ std::ostream& operator<<(std::ostream& os, const ModelConfig& config) {
         os << "    }\n";
     }
     os << "  Queries Rules Output: [\n";
-    for (const auto& [syntax, content] : config.getReasoningOutputQueries()) {
+    for (const auto& query : config.getReasoningOutputQueries()) {
         os << "    {\n";
-        os << "      Query Type: " << queryLanguageTypeToContentType(syntax) << ",\n";
-        os << "      Content: " << content << "\n";
+        os << "      Query Language: " << queryLanguageTypeToContentType(query.query_language)
+           << ",\n";
+        os << "      Query: " << query.query << "\n";
         os << "    }\n";
     }
     os << "  ]\n";

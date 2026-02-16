@@ -1,0 +1,12 @@
+prefix sh: <http://www.w3.org/ns/shacl#>
+
+ SELECT ?class1 ?data_property ?datatype
+ WHERE {
+   ?S sh:name "%A%";
+      sh:targetClass ?class1;
+      sh:property [ sh:name ?data_point_name;
+                    sh:path ?data_property;
+                    sh:datatype  ?datatype
+                   ].
+ FILTER (contains("%B%", ?data_point_name)) #The first value is from the data single point
+ }

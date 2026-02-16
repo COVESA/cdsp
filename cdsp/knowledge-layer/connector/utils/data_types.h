@@ -1,12 +1,8 @@
 #ifndef DATA_TYPES_H
 #define DATA_TYPES_H
 
-#include <chrono>
-#include <map>
 #include <optional>
 #include <string>
-#include <variant>
-#include <vector>
 
 #include "helper.h"
 
@@ -34,6 +30,14 @@ enum class MessageType {
 enum class SchemaType {
     VEHICLE,
     DEFAULT,
+};
+
+/**
+ * @brief Enum class for the supported confidence types in metadata
+ */
+enum class ConfidenceType : std::uint8_t {
+    DEDUCTIVE,
+    PROBABILISTIC,
 };
 
 /**
@@ -95,6 +99,7 @@ struct ReasonerServerData {
     std::string host;
     std::string port;
     std::string auth_base64;
+    std::string origin_system_name;
     std::optional<std::string> data_store_name;
 };
 
@@ -105,6 +110,19 @@ struct SystemConfig {
     std::string uuid;
     WSServerData websocket_server;
     ReasonerServerData reasoner_server;
+};
+
+/**
+ * @brief Structure representing the data of a Reasoning Output Query in the
+ * `model_config` object.
+ */
+struct ReasoningOutputQuery {
+    QueryLanguageType query_language;
+    std::string query;
+
+    bool operator==(const ReasoningOutputQuery& other) const {
+        return query_language == other.query_language && query == other.query;
+    }
 };
 
 /**
@@ -239,6 +257,35 @@ std::string queryAcceptTypeToString(const DataQueryAcceptType& type);
  * @throws std::runtime_error if the input SchemaType is not supported.
  */
 std::string schemaTypeToString(const SchemaType& type, bool capitalizeFirstLetter = false);
+
+/**
+ * @brief Converts a ConfidenceType enumeration value to its corresponding
+ * string representation.
+ *
+ * This function takes a ConfidenceType value as input and returns a string that
+ * describes the confidence type.
+ *
+ * @param type The ConfidenceType value to be converted to a string.
+ * @return A string representation of the provided ConfidenceType.
+ *
+ * @throws std::runtime_error if the input ConfidenceType is not supported.
+ */
+std::string confidenceTypeToString(const ConfidenceType& type);
+
+/**
+ * @brief Converts a string to a ConfidenceType enum value.
+ *
+ * This function takes a string as input and converts it to the corresponding
+ * ConfidenceType enum value. The input string should match one of the
+ * predefined confidence types.
+ *
+ * @param type A string representing the confidence type.
+ * @return The corresponding ConfidenceType enum value for the given string.
+ *
+ * @throws std::runtime_error if the input string does not match any of the
+ * predefined confidence definitions.
+ */
+ConfidenceType stringToConfidenceType(const std::string& type);
 
 /**
  * @brief Converts a string to a SchemaType enum value.
@@ -439,6 +486,28 @@ inline SchemaType stringToSchemaType(const std::string& type) {
     } else {
         throw std::invalid_argument("Unsupported schema type: " + type);
     }
+}
+
+inline std::string confidenceTypeToString(const ConfidenceType& type) {
+    switch (type) {
+        case ConfidenceType::DEDUCTIVE:
+            return "deductive";
+        case ConfidenceType::PROBABILISTIC:
+            return "probabilistic";
+        default:
+            throw std::invalid_argument("Unsupported confidence type");
+    }
+}
+
+inline ConfidenceType stringToConfidenceType(const std::string& type) {
+    std::string lowerCaseType = Helper::toLowerCase(type);
+    if (lowerCaseType == "deductive") {
+        return ConfidenceType::DEDUCTIVE;
+    }
+    if (lowerCaseType == "probabilistic") {
+        return ConfidenceType::PROBABILISTIC;
+    }
+    throw std::invalid_argument("Unsupported confidence type: " + type);
 }
 
 inline std::string MessageStructureFormatToString(const MessageStructureFormat& type) {

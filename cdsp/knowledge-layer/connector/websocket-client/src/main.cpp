@@ -24,11 +24,12 @@ constexpr char DEFAULT_PORT_WEB_SOCKET_SERVER[] = "8080";
 const std::string DEFAULT_TARGET_WEB_SOCKET_SERVER = "";
 const std::string MODEL_CONFIGURATION_FILE =
     getProjectRoot() + "/symbolic-reasoner/examples/use-case/model/model_config.json";
-constexpr char DEFAULT_REASONER_SERVER[] = "127.0.0.1";
-constexpr char DEFAULT_PORT_REASONER_SERVER[] = "12110";
-constexpr char DEFAULT_AUTH_REASONER_SERVER_BASE64[] =
+const std::string DEFAULT_REASONER_SERVER = "127.0.0.1";
+const std::string DEFAULT_PORT_REASONER_SERVER = "12110";
+const std::string DEFAULT_AUTH_REASONER_SERVER_BASE64 =
     "cm9vdDphZG1pbg==";  // 'root:admin' in base64
-constexpr char DEFAULT_REASONER_DATASTORE_NAME[] = "ds-test";
+const std::string DEFAULT_REASONER_DATASTORE_NAME = "ds-test";
+const std::string DEFAULT_REASONER_ORIGIN_SYSTEM_NAME = "SemanticReasoner";
 bool RESET_REASONER_DATASTORE = false;
 
 void printBanner() {
@@ -126,6 +127,12 @@ void displayEnvVariables() {
               << "Datastore name of the reasoner server" << std::setw(40)
               << Helper::getEnvVariable("REASONER_DATASTORE_NAME", DEFAULT_REASONER_DATASTORE_NAME)
               << "\n";
+
+    std::cout << std::left << std::setw(35) << "REASONER_ORIGIN_SYSTEM_NAME" << std::setw(65)
+              << "Origin system name for the reasoner server" << std::setw(40)
+              << Helper::getEnvVariable("REASONER_ORIGIN_SYSTEM_NAME",
+                                        DEFAULT_REASONER_ORIGIN_SYSTEM_NAME)
+              << "\n";
 }
 
 void displayHelpXOptions() {
@@ -184,7 +191,8 @@ int main(int argc, char* argv[]) {
         SystemConfig system_config = SystemConfigurationService::loadSystemConfig(
             DEFAULT_HOST_WEB_SOCKET_SERVER, DEFAULT_PORT_WEB_SOCKET_SERVER,
             DEFAULT_TARGET_WEB_SOCKET_SERVER, DEFAULT_REASONER_SERVER, DEFAULT_PORT_REASONER_SERVER,
-            DEFAULT_AUTH_REASONER_SERVER_BASE64, DEFAULT_REASONER_DATASTORE_NAME);
+            DEFAULT_AUTH_REASONER_SERVER_BASE64, DEFAULT_REASONER_DATASTORE_NAME,
+            DEFAULT_REASONER_ORIGIN_SYSTEM_NAME);
 
         // Initialize Model Configuration
         std::shared_ptr<ModelConfig> model_config = std::make_shared<ModelConfig>(

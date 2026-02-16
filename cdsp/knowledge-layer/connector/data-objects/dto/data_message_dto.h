@@ -3,40 +3,32 @@
 
 #include <nlohmann/json.hpp>
 #include <optional>
-#include <string>
 
 #include "metadata_dto.h"
 /**
  * @brief Data Transfer Object for Websocket Messages
  */
 struct DataMessageDTO {
-    std::string type;
-    std::string schema;
-    std::string instance;
-    std::optional<std::string> path;
+    int id;
     nlohmann::json data;
     std::optional<MetadataDTO> metadata;
-    std::optional<std::string> requestId;
 
     // Overload the << operator to print the DTO
-    friend std::ostream& operator<<(std::ostream& os, const DataMessageDTO& dto) {
-        os << "DataMessageDTO {\n"
-           << "  type: " << dto.type << "\n"
-           << "  schema: " << dto.schema << "\n"
-           << "  instance: " << dto.instance << "\n"
-           << "  data: " << dto.data.dump(4) << "\n"
-           << "  path: " << (dto.path ? *dto.path : "null") << "\n"
-           << "  metadata: ";
+    friend std::ostream &operator<<(std::ostream &out_stream, const DataMessageDTO &dto) {
+        out_stream << "DataMessageDTO {\n"
+                   << "  id: " << dto.id << "\n"
+                   << "  data: " << dto.data.dump(4) << "\n"
+                   << "  metadata: ";
 
         if (dto.metadata) {
-            os << dto.metadata.value();
+            out_stream << dto.metadata.value();
         } else {
-            os << "null";
+            out_stream << "null";
         }
 
-        os << "\n  requestId: " << (dto.requestId ? *dto.requestId : "null") << "\n"
-           << "}";
-        return os;
+        out_stream << "\n"
+                   << "}\n";
+        return out_stream;
     }
 };
 

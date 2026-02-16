@@ -2,6 +2,7 @@
 #define MODEL_CONFIG_DTO_H
 
 #include <map>
+#include <nlohmann/json.hpp>
 #include <string>
 #include <vector>
 
@@ -13,21 +14,22 @@ struct QueriesDTO {
     std::string reasoning_output_queries_path;
 
     // Overload the << operator to print the QueriesDTO
-    friend std::ostream& operator<<(std::ostream& os, const QueriesDTO& dto) {
-        os << "QueriesDTO {\n";
-        os << "  triple_assembler_helper: {\n";
+    friend std::ostream& operator<<(std::ostream& out_stream, const QueriesDTO& dto) {
+        out_stream << "QueriesDTO {\n";
+        out_stream << "  triple_assembler_helper: {\n";
         for (const auto& [key, value] : dto.triple_assembler_helper) {
-            os << "    " << key << ": [\n";
+            out_stream << "    " << key << ": [\n";
             for (const auto& query : value) {
-                os << "      " << query << ",\n";
+                out_stream << "      " << query << ",\n";
             }
-            os << "    ]\n";
+            out_stream << "    ]\n";
         }
-        os << "  }\n";
-        os << "  reasoning_output_queries_path: " << dto.reasoning_output_queries_path << "\n";
-        os << "}";
+        out_stream << "  }\n";
+        out_stream << "  reasoning_output_queries_path: " << dto.reasoning_output_queries_path
+                   << "\n";
+        out_stream << "}";
 
-        return os;
+        return out_stream;
     }
 };
 

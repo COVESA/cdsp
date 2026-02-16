@@ -1,0 +1,39 @@
+@prefix bmw: <http://groupontology.bmwgroup.net/bmw-ont#> .
+@prefix sosa: <http://www.w3.org/ns/sosa/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# --- Detect sharp turns at high speed ---
+# Angle > 45°, Speed > 80 km/h
+
+bmw:SharpTurnEvent[?event],
+bmw:hasVehicle[?event, ?vehicle],
+bmw:hasSpeed[?event, ?speed_value],
+bmw:hasAngle[?event, ?angle_value],
+bmw:hasTimestamp[?event, ?ts_trimmed] :-
+
+    # Observation of vehicle speed
+    sosa:Observation[?obs_speed],
+    sosa:observedProperty[?obs_speed, bmw:speed],
+    sosa:hasSimpleResult[?obs_speed, ?speed_value],
+    sosa:phenomenonTime[?obs_speed, ?ts_speed],
+
+    # Observation of steering angle
+    sosa:Observation[?obs_angle],
+    sosa:observedProperty[?obs_angle, bmw:angle],
+    sosa:hasSimpleResult[?obs_angle, ?angle_value],
+    sosa:phenomenonTime[?obs_angle, ?ts_angle],
+
+    # Optional: same vehicle if data linked by bmw:Vehicle
+    bmw:Vehicle[?vehicle],
+    sosa:madeBySensor[?obs_speed, ?vehicle],
+    sosa:madeBySensor[?obs_angle, ?vehicle],
+
+    # Timestamp normalization
+    BIND(SUBSTR(STR(?ts_speed), 1, 19) AS ?ts_trimmed),
+
+    # Filter: high speed and sharp turn
+    FILTER(xsd:float(?speed_value) > 80),
+    FILTER(ABS(xsd:float(?angle_value)) > 45),
+
+    # Create (skolemize) a unique event instance
+    SKOLEM("SharpTurnEvent", ?vehicle, ?ts_trimmed, ?speed_value, ?angle_value, ?event).
