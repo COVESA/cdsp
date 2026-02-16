@@ -23,7 +23,7 @@ class ModelConfigConverter {
         const std::string& reasoning_output_queries_path);
     std::map<SchemaType, SchemaInputList> getInputsFromDto(
         const std::map<std::string, std::string>& inputs);
-    SchemaInputList getSupportedDataPoints(std::string file_name);
+    SchemaInputList getSupportedDataPoints(std::string file_name, SchemaType schema_type);
     std::string getFullModelConfigPath(const std::string& model_config_file);
     std::vector<std::pair<ReasonerSyntaxType, std::string>> getReasonerSyntaxTypeAndContent(
         const std::vector<std::string>& file_list);

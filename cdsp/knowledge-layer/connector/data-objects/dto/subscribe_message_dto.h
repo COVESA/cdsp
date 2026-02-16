@@ -41,8 +41,10 @@ inline void to_json(nlohmann::json &json_obj, const SubscribeMessageDTO &dto) {
     if (dto.root) {
         params_obj["root"] = *dto.root;
     }
-    json_obj =
-        nlohmann::json{{"jsonrpc", getJsonRpcVersion()}, {"id", dto.id}, {"params", params_obj}};
+    json_obj = nlohmann::json{{"jsonrpc", getJsonRpcVersion()},
+                              {"method", "subscribe"},
+                              {"id", dto.id},
+                              {"params", params_obj}};
 }
 
 #endif  // SUBSCRIBE_MESSAGE_DTO_H

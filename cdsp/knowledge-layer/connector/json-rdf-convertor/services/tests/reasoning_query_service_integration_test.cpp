@@ -74,37 +74,37 @@ TEST_F(ReasoningQueryServiceTest, ProcessRegularReasoningQuery_Success) {
   )"_json);
 
     const std::string triple_data = R"(
-    @prefix bmw: <http://groupontology.bmwgroup.net/bmw-ont#> .
+    PREFIX car: <http://example.ontology.com/car#> .
     @prefix sosa: <http://www.w3.org/ns/sosa/> .
     @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-    bmw:VehicleObservation_speed_20251021114517921301000
+    car:VehicleObservation_speed_20251021114517921301000
       a sosa:Observation ;
-      sosa:hasFeatureOfInterest bmw:VehicleVINABC_Vehicle ;
+      sosa:hasFeatureOfInterest car:VehicleVINABC_Vehicle ;
       sosa:hasSimpleResult "100"^^xsd:float ;
-      sosa:observedProperty bmw:speed ;
+      sosa:observedProperty car:speed ;
       sosa:phenomenonTime "2025-10-21T11:45:17.921301000Z"^^xsd:dateTime .
 
-    bmw:VehicleVINABC_Vehicle
-      a bmw:Vehicle .
+    car:VehicleVINABC_Vehicle
+      a car:Vehicle .
 
-    bmw:ChassisVINABC_Vehicle
-      a bmw:Chassis ;
-      bmw:hasPart bmw:SteeringWheelVINABC_Vehicle .
+    car:ChassisVINABC_Vehicle
+      a car:Chassis ;
+      car:hasPart car:SteeringWheelVINABC_Vehicle .
 
-    bmw:SteeringWheelVINABC_Vehicle
-      a bmw:SteeringWheel .
+    car:SteeringWheelVINABC_Vehicle
+      a car:SteeringWheel .
 
-    bmw:VehicleObservation_angle_20251021114518921301000
+    car:VehicleObservation_angle_20251021114518921301000
       a sosa:Observation ;
-      sosa:hasFeatureOfInterest bmw:SteeringWheelVINABC_Vehicle ;
+      sosa:hasFeatureOfInterest car:SteeringWheelVINABC_Vehicle ;
       sosa:hasSimpleResult "55"^^xsd:float ;
-      sosa:observedProperty bmw:angle ;
+      sosa:observedProperty car:angle ;
       sosa:phenomenonTime "2025-10-21T11:45:18.921301000Z"^^xsd:dateTime .
 
-    bmw:VehicleVINABC_Vehicle
-      a bmw:Vehicle ;
-      bmw:hasPart bmw:ChassisVINABC_Vehicle .
+    car:VehicleVINABC_Vehicle
+      a car:Vehicle ;
+      car:hasPart car:ChassisVINABC_Vehicle .
   )";
 
     reasoner_service_->loadData(triple_data, model_config->getReasonerSettings().getOutputFormat());

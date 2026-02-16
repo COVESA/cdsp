@@ -1,4 +1,4 @@
-@prefix bmw: <http://groupontology.bmwgroup.net/bmw-ont#> .
+@prefix car: <http://example.ontology.com/car#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix sosa: <http://www.w3.org/ns/sosa/> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -7,19 +7,19 @@
 # syntax issue
 # semantic issue
  
-bmw:SlidingWindow1Min a bmw:1minSlideWindow ;
-    bmw:hasWindowSize "PT1M"^^xsd:duration ;
+car:SlidingWindow1Min a car:1minSlideWindow ;
+    car:hasWindowSize "PT1M"^^xsd:duration ;
     rdfs:label "60".
     
  
-bmw:SlidingWindow3Sec a bmw:3SecSlideWindow ;
-    bmw:hasWindowSize "PT3S"^^xsd:duration;
+car:SlidingWindow3Sec a car:3SecSlideWindow ;
+    car:hasWindowSize "PT3S"^^xsd:duration;
     rdfs:label "3".
  
-bmw:SlidingWindow6Sec a bmw:6SecSlideWindow ;
-    bmw:hasWindowSize "PT6S"^^xsd:duration;
+car:SlidingWindow6Sec a car:6SecSlideWindow ;
+    car:hasWindowSize "PT6S"^^xsd:duration;
     rdfs:label "6".
  
-bmw:SlidingWindow5Min a bmw:5MinSlideWindow ;
-    bmw:hasWindowSize "PT5M"^^xsd:duration ;
+car:SlidingWindow5Min a car:5MinSlideWindow ;
+    car:hasWindowSize "PT5M"^^xsd:duration ;
     rdfs:label "300".

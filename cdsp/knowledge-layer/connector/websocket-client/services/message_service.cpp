@@ -250,7 +250,7 @@ std::variant<DataMessageDTO, StatusMessageDTO> MessageService::displayAndParseMe
         if (json_message.contains("error") ||
             (json_message.contains("result") && json_message["result"].empty())) {
             std::cout << "(" << Helper::getFormattedTimestampNow("%Y-%m-%dT%H:%M:%S", true, true)
-                      << ") Websocket-Server: Error status message received\n"
+                      << ") Websocket-Server: Status message received correctly\n"
                       << "Message Content: " << json_message.dump() << "\n";
             return DtoService::parseStatusJsonToDto(json_message);
         }

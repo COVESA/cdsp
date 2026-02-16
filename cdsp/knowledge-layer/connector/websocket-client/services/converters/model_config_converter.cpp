@@ -3,7 +3,9 @@
 #include <iostream>
 #include <sstream>
 
+#include "data_types.h"
 #include "globals.h"
+#include "helper.h"
 #include "model_config.h"
 #include "triple_assembler_helper.h"
 
@@ -207,7 +209,7 @@ std::map<SchemaType, SchemaInputList> ModelConfigConverter::getInputsFromDto(
     for (const auto& [collection, data] : inputs) {
         auto collection_name = collection.substr(0, collection.find(INPUT_SUFFIX));
         auto schema_type = stringToSchemaType(collection_name);
-        auto data_points = getSupportedDataPoints(data);
+        auto data_points = getSupportedDataPoints(data, schema_type);
         inputs_map[schema_type] = data_points;
     }
     return inputs_map;
@@ -251,7 +253,8 @@ ModelConfigConverter::getReasonerSyntaxTypeAndContent(const std::vector<std::str
  * @return A SchemaInputList, each representing a supported data point.
  * @throws std::runtime_error If the file cannot be opened.
  */
-SchemaInputList ModelConfigConverter::getSupportedDataPoints(std::string file_name) {
+SchemaInputList ModelConfigConverter::getSupportedDataPoints(std::string file_name,
+                                                             SchemaType schema_type) {
     try {
         std::string root = getFullModelConfigPath(file_name);
         auto file_content = file_handler_->readFile(root);
@@ -262,6 +265,15 @@ SchemaInputList ModelConfigConverter::getSupportedDataPoints(std::string file_na
         std::istringstream file(file_content);
         std::string line;
         while (std::getline(file, line)) {
+            // Attempt to detect schema type prefix in the line
+            auto str_schema_type = schemaTypeToString(schema_type);
+            auto get_chars_number = str_schema_type.length() + 1;  // +1 for the dot separator
+            auto line_prefix = line.substr(0, get_chars_number);
+            if (Helper::toLowerCase(line_prefix) == Helper::toLowerCase(str_schema_type) + ".") {
+                schema_input_list.subscribe.push_back(
+                    line.substr(get_chars_number, line.length() - get_chars_number));
+                continue;
+            }
             schema_input_list.subscribe.push_back(line);
         }
         return schema_input_list;

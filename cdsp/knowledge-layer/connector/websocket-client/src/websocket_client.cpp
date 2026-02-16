@@ -39,6 +39,7 @@ WebSocketClient::WebSocketClient(SystemConfig system_config,
       model_config_(std::move(model_config)),
       connection_(std::move(connection)),
       triple_assembler_(model_config_, *reasoner_service_, file_handler_, triple_writer_),
+      request_registry_(std::make_shared<RequestRegistry>()),
       reasoner_query_service_(std::make_shared<ReasoningQueryService>(reasoner_service_)) {
     triple_assembler_.initialize();
 }
@@ -52,7 +53,7 @@ WebSocketClient::WebSocketClient(SystemConfig system_config,
  */
 void WebSocketClient::initializeConnection() {
     if (!connection_) {
-        auto self = shared_from_this();
+        auto self = std::enable_shared_from_this<WebSocketClient>::shared_from_this();
         connection_ = std::make_shared<RealWebSocketConnection>(io_context_, self);
     }
 }

@@ -2,9 +2,8 @@ import {IoTDBHandler} from "../src/IoTDBHandler";
 import {Session} from "../src/Session";
 import {SessionDataSet} from "../utils/SessionDataSet";
 import {WebSocketWithId} from "../../../../utils/database-params";
-import {NewMessageType, SetMessageType} from "../../../../router/utils/NewMessage";
+import {NewMessageType, SetMessageType, STATUS_SUCCESS} from "../../../../router/utils/NewMessage";
 import {SupportedMessageDataTypes} from "../utils/iotdb-constants";
-import {STATUS_SUCCESS} from "../../../../router/utils/ErrorMessage";
 
 jest.mock("../src/Session");
 jest.mock("../src/SubscriptionSimulator");
@@ -29,7 +28,7 @@ describe("IoTDBHandler", () => {
     mockSession.authenticateAndConnect = jest.fn();
     mockSession.executeQueryStatement = jest.fn();
 
-    handler = new IoTDBHandler();
+    handler = new IoTDBHandler(function(p1: WebSocketWithId,p2: any){});
     (handler as any).session = mockSession; // Inject mocked session
     mockWebSocket = {id: "test-socket"} as jest.Mocked<WebSocketWithId>;
     handler["sendMessageToClient"] = jest.fn();
@@ -40,7 +39,7 @@ describe("IoTDBHandler", () => {
     expect(mockSession.authenticateAndConnect).toHaveBeenCalled();
   });
 
-  test("should query data points and metadata from IoTDB individually", async () => {
+  test("should query data points and metadata from IoTDB", async () => {
     const mockDataPoints = ["Temperature", "Speed"];
     const vin = "TEST_VIN";
     mockSession.executeQueryStatement.mockResolvedValueOnce(new SessionDataSet([], [], {}, 0, {}, 0, {}, {}, false));
@@ -48,10 +47,8 @@ describe("IoTDBHandler", () => {
     const result = await handler.getDataPointsFromDB(mockDataPoints, vin);
 
     const expectedCalls = [
-      expect.stringContaining("SELECT Temperature"),
-      expect.stringContaining("SELECT Speed"),
-      expect.stringContaining("SELECT Temperature_Metadata"),
-      expect.stringContaining("SELECT Speed_Metadata"),
+      expect.stringContaining("SELECT Temperature,Temperature_Metadata"),
+      expect.stringContaining("SELECT Speed,Speed_Metadata"),
     ];
 
     expectedCalls.forEach((expected, index) => {
@@ -67,6 +64,7 @@ describe("IoTDBHandler", () => {
       type: NewMessageType.Set,
       instance: "TEST_VIN",
       path: "Vehicle",
+      requestId: "requestId",
       data: {Speed: 60, Temperature: 42.42},
       metadata: {Speed: {unit: "km/h"}},
     };
@@ -107,6 +105,7 @@ describe("IoTDBHandler", () => {
       instance: "",
       type: NewMessageType.Set,
       path: "Vehicle.Speed",
+      requestId: "requestId",
       data: {},
       metadata: {VIN: "123456", Unit: "km/h"}
     };

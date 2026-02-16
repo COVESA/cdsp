@@ -2,21 +2,17 @@ import {v4 as uuidv4} from 'uuid';
 import WebSocket, {RawData} from "ws";
 import {createHandler} from "../../handlers/src/HandlerCreator";
 import {RequestValidator} from '../utils/RequestValidator';
-import {
-  logMessage,
-  logWithColor,
-  LogMessageType,
-  COLORS,
-  logErrorStr,
-} from "../../utils/logger";
+import {COLORS, logErrorStr, logMessage, LogMessageType, logWithColor,} from "../../utils/logger";
 import {WebSocketWithId} from "../../utils/database-params";
-import {STATUS_ERRORS} from "../utils/ErrorMessage";
 import {HandlerBase} from "../../handlers/src/HandlerBase";
+import {MessageMapper} from "../utils/MessageMapper";
+import {DataContentMessage, ErrorMessage, STATUS_ERRORS, StatusMessage} from "../utils/NewMessage";
 // WebSocket server creation
 const server = new WebSocket.Server({port: 8080});
 
 // Define clients Map globally to store connected clients
 const clients = new Map<string, WebSocket>();
+const messageMapper = new MessageMapper();
 
 // Handle new client connections
 server.on("connection", (ws: WebSocket) => {
@@ -28,10 +24,10 @@ server.on("connection", (ws: WebSocket) => {
   const wsWithId = addIdToWebsocket(ws);
   const connectionId = wsWithId.id;
   clients.set(connectionId, ws); // Add client to the Map
-  const handler = createHandler();
+  const handler = createHandler(sendMessage);
 
   // Handle messages from the client
-  ws.on("message", handleMessage(connectionId, handler, wsWithId, ws));
+  ws.on("message", handleMessage(connectionId, handler, wsWithId));
 
   // Handle client disconnection
   ws.on("close", handleCloseConnection(handler, wsWithId, connectionId));
@@ -40,18 +36,20 @@ server.on("connection", (ws: WebSocket) => {
   logWithColor(`Client connected and authenticated with id ${connectionId}`, COLORS.YELLOW);
 });
 
-function handleMessage(connectionId: string, handler: HandlerBase, wsWithId: WebSocketWithId, ws: WebSocket) {
+function handleMessage(connectionId: string, handler: HandlerBase, wsWithId: WebSocketWithId) {
   return (message: WebSocket.RawData) => {
     let messageString = rawDataToString(message);
-    logMessage(JSON.stringify(messageString), LogMessageType.RECEIVED, connectionId);
+    logMessage(messageString, LogMessageType.RECEIVED, connectionId);
 
     // validation
     const validator = new RequestValidator();
     const result = validator.validate(messageString);
 
     if (result.valid) {
+      // Map DTO to internal business object
+      const messageBO = messageMapper.toDomain(result.messageDTO!);
       // Handle valid Message and exit
-      handler.handleMessage(result.message!, wsWithId);
+      handler.handleMessage(messageBO, wsWithId);
       return;
     }
 
@@ -59,12 +57,14 @@ function handleMessage(connectionId: string, handler: HandlerBase, wsWithId: Web
     logErrorStr("Processing failed:");
     result.errors?.forEach((error) => {
       logErrorStr(error);
-      const statusMessage = {
-        type: "status",
+      const errorMessage: ErrorMessage = {
         code: STATUS_ERRORS.BAD_REQUEST,
+        type: "error",
         message: `Processing Error: ${error}`,
+        reason:`Processing Error: ${error}`,
+        requestId: result.messageDTO?.id
       }
-      ws.send(JSON.stringify(statusMessage));
+      sendMessage(wsWithId, errorMessage);
     });
   };
 }
@@ -84,11 +84,25 @@ function addIdToWebsocket(ws: WebSocket): WebSocketWithId {
   return Object.assign(ws, {id: uuidv4()});
 }
 
+/**
+ * This must be the only function that sends messages via websocket to the connected clients to guarantee the right message structure. 
+ * Don't use WebSocket.send(...) anywhere else.
+ * @param ws websocket object
+ * @param message message to send
+ */
+export function sendMessage(
+  ws: WebSocketWithId,
+  message: StatusMessage | DataContentMessage | ErrorMessage
+): void {
+  
+  let dataResponseDTO = messageMapper.toDTO(message);
+  ws.send(JSON.stringify(dataResponseDTO));
+
+  logMessage(JSON.stringify(dataResponseDTO, null, 2), LogMessageType.SENT, ws.id);
+}
 
 function rawDataToString(message: RawData): string {
-  if (typeof message === "string") {
-    return message;
-  } else if (Buffer.isBuffer(message)) {
+  if (Buffer.isBuffer(message)) {
     return message.toString();
   } else if (message instanceof ArrayBuffer) {
     return new TextDecoder().decode(message);
