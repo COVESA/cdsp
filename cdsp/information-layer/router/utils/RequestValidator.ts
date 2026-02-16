@@ -1,13 +1,13 @@
 import Ajv, {ValidateFunction, Schema} from "ajv";
 import addFormats from "ajv-formats";
 import addErrors from "ajv-errors";
-import {NewMessageType, NewMessage} from "./NewMessage";
-import {replaceDotsWithUnderscore} from "../../handlers/utils/transformations";
+import {NewMessageType} from "./NewMessage";
+import {NewMessageDTO} from "./MessageDTO";
 
 export interface ValidationResult {
   valid: boolean;
   errors?: string[];
-  message?: NewMessage;
+  messageDTO?: NewMessageDTO;
 }
 
 export class RequestValidator {
@@ -22,112 +22,119 @@ export class RequestValidator {
     addFormats(this.ajv);
     addErrors(this.ajv);
 
+    // Base JSON-RPC envelope scheme
+    const baseRpcSchema = {
+      type: "object",
+      required: ["jsonrpc", "method", "id", "params"],
+      additionalProperties: false,
+      properties: {
+        jsonrpc: {type: "string", const: "2.0"},
+        method: {type: "string"}, // overridden in each message
+        id: {...stringOrIntegerRule},
+        params: {type: "object"}, // overridden in each message
+      },
+      errorMessage: {
+        required: {
+          jsonrpc: "The 'jsonrpc' field (must be '2.0') is required",
+          method: "The 'method' field is required",
+          id: "The 'id' field is required",
+          params: "The 'params' field is required",
+        },
+        additionalProperties: "Unexpected property found at top level",
+        properties: {
+          jsonrpc: "The 'jsonrpc' version must be the string '2.0'",
+          ...stringOrIntegerErrorMessage("id")
+        }
+      },
+    };
 
+    // Base params schema for all messages
+    const baseParamsSchema = {
+      type: "object",
+      required: ["instance", "schema"],
+      additionalProperties: false,
+      properties: {
+        path: {type: "string"},
+        instance: {...stringValidation},
+        schema: {...stringValidation},
+      },
+      errorMessage: {
+        required: {
+          instance: "The 'instance' field is required",
+          schema: "The 'schema' field is required",
+        },
+        additionalProperties: "Unexpected property found in params",
+        properties: {
+          ...notEmptyStringErrorMessage("instance"),
+          ...notEmptyStringErrorMessage("schema"),
+        },
+      },
+    };
     // Add schemas for each request type
     this.schemas = {
       [NewMessageType.Get]: this.compileSchema({
-        type: "object",
-        required: ["type", "instance", "schema"],
-        additionalProperties: false,
+        ...baseRpcSchema,
         properties: {
-          type: {type: "string", const: "get"},
-          path: {type: "string"},
-          instance: {...notEmptyStringRule},
-          schema: {...notEmptyStringRule},
-          requestId: {type: "string"},
-          format: {type: "string", enum: ["nested", "flat"]},
-          root: {type: "string", enum: ["absolute", "relative"]},
-        },
-        errorMessage: {
-          required: {
-            type: "The 'type' field is required",
-            path: "The 'path' field is required",
-            instance: "The 'instance' field is required",
+          ...baseRpcSchema.properties,
+          method: {type: "string", const: "get"},
+          params: {
+            ...baseParamsSchema,
+            properties: {
+              ...baseParamsSchema.properties,
+              format: {type: "string", enum: ["nested", "flat"]},
+              root: {type: "string", enum: ["absolute", "relative"]},
+            },
           },
-          additionalProperties: "Unexpected property found",
-          properties: {
-            ...notEmptyStringErrorMessage("schema"),
-            ...notEmptyStringErrorMessage("instance")
-          }
         },
       }),
       [NewMessageType.Set]: this.compileSchema({
-        type: "object",
-        required: ["type", "schema", "instance", "data"],
-        additionalProperties: false,
+        ...baseRpcSchema,
         properties: {
-          type: {type: "string", const: "set"},
-          path: {type: "string"},
-          instance: {...notEmptyStringRule},
-          schema: {...notEmptyStringRule},
-          data: {},
-          requestId: {type: "string"},
-          metadata: {type: "object"},
-          sync: {type: "string", enum: ["off", "local", "remote"]},
-          timeseries: {type: "boolean"},
-        },
-        errorMessage: {
-          required: {
-            type: "The 'type' field is required",
-            path: "The 'path' field is required",
-            instance: "The 'instance' field is required",
-            data: "The 'data' field is required",
+          ...baseRpcSchema.properties,
+          method: {type: "string", const: "set"},
+          params: {
+            ...baseParamsSchema,
+            required: [...baseParamsSchema.required, "data"],
+            properties: {
+              ...baseParamsSchema.properties,
+              data: {},
+              metadata: {type: "object"},
+              sync: {type: "string", enum: ["off", "local", "remote"]},
+              timeseries: {type: "boolean"},
+            },
+            errorMessage: {
+              ...baseParamsSchema.errorMessage,
+              required: {
+                ...baseParamsSchema.errorMessage.required,
+                data: "The 'data' field is required",
+              },
+            },
           },
-          additionalProperties: "Unexpected property found",
-          properties: {
-            ...notEmptyStringErrorMessage("schema"),
-            ...notEmptyStringErrorMessage("instance")
-          }
         },
       }),
       [NewMessageType.Subscribe]: this.compileSchema({
-        type: "object",
-        required: ["type", "instance", "schema"],
-        additionalProperties: false,
+        ...baseRpcSchema,
         properties: {
-          type: {type: "string", enum: ["subscribe"]},
-          path: {type: "string"},
-          instance: {...notEmptyStringRule},
-          schema: {...notEmptyStringRule},
-          requestId: {type: "string"},
-          format: {type: "string", enum: ["nested", "flat"]},
-          root: {type: "string", enum: ["absolute", "relative"]},
-        },
-        errorMessage: {
-          required: {
-            type: "The 'type' field is required",
-            instance: "The 'instance' field is required",
-            schema: "The 'schema' field is required",
+          ...baseRpcSchema.properties,
+          method: {type: "string", const: "subscribe"},
+          params: {
+            ...baseParamsSchema,
+            properties: {
+              ...baseParamsSchema.properties,
+              format: {type: "string", enum: ["nested", "flat"]},
+              root: {type: "string", enum: ["absolute", "relative"]},
+            },
           },
-          additionalProperties: "Unexpected property found",
-          properties: {
-            ...notEmptyStringErrorMessage("schema"),
-            ...notEmptyStringErrorMessage("instance")
-          }
         },
       }),
       [NewMessageType.Unsubscribe]: this.compileSchema({
-        type: "object",
-        required: ["type", "instance", "schema"],
-        additionalProperties: false,
+        ...baseRpcSchema,
         properties: {
-          type: {type: "string", enum: ["unsubscribe"]},
-          path: {type: "string"},
-          instance: {...notEmptyStringRule},
-          schema: {...notEmptyStringRule},
-          requestId: {type: "string"},
-        },
-        errorMessage: {
-          required: {
-            type: "The 'type' field is required",
-            instance: "The 'instance' field is required",
-            schema: "The 'schema' field is required",
+          ...baseRpcSchema.properties,
+          method: {type: "string", const: "unsubscribe"},
+          params: {
+            ...baseParamsSchema,
           },
-          additionalProperties: "Unexpected property found",
-          properties: {
-            ...notEmptyStringErrorMessage("schema"),
-            ...notEmptyStringErrorMessage("instance")
-          }
         },
       }),
       [NewMessageType.PermissionsEdit]: this.compileSchema({
@@ -231,63 +238,53 @@ export class RequestValidator {
     }
 
     // Use the mapping to find the schema key
-    const schemaKey = this.typeToSchemaKey[request.type];
+    const schemaKey = this.typeToSchemaKey[request.method];
     if (!schemaKey) {
-      return {valid: false, errors: [`Unknown request type: ${request.type}`]};
+      return {valid: false, errors: [`Unknown request method: ${request.method}`], messageDTO: request as NewMessageDTO};
     }
 
     const validator = this.schemas[schemaKey];
 
     if (!validator) {
-      return {valid: false, errors: [`Unknown request type: ${request.type}`]};
+      return {valid: false, errors: [`Unknown request method: ${request.method}`], messageDTO: request as NewMessageDTO};
     }
 
     // Validate the parsed object
     const valid = validator(request);
 
     if (valid) {
-      this.modifyRequest(request);
-      return {valid: true, message: request as NewMessage}; // Cast to NewMessage
+      return {valid: true, messageDTO: request as NewMessageDTO};
     } else {
       return {
         valid: false,
         errors: validator.errors?.map((error) => error.message || "") || [],
+        messageDTO: request as NewMessageDTO,
       };
     }
-  }
-
-  /**
-   * Apply modifications to the request structure and transformations to request values.
-   *
-   * @param request - The request object to modify.
-   */
-  private modifyRequest(request: any) {
-    this.moveSchemaToPathField(request);
-    request.path = replaceDotsWithUnderscore(request.path);
-  }
-
-  /**
-   * Merges `schema` into `path` and removes `schema`.
-   * If `path` is missing, sets it to `schema`.
-   *
-   * @param request - The request object to modify.
-   */
-  private moveSchemaToPathField(request: any) {
-    if (request.schema && request.path) {
-      request.path = `${request.schema}_${request.path}`;
-    } else if (request.schema && !request.path) {
-      request.path = `${request.schema}`;
-    }
-    delete request.schema;
   }
 }
 
 // Generic validation rule: Ensure a string is not empty or blank
-const notEmptyStringRule = {
+const stringValidation = {
   type: "string",
-  minLength: 1,  // Prevents empty strings ("" )
+  minLength: 1,  // Prevents empty strings ("")
   pattern: "^(?!\\s*$).+" // Ensures the string is not just whitespace ("  ")
 };
+
+// Generic validation rule: Ensure a string is not empty/blank, OR accept integers
+const stringOrIntegerRule = {
+  anyOf: [
+    stringValidation,
+    {
+      type: "integer",
+    },
+  ],
+};
+
+// Generic error message: Used for any field requiring a non-empty string or integer
+const stringOrIntegerErrorMessage = (fieldName: string) => ({
+  [fieldName]: `The '${fieldName}' field must be a non-empty string or an integer`,
+});
 
 // Generic error message: Used for any field requiring a non-empty string
 const notEmptyStringErrorMessage = (fieldName: string) => ({

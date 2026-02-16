@@ -106,37 +106,43 @@ async def websocket_handler(element_id: str):
         websocket = await websockets.connect(information_layer_url)
         print("Connected to information-layer websocket.")
 
+        message_id = 1
+
         while not stopped:
             async with signal_map_async_lock:  # Use asyncio.Lock here
                 if not signal_map:
                     await asyncio.sleep(0.1)
                     continue
 
-                # Prepare WebSocket data format
+                # Prepare WebSocket data format using JSON-RPC 2.0
                 websocket_data = {
-                    "type": "set",
-                    "instance": element_id,
+                    "jsonrpc": "2.0",
+                    "method": "set",
+                    "id": str(message_id),
+                    "params": {
+                        "instance": element_id,
+                    }
                 }
 
                 if len(signal_map) == 1:
                     signal_name, signal_value_timestamp = next(iter(signal_map.items()))
                     schema, _, path = signal_name.partition('.')
-                    websocket_data["schema"] = schema
-                    websocket_data["path"] = path
-                    websocket_data["data"] = signal_value_timestamp[0]
-                    websocket_data["metadata"] = timestamp_to_metadata_format(signal_value_timestamp[1])
+                    websocket_data["params"]["schema"] = schema
+                    websocket_data["params"]["path"] = path
+                    websocket_data["params"]["data"] = signal_value_timestamp[0]
+                    websocket_data["params"]["metadata"] = timestamp_to_metadata_format(signal_value_timestamp[1])
                 else:
                     # take any signal to extract the root path, that should be identical for all cases
                     common_prefix, _ = next(iter(signal_map)).split('.', 1)
-                    websocket_data["schema"] = common_prefix.rstrip('.')
-                    websocket_data["data"] = {}
+                    websocket_data["params"]["schema"] = common_prefix.rstrip('.')
+                    websocket_data["params"]["data"] = {}
                     metadata_accumulation = {}
 
                     for name, value_timestamp in signal_map.items():
                         parts = name.split('.')
-                        current_level = websocket_data["data"]
+                        current_level = websocket_data["params"]["data"]
                         # Traverse through the parts except the first and last one, creating nested dictionaries as needed.
-                        # First part can be removed, because it is used in the websocket_data["path"] field.
+                        # First part can be removed, because it is used in the websocket_data["params"]["schema"] field.
                         # Last part is stored not as dictionary, but as a value.
                         for part in parts[1:-1]:
                             current_level = current_level.setdefault(part, {})
@@ -147,7 +153,7 @@ async def websocket_handler(element_id: str):
                         metadata_accumulation.update(timestamp_to_metadata_format(value_timestamp[1], data_point_path))
 
                     # add accumulated metadata
-                    websocket_data["metadata"] = metadata_accumulation
+                    websocket_data["params"]["metadata"] = metadata_accumulation
                 signal_map.clear()
 
             try:
@@ -157,10 +163,12 @@ async def websocket_handler(element_id: str):
 
                 response = await websocket.recv()
                 response_data = json.loads(response)
-                if response_data.get("code") != 200:
+                if "error" in response_data:
                     safe_exit(f"Unexpected response from information-layer: {response}")
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
                 print(f"{timestamp} Received response from information-layer: {response}")
+
+                message_id += 1
 
             except Exception as e:
                 if not stopped:

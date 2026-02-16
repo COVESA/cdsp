@@ -7,14 +7,18 @@ import {IoTDBDataInterpreter} from "../utils/IoTDBDataInterpreter";
 import {createDataPointsSchema, isSupportedDataPoint, SupportedDataPoints,} from "../config/iotdb-config";
 import {databaseConfig, databaseParams} from "../config/database-params";
 import {COLORS, logErrorStr, logWithColor,} from "../../../../utils/logger";
-import {STATUS_ERRORS, STATUS_SUCCESS} from "../../../../router/utils/ErrorMessage";
 import {WebSocketWithId} from "../../../../utils/database-params";
 import {transformSessionDataSet} from "../utils/database-helper";
 import {
+  DataContentMessage,
+  ErrorMessage,
   NewMessage,
   SetMessageType,
+  STATUS_ERRORS,
+  STATUS_SUCCESS,
   StatusMessage,
-  SubscribeMessageType, UnsubscribeMessageType
+  SubscribeMessageType,
+  UnsubscribeMessageType
 } from "../../../../router/utils/NewMessage";
 import {removeSuffixFromString, replaceDotsWithUnderscore, replaceUnderscoresWithDots} from "../../../utils/transformations";
 
@@ -26,17 +30,18 @@ export class IoTDBHandler extends HandlerBase {
   private subscriptionSimulator: SubscriptionSimulator;
   private dataPointsSchema: SupportedDataPoints = {};
 
-  constructor() {
-    super();
+  constructor(sendMessage: (ws: WebSocketWithId, message: StatusMessage | DataContentMessage | ErrorMessage) => void) {
+    super(sendMessage);
     if (!databaseConfig) {
       throw new Error("Invalid database configuration.");
     }
     this.session = new Session();
     this.subscriptionSimulator = getSubscriptionSimulator(
-      this.sendMessageToClient,
+      this.sendMessageToClient.bind(this),
       this.createDataContentMessage,
       this.createStatusMessage,
-      this.sendAlreadySubscribedErrorMsg);
+      this.createErrorMessage,
+      this.sendAlreadySubscribedErrorMsg.bind(this));
   }
 
   async authenticateAndConnect(): Promise<void> {
@@ -60,7 +65,7 @@ export class IoTDBHandler extends HandlerBase {
     const newDataPoints = this.getKnownDatapointsByPrefix(message.path);
 
     if (newDataPoints.length === 0) {
-      this.sendRequestedDataPointsNotFoundErrorMsg(ws, message.path)
+      this.sendRequestedDataPointsNotFoundErrorMsg(ws, message.path, message.requestId)
       return;
     }
 
@@ -70,7 +75,7 @@ export class IoTDBHandler extends HandlerBase {
   protected unsubscribe(message: UnsubscribeMessageType, ws: WebSocketWithId): void {
     const dataPointsToUnsub = this.getKnownDatapointsByPrefix(message.path);
     if (dataPointsToUnsub.length === 0) {
-      this.sendRequestedDataPointsNotFoundErrorMsg(ws, message.path)
+      this.sendRequestedDataPointsNotFoundErrorMsg(ws, message.path, message.requestId)
       return;
     }
 
@@ -84,7 +89,7 @@ export class IoTDBHandler extends HandlerBase {
 
   protected async set(message: SetMessageType, ws: WebSocketWithId): Promise<void> {
     if (this.areNodesValid(message, ws)) {
-      let statusMessage: StatusMessage;
+      let statusMessage: StatusMessage | ErrorMessage;
       try {
         const data = {
           ...this.extractNodesFromMessageWithVinAsNode(message),
@@ -113,10 +118,13 @@ export class IoTDBHandler extends HandlerBase {
           COLORS.GREY
         );
 
-        statusMessage = this.createStatusMessage(STATUS_SUCCESS.OK, "Successfully wrote data to database.");
+        statusMessage = this.createStatusMessage(STATUS_SUCCESS.OK, "Successfully wrote data to database.", message.requestId);
       } catch (error: unknown) {
         const errMsg = error instanceof Error ? error.message : "Unknown error";
-        statusMessage = this.createStatusMessage(STATUS_ERRORS.SERVICE_UNAVAILABLE, `Failed writing data. ${errMsg}`);
+        statusMessage = this.createErrorMessage(STATUS_ERRORS.SERVICE_UNAVAILABLE,
+          `Database service unavailable`,
+          `Failed writing data. ${errMsg}`,
+          message.requestId);
       }
       this.sendMessageToClient(ws, statusMessage);
     }
@@ -160,15 +168,18 @@ export class IoTDBHandler extends HandlerBase {
    * @returns - Returns true if all nodes are valid against the schema, otherwise false.
    */
   private areNodesValid(message: NewMessage, ws: WebSocketWithId): boolean {
-    const errorMessage = this.validateNodesAgainstSchema(
+    const errorReason = this.validateNodesAgainstSchema(
       message,
       this.dataPointsSchema
     );
 
-    if (errorMessage) {
-      logErrorStr(`Error validating message nodes against schema: ${errorMessage}`);
-      const statusMessage = this.createStatusMessage(STATUS_ERRORS.NOT_FOUND, errorMessage);
-      this.sendMessageToClient(ws, statusMessage);
+    if (errorReason) {
+      logErrorStr(`Error validating message nodes against schema: ${errorReason}`);
+      const errorMessage = this.createErrorMessage(STATUS_ERRORS.NOT_FOUND,
+        'Nodes not found in schema',
+        errorReason,
+        message.requestId);
+      this.sendMessageToClient(ws, errorMessage);
       return false;
     }
     return true;

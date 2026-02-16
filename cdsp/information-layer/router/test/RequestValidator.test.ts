@@ -11,166 +11,165 @@ describe("RequestValidator", () => {
     {
       name: "Valid get request",
       json: `{
-        "type": "get",
-        "schema": "Vehicle",
-        "instance": "SMT905JN26J262542"
+        "jsonrpc": "2.0",
+        "method": "get",
+        "id": "123",
+        "params": {
+          "schema": "Vehicle",
+          "instance": "SMT905JN26J262542"
+        }
       }`,
       expectedPath: "Vehicle",
     },
     {
       name: "Valid set request",
       json: `{
-        "type": "set",
-        "schema": "Vehicle",
-        "path": "Speed",
-        "instance": "SMT905JN26J262542",
-        "data": 100
+        "jsonrpc": "2.0",
+        "method": "set",
+        "id": "123",
+        "params": {
+          "schema": "Vehicle",
+          "path": "Speed",
+          "instance": "SMT905JN26J262542",
+          "data": 100
+        }
       }`,
       expectedPath: "Vehicle_Speed",
     },
     {
       name: "Valid subscribe request",
       json: `{
-        "type": "subscribe",
-        "schema": "Vehicle",
-        "instance": "SMT905JN26J262542"
+        "jsonrpc": "2.0",
+        "method": "subscribe",
+        "id": "123",
+        "params": {
+          "schema": "Vehicle",
+          "instance": "SMT905JN26J262542"
+        }
       }`,
       expectedPath: "Vehicle",
     },
     {
       name: "Valid unsubscribe request",
       json: `{
-        "type": "unsubscribe",
-        "schema": "Vehicle",
-        "instance": "SMT905JN26J262542"
-      }`,
-      expectedPath: "Vehicle",
-    },
-    {
-      name: "Valid getTimeseries request",
-      json: `{
-        "type": "timeseries/get",
-        "path": "Person.Vitals.Cardiovascular.HeartRate",
-        "instance": "P123",
-        "query": {
-          "gte": { "seconds": 1733389000, "nanos": 814343000 },
-          "lte": { "seconds": 1733389389, "nanos": 814343000 }
+        "jsonrpc": "2.0",
+        "method": "unsubscribe",
+        "id": "123",
+        "params": {
+          "schema": "Vehicle",
+          "instance": "SMT905JN26J262542"
         }
       }`,
-      expectedPath: "Person_Vitals_Cardiovascular_HeartRate",
-    }    
+      expectedPath: "Vehicle",
+    }  
   ];
 
   const invalidRequests = [
     {
       name: "Additional not specified property in get",
       json: `{
-        "type": "get",
-        "path": "Speed",
-        "schema": "Vehicle",
-        "instance": "SMT905JN26J262542",
-        "extraProperty": "should not be here"
+        "jsonrpc": "2.0",
+        "method": "get",
+        "id": "123",
+        "params": {
+          "path": "Speed",
+          "schema": "Vehicle",
+          "instance": "SMT905JN26J262542",
+          "extraProperty": "should not be here"
+        }
       }`,
-      error: "Unexpected property found",
+      error: "Unexpected property found in params",
     },
     {
       name: "Missing required property in get",
       json: `{
-        "type": "get",
-        "path": "Speed",
-        "schema": "Vehicle"
+        "jsonrpc": "2.0",
+        "method": "get",
+        "id": "123",
+        "params": {
+          "path": "Speed",
+          "schema": "Vehicle"
+        }
       }`,
       error: "The 'instance' field is required",
     },
     {
       name: "Schema is blank",
       json: `{
-        "type": "get",
-        "path": "Speed",
-        "schema": "",
-        "instance": "SMT905JN26J262542"
+        "jsonrpc": "2.0",
+        "method": "get",
+        "id": "123",
+        "params": {
+          "path": "Speed",
+          "schema": "",
+          "instance": "SMT905JN26J262542"
+        }
       }`,
       error: "The 'schema' field must contain at least one non-whitespace character",
     },
     {
       name: "Schema contains only whitespace characters",
       json: `{
-        "type": "get",
-        "path": "Speed",
-        "schema": "   ",
-        "instance": "SMT905JN26J262542"
+        "jsonrpc": "2.0",
+        "method": "get",
+        "id": "123",
+        "params": {
+          "path": "Speed",
+          "schema": "   ",
+          "instance": "SMT905JN26J262542"
+        }
       }`,
       error: "The 'schema' field must contain at least one non-whitespace character",
     },
     {
       name: "Instance is blank",
       json: `{
-        "type": "get",
-        "path": "Speed",
-        "instance": "",
-        "schema": "SMT905JN26J262542"
+        "jsonrpc": "2.0",
+        "method": "get",
+        "id": "123",
+        "params": {
+          "path": "Speed",
+          "instance": "",
+          "schema": "SMT905JN26J262542"
+        }
       }`,
       error: "The 'instance' field must contain at least one non-whitespace character",
     },
     {
       name: "Instance contains only whitespace characters",
       json: `{
-        "type": "get",
-        "path": "Speed",
-        "instance": "   ",
-        "schema": "Vehicle"
+        "jsonrpc": "2.0",
+        "method": "get",
+        "id": "123",
+        "params": {
+          "path": "Speed",
+          "instance": "   ",
+          "schema": "Vehicle"
+        }
       }`,
       error: "The 'instance' field must contain at least one non-whitespace character",
     },
     {
-      name: "Unknown request 'type'",
+      name: "Unknown request 'method'",
       json: `{
-        "type": "unknownType",
-        "path": "Speed",
-        "schema": "Vehicle",
-        "instance": "Vehicle"
-      }`,
-      error: "Unknown request type: unknownType",
-    },
-    {
-      name: "Missing instance in getTimeseries",
-      json: `{
-        "type": "timeseries/get",
-        "path": "Person.Vitals.Cardiovascular.HeartRate"
-      }`,
-      error: "The 'instance' field is required",
-    },
-    {
-      name: "Additional property in getTimeseries",
-      json: `{
-        "type": "timeseries/get",
-        "path": "Person.Vitals.Cardiovascular.HeartRate",
-        "instance": "P123",
-        "extraProperty": "unexpected"
-      }`,
-      error: "Unexpected property found",
-    },
-    {
-      name: "Invalid query in getTimeseries",
-      json: `{
-        "type": "timeseries/get",
-        "path": "Person.Vitals.Cardiovascular.HeartRate",
-        "instance": "P123",
-        "query": {
-          "gte": { "seconds": "invalid", "nanos": 814343000 }
+        "jsonrpc": "2.0",
+        "method": "unknownType",
+        "id": "123",
+        "params": {
+          "path": "Speed",
+          "schema": "Vehicle",
+          "instance": "Vehicle"
         }
       }`,
-      error: "must be number",
+      error: "Unknown request method: unknownType",
     }
   ];
 
   describe("Valid Requests", () => {
-    validRequests.forEach(({ name, json, expectedPath }) => {
+    validRequests.forEach(({ name, json }) => {
       test(name, () => {
         const result = validator.validate(json);
         expect(result.valid).toBe(true);
-        expect(result).toHaveProperty("message");
-        expect(result.message).toHaveProperty("path", expectedPath)
 
       });
     });
@@ -182,7 +181,7 @@ describe("RequestValidator", () => {
         const result = validator.validate(json);
   
         // Ensure the result is invalid before accessing errors
-        if (result.valid === false) {
+        if (!result.valid) {
           expect(result.errors).toEqual(expect.arrayContaining([error]));
         } else {
           // Fail the test if the result is valid when it shouldn't be

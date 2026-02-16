@@ -40,7 +40,9 @@ inline void to_json(nlohmann::json &json_obj, const GetMessageDTO &dto) {
         params_obj["root"] = *dto.root;
     }
 
-    json_obj =
-        nlohmann::json{{"jsonrpc", getJsonRpcVersion()}, {"id", dto.id}, {"params", params_obj}};
+    json_obj = nlohmann::json{{"jsonrpc", getJsonRpcVersion()},
+                              {"method", "get"},
+                              {"id", dto.id},
+                              {"params", params_obj}};
 }
 #endif  // GET_MESSAGE_DTO_H
