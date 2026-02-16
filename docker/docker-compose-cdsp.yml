@@ -63,7 +63,7 @@ services:
       - RDFOX_ROLE=root
       - RDFOX_PASSWORD=admin
     command: |
-      -persistence file
+      -persistence file -channel unsecure init
     restart: "no"
 
   # RDFox Daemon (persistent service)
