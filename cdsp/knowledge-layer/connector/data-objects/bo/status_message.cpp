@@ -3,67 +3,48 @@
 /**
  * @brief Constructs a StatusMessage object with the given parameters.
  *
- * @param code An integer representing the status code.
- * @param message A string containing the status message. Must not be empty.
- * @param requestId An optional string representing the request ID.
- * @param timestamp A time_point representing the timestamp of the status message. Must not be
- * empty.
- *
- * @throws std::invalid_argument if the message is empty.
- * @throws std::invalid_argument if the timestamp is empty.
+ * @param identifier A string representing the request ID.
+ * @param error An optional Error object representing the error associated with
+ * the status message.
  */
-StatusMessage::StatusMessage(int code, const std::string& message,
-                             const std::optional<std::string>& requestId,
-                             const std::chrono::system_clock::time_point& timestamp)
-    : code_(code), message_(message), request_id_(requestId), timestamp_(timestamp) {
-    if (message_.empty()) {
-        throw std::invalid_argument("StatusMessage message cannot be empty");
+StatusMessage::StatusMessage(int identifier, std::optional<Error> error)
+    : id_(identifier), error_(std::move(error)) {
+    if (id_ < 0) {
+        throw std::invalid_argument("StatusMessage ID cannot be negative");
     }
 }
 
 /**
- * @brief Returns the status code.
+ * @brief Returns the ID of the request.
  *
- * @return An integer representing the status code.
+ * @return An integer representing the request ID.
  */
-int StatusMessage::getCode() const { return code_; }
+int StatusMessage::getIdentifier() const { return id_; }
 
 /**
- * @brief Returns the status message.
+ * @brief Returns the optional Error object associated with the status message.
  *
- * @return A string containing the status message.
+ * @return An optional Error object.
  */
-std::string StatusMessage::getMessage() const { return message_; }
-
-/**
- * @brief Returns the request ID.
- *
- * @return An optional string representing the request ID.
- */
-std::optional<std::string> StatusMessage::getRequestId() const { return request_id_; }
-
-/**
- * @brief Returns the timestamp.
- *
- * @return A time_point representing the timestamp of the status message.
- */
-std::chrono::system_clock::time_point StatusMessage::getTimestamp() const { return timestamp_; }
+std::optional<Error> StatusMessage::getError() const { return error_; }
 
 /**
  * @brief Overloads the << operator to print the StatusMessage object.
  *
  * @param os The output stream to write to.
  * @param message The StatusMessage object to print.
- * @return std::ostream& The output stream with the StatusMessage object printed to it.
+ * @return std::ostream& The output stream with the StatusMessage object printed
+ * to it.
  */
-std::ostream& operator<<(std::ostream& os, const StatusMessage& message) {
-    os << "StatusMessage {" << "\n";
-    os << "  code: " << message.getCode() << ",\n";
-    os << "  message: " << message.getMessage() << ",\n";
-    os << "  request_id: "
-       << (message.getRequestId() ? *message.getRequestId() : std::string("null")) << ",\n";
-    os << "  timestamp: " << message.getTimestamp().time_since_epoch().count() << " nanos\n";
-    os << "}";
+std::ostream &operator<<(std::ostream &out_stream, const StatusMessage &message) {
+    out_stream << "StatusMessage {" << "\n";
+    out_stream << "  id: " << message.getIdentifier() << ",\n";
+    if (message.getError()) {
+        out_stream << "  error: " << *message.getError() << ",\n";
+    } else {
+        out_stream << "  error: null,\n";
+    }
+    out_stream << "}";
 
-    return os;
+    return out_stream;
 }

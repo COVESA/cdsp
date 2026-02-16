@@ -1,27 +1,29 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include <random>
-
 #include "mock_rdfox_adapter.h"
 #include "mock_request_builder.h"
 #include "random_utils.h"
 #include "rdfox_adapter.h"
 
 class RDFoxAdapterTest : public ::testing::Test {
+    // NOLINTBEGIN(cppcoreguidelines-non-private-member-variables-in-classes)
    protected:
     const std::string DATASTORE = "ds-test";
-    const ReasonerServerData server_data_{"localhost", "8080", "auth", DATASTORE};
+    const ReasonerServerData server_data_{"localhost", "8080", "auth", "", DATASTORE};
 
+    std::shared_ptr<MockRDFoxAdapter> mock_rdfox_adapter_;
+    std::unique_ptr<MockRequestBuilder> mock_request_builder_;
+
+    // NOLINTEND(cppcoreguidelines-non-private-member-variables-in-classes)
     void SetUp() override {
         mock_rdfox_adapter_ = std::make_shared<MockRDFoxAdapter>(server_data_);
         mock_request_builder_ = std::make_unique<MockRequestBuilder>(
             server_data_.host, server_data_.port, server_data_.auth_base64);
     }
-
-    std::shared_ptr<MockRDFoxAdapter> mock_rdfox_adapter_;
-    std::unique_ptr<MockRequestBuilder> mock_request_builder_;
 };
+
+// Unit tests for RDFoxAdapter to verify success regular operations
 
 /**
  * @brief Test fixture for RDFoxAdapter to check the existence of a datastore.
@@ -35,7 +37,7 @@ TEST_F(RDFoxAdapterTest, CheckExistentDatastore) {
     const std::string expected_response = "datastore ds-test";
 
     // Create a mock RequestBuilder
-    MockRequestBuilder* mock_request_builder_ptr = mock_request_builder_.get();
+    MockRequestBuilder *mock_request_builder_ptr = mock_request_builder_.get();
 
     // Mock `createRequestBuilder` to return the mock RequestBuilder
     EXPECT_CALL(*mock_rdfox_adapter_, createRequestBuilder())
@@ -57,7 +59,8 @@ TEST_F(RDFoxAdapterTest, CheckExistentDatastore) {
 }
 
 /**
- * @brief Unit test for RDFoxAdapter to verify the initialization process creates a datastore.
+ * @brief Unit test for RDFoxAdapter to verify the initialization process
+ * creates a datastore.
  */
 TEST_F(RDFoxAdapterTest, InitializationCreatesDatastore) {
     const std::string target_create_data = "/datastores/" + DATASTORE;
@@ -66,7 +69,7 @@ TEST_F(RDFoxAdapterTest, InitializationCreatesDatastore) {
     EXPECT_CALL(*mock_rdfox_adapter_, checkDataStore()).WillOnce(testing::Return(false));
 
     // Create a mock RequestBuilder
-    MockRequestBuilder* mock_request_builder_ptr = mock_request_builder_.get();
+    MockRequestBuilder *mock_request_builder_ptr = mock_request_builder_.get();
 
     // Mock createRequestBuilder to return the shared_ptr to MockRequestBuilder
     EXPECT_CALL(*mock_rdfox_adapter_, createRequestBuilder())
@@ -87,8 +90,8 @@ TEST_F(RDFoxAdapterTest, InitializationCreatesDatastore) {
 }
 
 /**
- * @brief Unit test for RDFoxAdapter to verify the behavior during initialization
- * when a datastore already exists.
+ * @brief Unit test for RDFoxAdapter to verify the behavior during
+ * initialization when a datastore already exists.
  */
 TEST_F(RDFoxAdapterTest, InitializationWithExistingDatastore) {
     // Mock check for the existence of the datastore to return true
@@ -102,7 +105,8 @@ TEST_F(RDFoxAdapterTest, InitializationWithExistingDatastore) {
 }
 
 /**
- * @brief Unit test for RDFoxAdapter to verify the behavior when loading data into a datastore.
+ * @brief Unit test for RDFoxAdapter to verify the behavior when loading data
+ * into a datastore.
  */
 TEST_F(RDFoxAdapterTest, LoadDataSuccess) {
     const std::string target = "/datastores/" + DATASTORE + "/content";
@@ -110,7 +114,7 @@ TEST_F(RDFoxAdapterTest, LoadDataSuccess) {
     const ReasonerSyntaxType content_type = ReasonerSyntaxType::TURTLE;
 
     // Create a mock RequestBuilder
-    MockRequestBuilder* mock_request_builder_ptr = mock_request_builder_.get();
+    MockRequestBuilder *mock_request_builder_ptr = mock_request_builder_.get();
 
     // Mock createRequestBuilder to return the shared_ptr to MockRequestBuilder
     EXPECT_CALL(*mock_rdfox_adapter_, createRequestBuilder())
@@ -143,7 +147,7 @@ TEST_F(RDFoxAdapterTest, QueryDataSuccess) {
     const std::string mock_response = "<http://example.org/test>";
 
     // Create a mock RequestBuilder
-    MockRequestBuilder* mock_request_builder_ptr = mock_request_builder_.get();
+    MockRequestBuilder *mock_request_builder_ptr = mock_request_builder_.get();
 
     // Mock createRequestBuilder to return the shared_ptr to MockRequestBuilder
     EXPECT_CALL(*mock_rdfox_adapter_, createRequestBuilder())
@@ -171,7 +175,8 @@ TEST_F(RDFoxAdapterTest, QueryDataSuccess) {
 }
 
 /**
- * @brief Unit test for RDFoxAdapter to verify successful deletion of a datastore.
+ * @brief Unit test for RDFoxAdapter to verify successful deletion of a
+ * datastore.
  */
 TEST_F(RDFoxAdapterTest, DeleteDataStoreSuccess) {
     const std::string target = "/datastores/" + DATASTORE;
@@ -180,7 +185,7 @@ TEST_F(RDFoxAdapterTest, DeleteDataStoreSuccess) {
     EXPECT_CALL(*mock_rdfox_adapter_, checkDataStore()).WillOnce(testing::Return(true));
 
     // Create a mock RequestBuilder
-    MockRequestBuilder* mock_request_builder_ptr = mock_request_builder_.get();
+    MockRequestBuilder *mock_request_builder_ptr = mock_request_builder_.get();
 
     // Mock createRequestBuilder to return the shared_ptr to MockRequestBuilder
     EXPECT_CALL(*mock_rdfox_adapter_, createRequestBuilder())
@@ -199,13 +204,11 @@ TEST_F(RDFoxAdapterTest, DeleteDataStoreSuccess) {
 }
 
 /**
- * @brief Unit test for RDFoxAdapter to verify the behavior when attempting to delete a
- nonexistent
+ * @brief Unit test for RDFoxAdapter to verify the behavior when attempting to
+ delete a nonexistent
  * datastore.
  */
 TEST_F(RDFoxAdapterTest, DeleteNonexistentDataStoreSuccess) {
-    const std::string target = "/datastores/" + DATASTORE;
-
     // Mock check for the existence of the datastore to return false
     EXPECT_CALL(*mock_rdfox_adapter_, checkDataStore()).WillOnce(testing::Return(false));
 
@@ -216,7 +219,7 @@ TEST_F(RDFoxAdapterTest, DeleteNonexistentDataStoreSuccess) {
     EXPECT_TRUE(mock_rdfox_adapter_->deleteDataStore());
 }
 
-// Unit tests for RDFoxAdapter to verify cursor-related operations
+// Unit tests for RDFoxAdapter to verify success cursor-related operations
 
 /**
  * @brief Unit test for RDFoxAdapter to verify successful connection creation.
@@ -231,7 +234,7 @@ TEST_F(RDFoxAdapterTest, CreateConnectionSuccess) {
         {"RDFox-Authentication-Token", random_auth}};
 
     // Get the raw pointer to the mock_request_builder_
-    MockRequestBuilder* mock_request_builder_ptr = mock_request_builder_.get();
+    MockRequestBuilder *mock_request_builder_ptr = mock_request_builder_.get();
 
     // Mock createRequestBuilder to return the mock RequestBuilder
     EXPECT_CALL(*mock_rdfox_adapter_, createRequestBuilder())
@@ -273,7 +276,7 @@ TEST_F(RDFoxAdapterTest, CreateCursorSuccess) {
     const std::map<std::string, std::string> response_headers = {{"Location", location_header}};
 
     // Get the raw pointer to the mock_request_builder_
-    MockRequestBuilder* mock_request_builder_ptr = mock_request_builder_.get();
+    MockRequestBuilder *mock_request_builder_ptr = mock_request_builder_.get();
 
     ASSERT_TRUE(mock_request_builder_);
 
@@ -322,7 +325,7 @@ TEST_F(RDFoxAdapterTest, AdvanceCursorSuccess) {
                                "&limit=" + std::to_string(limit);
 
     // Create a mock RequestBuilder
-    MockRequestBuilder* mock_request_builder_ptr = mock_request_builder_.get();
+    MockRequestBuilder *mock_request_builder_ptr = mock_request_builder_.get();
 
     // Mock createRequestBuilder to return the mock RequestBuilder
     EXPECT_CALL(*mock_rdfox_adapter_, createRequestBuilder())
@@ -360,7 +363,7 @@ TEST_F(RDFoxAdapterTest, DeleteCursorSuccess) {
         "/datastores/" + DATASTORE + "/connections/" + connection_id + "/cursors/" + cursor_id;
 
     // Create a mock RequestBuilder
-    MockRequestBuilder* mock_request_builder_ptr = mock_request_builder_.get();
+    MockRequestBuilder *mock_request_builder_ptr = mock_request_builder_.get();
 
     // Mock createRequestBuilder to return the mock RequestBuilder
     EXPECT_CALL(*mock_rdfox_adapter_, createRequestBuilder())
@@ -381,10 +384,11 @@ TEST_F(RDFoxAdapterTest, DeleteCursorSuccess) {
     EXPECT_TRUE(success);
 }
 
-// Unit tests for RDFoxAdapter to verify error handling
+// Unit tests for RDFoxAdapter to verify error handling of generic operations
 
 /**
- * @brief Unit test for RDFoxAdapter to verify behavior when datastore creation fails.
+ * @brief Unit test for RDFoxAdapter to verify behavior when datastore creation
+ * fails.
  */
 TEST_F(RDFoxAdapterTest, FailedToCreateDataStore) {
     const std::string target_create_data = "/datastores/" + DATASTORE;
@@ -393,7 +397,7 @@ TEST_F(RDFoxAdapterTest, FailedToCreateDataStore) {
     EXPECT_CALL(*mock_rdfox_adapter_, checkDataStore()).WillOnce(testing::Return(false));
 
     // Create a mock RequestBuilder
-    MockRequestBuilder* mock_request_builder_ptr = mock_request_builder_.get();
+    MockRequestBuilder *mock_request_builder_ptr = mock_request_builder_.get();
 
     // Mock createRequestBuilder to return the shared_ptr to MockRequestBuilder
     EXPECT_CALL(*mock_rdfox_adapter_, createRequestBuilder())
@@ -422,7 +426,7 @@ TEST_F(RDFoxAdapterTest, LoadDataFailure) {
     const ReasonerSyntaxType content_type = ReasonerSyntaxType::TURTLE;
 
     // Create a mock RequestBuilder
-    MockRequestBuilder* mock_request_builder_ptr = mock_request_builder_.get();
+    MockRequestBuilder *mock_request_builder_ptr = mock_request_builder_.get();
 
     // Mock createRequestBuilder to return the shared_ptr to MockRequestBuilder
     EXPECT_CALL(*mock_rdfox_adapter_, createRequestBuilder())
@@ -447,7 +451,8 @@ TEST_F(RDFoxAdapterTest, LoadDataFailure) {
 }
 
 /**
- * @brief Unit test for RDFoxAdapter to verify behavior when a SPARQL query fails.
+ * @brief Unit test for RDFoxAdapter to verify behavior when a SPARQL query
+ * fails.
  */
 TEST_F(RDFoxAdapterTest, QueryDataFailure) {
     const std::string target = "/datastores/" + DATASTORE + "/sparql";
@@ -455,7 +460,7 @@ TEST_F(RDFoxAdapterTest, QueryDataFailure) {
     const DataQueryAcceptType accept_type = DataQueryAcceptType::TEXT_TSV;
 
     // Create a mock RequestBuilder
-    MockRequestBuilder* mock_request_builder_ptr = mock_request_builder_.get();
+    MockRequestBuilder *mock_request_builder_ptr = mock_request_builder_.get();
 
     // Mock createRequestBuilder to return the shared_ptr to MockRequestBuilder
     EXPECT_CALL(*mock_rdfox_adapter_, createRequestBuilder())
@@ -482,8 +487,8 @@ TEST_F(RDFoxAdapterTest, QueryDataFailure) {
 }
 
 /**
- * @brief Unit test for RDFoxAdapter to verify the behavior when attempting to delete a
- * datastore fails.
+ * @brief Unit test for RDFoxAdapter to verify the behavior when attempting to
+ * delete a datastore fails.
  */
 TEST_F(RDFoxAdapterTest, DeleteDataStoreFailure) {
     const std::string target = "/datastores/" + DATASTORE;
@@ -492,7 +497,7 @@ TEST_F(RDFoxAdapterTest, DeleteDataStoreFailure) {
     EXPECT_CALL(*mock_rdfox_adapter_, checkDataStore()).WillOnce(testing::Return(true));
 
     // Create a mock RequestBuilder
-    MockRequestBuilder* mock_request_builder_ptr = mock_request_builder_.get();
+    MockRequestBuilder *mock_request_builder_ptr = mock_request_builder_.get();
 
     // Mock createRequestBuilder to return the shared_ptr to MockRequestBuilder
     EXPECT_CALL(*mock_rdfox_adapter_, createRequestBuilder())
@@ -513,13 +518,14 @@ TEST_F(RDFoxAdapterTest, DeleteDataStoreFailure) {
 // Unit tests for RDFoxAdapter to verify cursor-related operations
 
 /**
- * @brief Unit test for RDFoxAdapter to verify the behavior when a connection cannot be created.
+ * @brief Unit test for RDFoxAdapter to verify the behavior when a connection
+ * cannot be created.
  */
 TEST_F(RDFoxAdapterTest, CreateConnectionFailure) {
     const std::string target = "/datastores/" + DATASTORE + "/connections";
 
     // Create a mock RequestBuilder
-    MockRequestBuilder* mock_request_builder_ptr = mock_request_builder_.get();
+    MockRequestBuilder *mock_request_builder_ptr = mock_request_builder_.get();
 
     // Mock createRequestBuilder to return the mock RequestBuilder
     EXPECT_CALL(*mock_rdfox_adapter_, createRequestBuilder())
@@ -542,13 +548,11 @@ TEST_F(RDFoxAdapterTest, CreateConnectionFailure) {
 }
 
 /**
- * @brief Unit test for RDFoxAdapter to verify the behavior when header values are missing after
- * create connection.
+ * @brief Unit test for RDFoxAdapter to verify the behavior when header values
+ * are missing after create connection.
  */
 TEST_F(RDFoxAdapterTest, CreateConnectionMissingHeader) {
     const std::string target = "/datastores/" + DATASTORE + "/connections";
-    const std::string random_connection_id =
-        std::to_string(RandomUtils::generateRandomInt(0, 1000));
     const std::string random_header_value = RandomUtils::generateRandomString(8);
     const std::pair<std::string, std::string> valid_headers = {"Location",
                                                                "RDFox-Authentication-Token"};
@@ -558,7 +562,7 @@ TEST_F(RDFoxAdapterTest, CreateConnectionMissingHeader) {
         {header, random_header_value}};  // Missing header required values
 
     // Get the raw pointer to the mock_request_builder_
-    MockRequestBuilder* mock_request_builder_ptr = mock_request_builder_.get();
+    MockRequestBuilder *mock_request_builder_ptr = mock_request_builder_.get();
 
     ASSERT_TRUE(mock_request_builder_);
 
@@ -582,8 +586,8 @@ TEST_F(RDFoxAdapterTest, CreateConnectionMissingHeader) {
 }
 
 /**
- * @brief Unit test for RDFoxAdapter to verify the behavior when the location header format is
- * incorrect after creating a connection.
+ * @brief Unit test for RDFoxAdapter to verify the behavior when the location
+ * header format is incorrect after creating a connection.
  */
 TEST_F(RDFoxAdapterTest, CreateConnectionWrongLocationHeaderFormat) {
     const std::string target = "/datastores/" + DATASTORE + "/connections";
@@ -592,7 +596,7 @@ TEST_F(RDFoxAdapterTest, CreateConnectionWrongLocationHeaderFormat) {
         {"Location", "wrong_format_without_slashes"}, {"RDFox-Authentication-Token", random_auth}};
 
     // Get the raw pointer to the mock_request_builder_
-    MockRequestBuilder* mock_request_builder_ptr = mock_request_builder_.get();
+    MockRequestBuilder *mock_request_builder_ptr = mock_request_builder_.get();
 
     // Mock createRequestBuilder to return the mock RequestBuilder
     EXPECT_CALL(*mock_rdfox_adapter_, createRequestBuilder())
@@ -614,7 +618,8 @@ TEST_F(RDFoxAdapterTest, CreateConnectionWrongLocationHeaderFormat) {
 }
 
 /**
- * @brief Unit test for RDFoxAdapter to verify the behavior when a cursor cannot be created.
+ * @brief Unit test for RDFoxAdapter to verify the behavior when a cursor cannot
+ * be created.
  */
 TEST_F(RDFoxAdapterTest, CreateCursorFailure) {
     const std::string connection_id = RandomUtils::generateRandomString(8);
@@ -624,7 +629,7 @@ TEST_F(RDFoxAdapterTest, CreateCursorFailure) {
         "/datastores/" + DATASTORE + "/connections/" + connection_id + "/cursors";
 
     // Create a mock RequestBuilder
-    MockRequestBuilder* mock_request_builder_ptr = mock_request_builder_.get();
+    MockRequestBuilder *mock_request_builder_ptr = mock_request_builder_.get();
 
     // Mock createRequestBuilder to return the mock RequestBuilder
     EXPECT_CALL(*mock_rdfox_adapter_, createRequestBuilder())
@@ -650,8 +655,8 @@ TEST_F(RDFoxAdapterTest, CreateCursorFailure) {
 }
 
 /**
- * @brief Unit test for RDFoxAdapter to verify the behavior when location header is missing after
- * cursor creation.
+ * @brief Unit test for RDFoxAdapter to verify the behavior when location header
+ * is missing after cursor creation.
  */
 TEST_F(RDFoxAdapterTest, CreateCursorMissingLocationHeader) {
     const std::string connection_id = RandomUtils::generateRandomString(8);
@@ -664,7 +669,7 @@ TEST_F(RDFoxAdapterTest, CreateCursorMissingLocationHeader) {
     std::map<std::string, std::string> response_headers = {};
 
     // Get the raw pointer to the mock_request_builder_
-    MockRequestBuilder* mock_request_builder_ptr = mock_request_builder_.get();
+    MockRequestBuilder *mock_request_builder_ptr = mock_request_builder_.get();
 
     ASSERT_TRUE(mock_request_builder_);
 
@@ -693,8 +698,8 @@ TEST_F(RDFoxAdapterTest, CreateCursorMissingLocationHeader) {
 }
 
 /**
- * @brief Unit test for RDFoxAdapter to verify the behavior when the location header format is
- * incorrect after creating a cursor.
+ * @brief Unit test for RDFoxAdapter to verify the behavior when the location
+ * header format is incorrect after creating a cursor.
  */
 TEST_F(RDFoxAdapterTest, CreateCursorWrongLocationHeaderFormat) {
     const std::string connection_id = RandomUtils::generateRandomString(8);
@@ -705,7 +710,7 @@ TEST_F(RDFoxAdapterTest, CreateCursorWrongLocationHeaderFormat) {
     std::map<std::string, std::string> response_headers = {{"Location", "wrong_format"}};
 
     // Get the raw pointer to the mock_request_builder_
-    MockRequestBuilder* mock_request_builder_ptr = mock_request_builder_.get();
+    MockRequestBuilder *mock_request_builder_ptr = mock_request_builder_.get();
 
     ASSERT_TRUE(mock_request_builder_);
 
@@ -734,7 +739,8 @@ TEST_F(RDFoxAdapterTest, CreateCursorWrongLocationHeaderFormat) {
 }
 
 /**
- * @brief Unit test for RDFoxAdapter to verify the behavior when cursor advance fails.
+ * @brief Unit test for RDFoxAdapter to verify the behavior when cursor advance
+ * fails.
  */
 TEST_F(RDFoxAdapterTest, AdvanceCursorFailure) {
     const std::string connection_id = RandomUtils::generateRandomString(8);
@@ -751,7 +757,7 @@ TEST_F(RDFoxAdapterTest, AdvanceCursorFailure) {
                                "&limit=" + std::to_string(limit);
 
     // Create a mock RequestBuilder
-    MockRequestBuilder* mock_request_builder_ptr = mock_request_builder_.get();
+    MockRequestBuilder *mock_request_builder_ptr = mock_request_builder_.get();
 
     // Mock createRequestBuilder to return the mock RequestBuilder
     EXPECT_CALL(*mock_rdfox_adapter_, createRequestBuilder())
@@ -777,8 +783,8 @@ TEST_F(RDFoxAdapterTest, AdvanceCursorFailure) {
 }
 
 /**
- * @brief Unit test for RDFoxAdapter to verify the behavior when cursor advance fails due to
- * invalid operation value.
+ * @brief Unit test for RDFoxAdapter to verify the behavior when cursor advance
+ * fails due to invalid operation value.
  */
 TEST_F(RDFoxAdapterTest, AdvanceCursorInvalidOperation) {
     const std::string connection_id = RandomUtils::generateRandomString(8);
@@ -786,9 +792,6 @@ TEST_F(RDFoxAdapterTest, AdvanceCursorInvalidOperation) {
     const std::string cursor_id = RandomUtils::generateRandomString(8);
     const DataQueryAcceptType accept_type = DataQueryAcceptType::SPARQL_JSON;
     const std::string operation = "invalid_operation";
-
-    const std::string target = "/datastores/" + DATASTORE + "/connections/" + connection_id +
-                               "/cursors/" + cursor_id + "?operation=" + operation;
 
     // Ensure that any request to create the datastore is not made.
     EXPECT_CALL(*mock_rdfox_adapter_, createRequestBuilder()).Times(0);
@@ -801,7 +804,8 @@ TEST_F(RDFoxAdapterTest, AdvanceCursorInvalidOperation) {
 }
 
 /**
- * @brief Unit test for RDFoxAdapter to verify the behavior when cursor deletion fails.
+ * @brief Unit test for RDFoxAdapter to verify the behavior when cursor deletion
+ * fails.
  */
 TEST_F(RDFoxAdapterTest, DeleteCursorFailure) {
     const std::string connection_id = RandomUtils::generateRandomString(8);
@@ -810,7 +814,7 @@ TEST_F(RDFoxAdapterTest, DeleteCursorFailure) {
         "/datastores/" + DATASTORE + "/connections/" + connection_id + "/cursors/" + cursor_id;
 
     // Create a mock RequestBuilder
-    MockRequestBuilder* mock_request_builder_ptr = mock_request_builder_.get();
+    MockRequestBuilder *mock_request_builder_ptr = mock_request_builder_.get();
 
     // Mock createRequestBuilder to return the mock RequestBuilder
     EXPECT_CALL(*mock_rdfox_adapter_, createRequestBuilder())

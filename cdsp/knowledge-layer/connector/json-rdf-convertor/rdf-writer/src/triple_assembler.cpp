@@ -1,6 +1,5 @@
 #include "triple_assembler.h"
 
-#include <fstream>
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include <sstream>
@@ -68,7 +67,7 @@ void TripleAssembler::transformMessageToTriple(const DataMessage& message) {
     std::vector<Node> nodes = message.getNodes();
 
     // Add the identifier to the triples that will be generated
-    triple_writer_.initiateTriple(header.getId());
+    triple_writer_.initiateTriple(header.getInstance());
 
     if (nodes.empty()) {
         std::cout << "No nodes found in the message\n\n";

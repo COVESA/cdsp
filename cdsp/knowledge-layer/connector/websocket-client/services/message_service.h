@@ -1,7 +1,6 @@
 #ifndef MESSAGE_UTILS_H
 #define MESSAGE_UTILS_H
 
-#include <iostream>
 #include <nlohmann/json.hpp>
 #include <optional>
 #include <string>
@@ -12,26 +11,42 @@
 #include "data_message_dto.h"
 #include "data_types.h"
 #include "get_message.h"
-#include "model_config.h"
+#include "request_registry.h"
 #include "set_message.h"
 #include "status_message_dto.h"
 #include "subscribe_message.h"
+#include "unsubscribe_message.h"
 
 using json = nlohmann::json;
 
 class MessageService {
    public:
-    MessageService(const std::map<SchemaType, std::vector<std::string>>& system_data_point);
+    static void createAndQueueSubscribeMessage(const std::string &object_id,
+                                               const SchemaType &schema_type,
+                                               const std::vector<std::string> &data_point_list,
+                                               RequestRegistry &registry,
+                                               std::vector<json> &reply_messages_queue);
 
-    void addMessageToQueue(const std::variant<GetMessage, SubscribeMessage, SetMessage>& message,
-                           std::vector<json>& reply_messages_queue);
+    static void createAndQueueUnsubscribeMessage(const std::string &object_id,
+                                                 const SchemaType &schema_type,
+                                                 const std::vector<std::string> &data_point_list,
+                                                 RequestRegistry &registry,
+                                                 std::vector<json> &reply_messages_queue);
 
-    std::optional<DataMessage> getDataMessageOrLogStatus(const std::string& message);
+    static void createAndQueueSetMessage(const std::map<SchemaType, std::string> &object_id,
+                                         const json &json_body, RequestRegistry &registry,
+                                         std::vector<json> &reply_messages_queue,
+                                         const std::string &origin_system_name);
+
+    static std::optional<DataMessage> getDataOrProcessStatusFromMessage(const std::string &message,
+                                                                        RequestRegistry &registry);
 
    private:
-    std::map<SchemaType, std::vector<std::string>> system_data_point_;
+    static void addMessageToQueue(
+        const std::variant<GetMessage, SetMessage, SubscribeMessage, UnsubscribeMessage> &message,
+        RequestRegistry &registry, std::vector<json> &reply_messages_queue);
 
-    std::variant<DataMessageDTO, StatusMessageDTO> displayAndParseMessage(
-        const std::string& message);
+    static std::variant<DataMessageDTO, StatusMessageDTO> displayAndParseMessage(
+        const std::string &message);
 };
 #endif  // MESSAGE_UTILS_H

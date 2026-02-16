@@ -4,10 +4,13 @@
 #include "random_utils.h"
 
 class JSONWriterIntegrationTest : public ::testing::Test {
+    // NOLINTBEGIN(cppcoreguidelines-non-private-member-variables-in-classes)
    protected:
     std::string data_point_1_;
     std::string data_point_2_;
     std::string data_point_3_;
+    static constexpr int MAX_RANDOM_BIG = 100;
+    static constexpr int MAX_RANDOM_SMALL = 10;
     int value_dp_1_row_1_;
     float value_dp_1_row_2_;
     std::string value_dp_2_row_1_;
@@ -15,6 +18,7 @@ class JSONWriterIntegrationTest : public ::testing::Test {
     bool value_dp_3_row_1_;
     double value_dp_3_row_2_;
     nlohmann::json expected_json_;
+    // NOLINTEND(cppcoreguidelines-non-private-member-variables-in-classes)
 
     void SetUp() override {
         const std::string some_string_1 = RandomUtils::generateRandomString(4);
@@ -26,12 +30,12 @@ class JSONWriterIntegrationTest : public ::testing::Test {
         data_point_1_ = some_string_1 + "_" + some_string_2 + "_" + some_string_3;
         data_point_2_ = some_string_1 + "_" + some_string_4;
         data_point_3_ = some_string_5 + "_" + some_string_6;
-        value_dp_1_row_1_ = RandomUtils::generateRandomInt(0, 100);
-        value_dp_1_row_2_ = RandomUtils::generateRandomFloat(0, 10);
-        value_dp_2_row_1_ = RandomUtils::generateRandomString(10);
+        value_dp_1_row_1_ = RandomUtils::generateRandomInt(0, MAX_RANDOM_BIG);
+        value_dp_1_row_2_ = RandomUtils::generateRandomFloat(0, MAX_RANDOM_SMALL);
+        value_dp_2_row_1_ = RandomUtils::generateRandomString(MAX_RANDOM_SMALL);
         value_dp_2_row_2_ = "";
-        value_dp_3_row_1_ = RandomUtils::generateRandomInt(0, 1);
-        value_dp_3_row_2_ = RandomUtils::generateRandomDouble(0, 10);
+        value_dp_3_row_1_ = (RandomUtils::generateRandomInt(0, 1) != 0);
+        value_dp_3_row_2_ = RandomUtils::generateRandomDouble(0, MAX_RANDOM_SMALL);
 
         expected_json_ =
             nlohmann::json::array({{{some_string_1,
@@ -45,19 +49,19 @@ class JSONWriterIntegrationTest : public ::testing::Test {
     }
 
     // Helper function to validate the JSON output
-    void validateJsonOutput(const nlohmann::json& result_json) {
+    void validateJsonOutput(const nlohmann::json &result_json) {
         ASSERT_EQ(result_json.size(), expected_json_.size());
 
         for (size_t i = 0; i < expected_json_.size(); ++i) {
-            const auto& expected_group = expected_json_[i];
-            const auto& actual_group = result_json[i];
+            const auto &expected_group = expected_json_[i];
+            const auto &actual_group = result_json[i];
             ASSERT_EQ(expected_group.size(), actual_group.size());
 
-            for (const auto& [expected_schema, expected_data_points] : expected_group.items()) {
+            for (const auto &[expected_schema, expected_data_points] : expected_group.items()) {
                 ASSERT_TRUE(actual_group.contains(expected_schema))
                     << "Missing domain: " << expected_schema;
 
-                const auto& actual_schema_section = actual_group[expected_schema];
+                const auto &actual_schema_section = actual_group[expected_schema];
 
                 // Detect AI Reasoner stringified format
                 if (actual_schema_section.contains("AI.Reasoner.InferenceResults")) {
@@ -75,24 +79,35 @@ class JSONWriterIntegrationTest : public ::testing::Test {
         }
     }
 
-    void validateJsonDataContent(const nlohmann::json& actual_data_points,
-                                 const nlohmann::json& expected_data_points,
-                                 const std::string& expected_schema) {
+    static void validateJsonDataContent(const nlohmann::json &actual_data_points,
+                                        const nlohmann::json &expected_data_points,
+                                        const std::string &expected_schema) {
         ASSERT_EQ(expected_data_points.size(), actual_data_points.size());
 
-        for (const auto& [expected_data_point, expected_value] : expected_data_points.items()) {
-            ASSERT_TRUE(actual_data_points.contains(expected_data_point))
-                << "Missing key: " << expected_schema << "." << expected_data_point;
+        for (const auto &[expected_data_point, expected_value] : expected_data_points.items()) {
+            validateJsonKeyExists(actual_data_points, expected_data_point, expected_schema);
+            validateJsonValue(actual_data_points[expected_data_point], expected_value,
+                              expected_schema, expected_data_point);
+        }
+    }
 
-            const auto& actual_value = actual_data_points[expected_data_point];
+    static void validateJsonKeyExists(const nlohmann::json &actual_data_points,
+                                      const std::string &expected_data_point,
+                                      const std::string &expected_schema) {
+        ASSERT_TRUE(actual_data_points.contains(expected_data_point))
+            << "Missing key: " << expected_schema << "." << expected_data_point;
+    }
 
-            if (expected_value.is_number_float() && actual_value.is_number_float()) {
-                ASSERT_NEAR(actual_value.get<double>(), expected_value.get<double>(), 1e-6)
-                    << "Mismatch in key: " << expected_schema << "." << expected_data_point;
-            } else {
-                ASSERT_EQ(actual_value, expected_value)
-                    << "Mismatch in key: " << expected_schema << "." << expected_data_point;
-            }
+    static void validateJsonValue(const nlohmann::json &actual_value,
+                                  const nlohmann::json &expected_value,
+                                  const std::string &expected_schema,
+                                  const std::string &expected_data_point) {
+        if (expected_value.is_number_float() && actual_value.is_number_float()) {
+            ASSERT_NEAR(actual_value.get<double>(), expected_value.get<double>(), 1e-6)
+                << "Mismatch in key: " << expected_schema << "." << expected_data_point;
+        } else {
+            ASSERT_EQ(actual_value, expected_value)
+                << "Mismatch in key: " << expected_schema << "." << expected_data_point;
         }
     }
 };
@@ -113,14 +128,14 @@ TEST_F(JSONWriterIntegrationTest, ConvertSparqlCsvToJson) {
 
     bool is_ai_reasoner_inference_results = RandomUtils::generateRandomBool();
     std::cout << "Inference results: " << (is_ai_reasoner_inference_results ? "true" : "false")
-              << std::endl;
+              << "\n";
 
-    std::cout << "Input CSV:\n" << csv_result << std::endl;
+    std::cout << "Input CSV:\n" << csv_result << "\n";
     nlohmann::json result_json =
         JSONWriter::writeToJson(csv_result, DataQueryAcceptType::TEXT_CSV,
                                 is_ai_reasoner_inference_results, TEST_OUTPUT_DIR);
 
-    std::cout << "Result JSON:\n" << result_json.dump(4) << std::endl;
+    std::cout << "Result JSON:\n" << result_json.dump(4) << "\n";
     validateJsonOutput(result_json);
 };
 
@@ -140,15 +155,15 @@ TEST_F(JSONWriterIntegrationTest, ConvertSparqlTsvToJson) {
 
     bool is_ai_reasoner_inference_results = RandomUtils::generateRandomBool();
     std::cout << "Inference results: " << (is_ai_reasoner_inference_results ? "true" : "false")
-              << std::endl;
+              << "\n";
 
-    std::cout << "Input TSV:\n" << tsv_result << std::endl;
+    std::cout << "Input TSV:\n" << tsv_result << "\n";
 
     nlohmann::json result_json =
         JSONWriter::writeToJson(tsv_result, DataQueryAcceptType::TEXT_TSV,
                                 is_ai_reasoner_inference_results, TEST_OUTPUT_DIR);
 
-    std::cout << "Result JSON:\n" << result_json.dump(4) << std::endl;
+    std::cout << "Result JSON:\n" << result_json.dump(4) << "\n";
     validateJsonOutput(result_json);
 };
 
@@ -164,7 +179,8 @@ TEST_F(JSONWriterIntegrationTest, ConvertSparqlJsonToJson) {
         R"({
         "head": {
             "vars": [" )" +
-        data_point_1_ + R"(", ")" + data_point_2_ + R"(", ")" + data_point_3_ + R"("]
+        data_point_1_ + R"(", ")" + data_point_2_ + R"(", ")" + data_point_3_ +
+        R"("]
         },
         "results": {
             "bindings": [
@@ -173,7 +189,8 @@ TEST_F(JSONWriterIntegrationTest, ConvertSparqlJsonToJson) {
         data_point_1_ + R"(": { "type": "literal", "value": ")" +
         std::to_string(value_dp_1_row_1_) + R"(" },
                     ")" +
-        data_point_2_ + R"(": { "type": "uri", "value": ")" + value_dp_2_row_1_ + R"(" },
+        data_point_2_ + R"(": { "type": "uri", "value": ")" + value_dp_2_row_1_ +
+        R"(" },
                     ")" +
         data_point_3_ + R"(": { "type": "literal", "value": ")" +
         (value_dp_3_row_1_ ? "true" : "false") + R"(" }
@@ -193,15 +210,15 @@ TEST_F(JSONWriterIntegrationTest, ConvertSparqlJsonToJson) {
     })";
     bool is_ai_reasoner_inference_results = RandomUtils::generateRandomBool();
     std::cout << "Inference results: " << (is_ai_reasoner_inference_results ? "true" : "false")
-              << std::endl;
+              << "\n";
 
-    std::cout << "Input SPARQL JSON:\n" << sparql_json_result << std::endl;
+    std::cout << "Input SPARQL JSON:\n" << sparql_json_result << "\n";
 
     nlohmann::json result_json =
         JSONWriter::writeToJson(sparql_json_result, DataQueryAcceptType::SPARQL_JSON,
                                 is_ai_reasoner_inference_results, TEST_OUTPUT_DIR);
 
-    std::cout << "Result JSON:\n" << result_json.dump(4) << std::endl;
+    std::cout << "Result JSON:\n" << result_json.dump(4) << "\n";
     validateJsonOutput(result_json);
 }
 
@@ -277,14 +294,14 @@ TEST_F(JSONWriterIntegrationTest, ConvertSparqXmlToJson) {
                 </results>
             </sparql>)";
     bool is_ai_reasoner_inference_results = RandomUtils::generateRandomBool();
-    std::cout << "Input SPARQL XML:\n" << xml_response_ << std::endl;
+    std::cout << "Input SPARQL XML:\n" << xml_response_ << "\n";
     std::cout << "Inference results: " << (is_ai_reasoner_inference_results ? "true" : "false")
-              << std::endl;
+              << "\n";
 
     nlohmann::json result_json =
         JSONWriter::writeToJson(xml_response_, DataQueryAcceptType::SPARQL_XML,
                                 is_ai_reasoner_inference_results, TEST_OUTPUT_DIR);
 
-    std::cout << "Result JSON:\n" << result_json.dump(4) << std::endl;
+    std::cout << "Result JSON:\n" << result_json.dump(4) << "\n";
     validateJsonOutput(result_json);
 }

@@ -1,20 +1,19 @@
 #ifndef DATA_HEADER_H
 #define DATA_HEADER_H
 
-#include <optional>
 #include <string>
 
 #include "data_types.h"
 
 class MessageHeader {
    public:
-    MessageHeader(const std::string& id, const SchemaType& schema_defintion);
+    MessageHeader(const std::string &instance, const SchemaType &schema_type);
 
-    std::string getId() const;
-    SchemaType getSchemaType() const;
+    [[nodiscard]] std::string getInstance() const;
+    [[nodiscard]] SchemaType getSchemaType() const;
 
    private:
-    std::string id_;
+    std::string instance_;
     SchemaType schema_type_;
 };
 

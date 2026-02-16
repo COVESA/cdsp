@@ -20,6 +20,7 @@ COPY connector connector
 COPY symbolic-reasoner symbolic-reasoner
 COPY third_party third_party
 COPY common-test-resources common-test-resources
+COPY common common
 COPY CMakeLists.txt .
 
 WORKDIR /src/build

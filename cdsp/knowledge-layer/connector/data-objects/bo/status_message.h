@@ -1,26 +1,22 @@
 #ifndef STATUS_MESSAGE_H
 #define STATUS_MESSAGE_H
 
-#include <chrono>
 #include <optional>
 #include <ostream>
-#include <string>
+
+#include "error.h"
 
 class StatusMessage {
    public:
-    StatusMessage(int code, const std::string& message, const std::optional<std::string>& requestId,
-                  const std::chrono::system_clock::time_point& timestamp);
+    StatusMessage(int identifier, std::optional<Error> error);
 
-    int getCode() const;
-    std::string getMessage() const;
-    std::optional<std::string> getRequestId() const;
-    std::chrono::system_clock::time_point getTimestamp() const;
+    [[nodiscard]] int getIdentifier() const;
+    [[nodiscard]] std::optional<Error> getError() const;
     friend std::ostream& operator<<(std::ostream& os, const StatusMessage& message);
 
    private:
-    int code_;
-    std::string message_;
-    std::optional<std::string> request_id_;
+    int id_;
+    std::optional<Error> error_;
     std::chrono::system_clock::time_point timestamp_;
 };
 

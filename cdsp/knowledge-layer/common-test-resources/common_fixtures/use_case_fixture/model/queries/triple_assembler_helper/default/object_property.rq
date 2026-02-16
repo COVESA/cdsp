@@ -1,0 +1,14 @@
+prefix sh: <http://www.w3.org/ns/shacl#>
+
+SELECT ?class1 ?object_property ?class2
+WHERE {
+   ?S sh:name "%A%";
+      sh:targetClass ?class1;
+      sh:property [ sh:name "%B%";
+                    sh:path ?object_property;
+                    sh:class ?class2;
+                    sh:nodeKind sh:IRI].
+
+ }
+
+

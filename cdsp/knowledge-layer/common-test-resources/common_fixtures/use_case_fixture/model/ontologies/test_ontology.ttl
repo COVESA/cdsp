@@ -1,0 +1,25 @@
+@prefix bmw: <http://groupontology.bmwgroup.net/bmw-ont#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sosa: <http://www.w3.org/ns/sosa/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+ 
+# Test the rule
+# syntax issue
+# semantic issue
+ 
+bmw:SlidingWindow1Min a bmw:1minSlideWindow ;
+    bmw:hasWindowSize "PT1M"^^xsd:duration ;
+    rdfs:label "60".
+    
+ 
+bmw:SlidingWindow3Sec a bmw:3SecSlideWindow ;
+    bmw:hasWindowSize "PT3S"^^xsd:duration;
+    rdfs:label "3".
+ 
+bmw:SlidingWindow6Sec a bmw:6SecSlideWindow ;
+    bmw:hasWindowSize "PT6S"^^xsd:duration;
+    rdfs:label "6".
+ 
+bmw:SlidingWindow5Min a bmw:5MinSlideWindow ;
+    bmw:hasWindowSize "PT5M"^^xsd:duration ;
+    rdfs:label "300".

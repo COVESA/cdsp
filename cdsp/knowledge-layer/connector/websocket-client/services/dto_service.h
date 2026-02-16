@@ -5,7 +5,6 @@
 
 #include "data_message_dto.h"
 #include "model_config_dto.h"
-#include "set_message_dto.h"
 #include "status_message_dto.h"
 
 class DtoService {
@@ -16,6 +15,9 @@ class DtoService {
 
    private:
     static MetadataDTO parseMetadataJsonToDto(const nlohmann::json& metadata_json);
+
+    static ReasonerSettingsDTO parseReasonerSettingsJsonToDto(
+        const nlohmann::json& reasoner_settings_json);
 };
 
 #endif  // DTO_SERVICE_H
