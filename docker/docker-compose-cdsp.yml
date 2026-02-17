@@ -29,8 +29,8 @@ services:
     volumes:
       - ./iotdb-data:/iotdb/data
       - ./iotdb-logs:/iotdb/logs
-    healthcheck: 
-      test: [ "CMD", "./start-cli.sh", "-h", "iotdb-service", "-p", "6667", "-u", "root", "-pw", "root", "-e", "SHOW DATABASES;" ]
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://iotdb-service:18080/ping" ]
       interval: 10s
       timeout: 10s
       retries: 5
