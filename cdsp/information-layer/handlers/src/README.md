@@ -1,10 +1,10 @@
 # Database handlers
 
-This project already contains handlers configured to be used with RealmDB and IoTDB.
+This project contains one handler configured to be used with IoTDB.
 
 ## Adding a New Database Handler
 
-This project uses a handler interface to dynamically integrate new database backends such as RealmDB or IoTDB. Each handler must implement the core functionality to handle WebSocket messages (get, set, subscribe, unsubscribe).
+This project uses a handler interface to dynamically integrate new database backends such as IoTDB, RealmDB and other DB solutions. Each handler must implement necessary methods and core functionalities to handle WebSocket messages (get, set, subscribe, unsubscribe).
 
 ### How to Add a New Database Handler
 
@@ -13,23 +13,30 @@ This project uses a handler interface to dynamically integrate new database back
 2. **Implement the handler methods**: 
     You must implement the following methods in your new handler:
    - `authenticateAndConnect()`: Establish a connection with the database and authenticate.
-   - `get(message, ws)`: Retrieve data from the database based on the incoming WebSocket message.
+   - `getKnownDatapointsByPrefix(prefix)`: Return a list of all known data point names that begin with the specified prefix.
+   - `getDataPointsFromDB(dataPoints, vin)`: Return the dataPoints from DB based on the provided list of dataPoints and VIN.
    - `set(message, ws)`: Write data to the database.
    - `subscribe(message, ws)`: Subscribe to changes in the database, and automatically send updates over WebSocket.
    - `unsubscribe(message, ws)`: Unsubscribe from database updates.
+   - `unsubscribe_client(ws)`: Unsubscribing the client itself on a closed connection.
 
 3. **Example Handler Implementation**:
    Here’s a basic template you can follow:
 ```js
 const Handler = require('../../handler');
 
-class MyDBHandler extends Handler {
+export class MyDBHandler extends Handler {
+
 async authenticateAndConnect() {
     // Connect to your database here
 }
 
-async get(message, ws) {
-    // Implement the logic to read data from the database
+getKnownDatapointsByPrefix(datapointPrefix) {
+    // Return a list of all known data point names that begin with the specified prefix
+}
+
+async getDataPointsFromDB(dataPoints, vin) {
+    // Return the dataPoints from DB based on the provided list of dataPoints and VIN
 }
 
 async set(message, ws) {
@@ -44,12 +51,10 @@ async unsubscribe(message, ws) {
     // Implement the logic to unsubscribe from updates
 }
 }
-
-module.exports = MyDBHandler;
 ```
 
 4. **Create configuration files**: 
-    Create the the configuration files into `./mydb/config` to include parameters for your new database (e.g., database names, data schemas, etc.).
+    Create the configuration files into `./mydb/config` to include parameters for your new database (e.g., database names, data schemas, etc.).
 > [!IMPORTANT]     
 > Ensure to create the necessary files to support the necessary data points that will be store in the DB and required for your clients. See [how](../config/README.md).
 
@@ -81,9 +86,6 @@ In order to work with your custom database handler, it is required to create it 
 
 ```ts
 switch (handlerType) {
-  case "realmdb":
-    handler = new RealmDBHandler();
-    break;
   case "iotdb":
     handler = new IoTDBHandler();
     break;
@@ -101,7 +103,6 @@ Run the WebSocket server, and connect with your handler by sending WebSocket mes
 ### Existing Handlers
 
 You can check the following examples to understand how to structure your new handler:
-- **RealmDB Handler**: [RealmHandler](./realmdb/src/RealmDBHandler.ts) provides an example of how to interact with RealmDB.
-- **IoTDB Handler**: A similar implementation can be followed for [IoTDBHandler](./iotdb/src/IoTDBHandler.ts).
+- **IoTDB Handler**: provides an example implementation with IotDB. [IoTDBHandler](./iotdb/src/IoTDBHandler.ts).
 
 For additional logging, you can utilize the `logMessage` function from [logger.ts](../../utils/logger.ts).

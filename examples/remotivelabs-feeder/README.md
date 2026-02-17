@@ -4,7 +4,7 @@ This a simple example of using the [RemotiveLabs virtual signal platform](https:
 It is implemented as a bridge between an RemotiveLabs Broker as the data source and the IoTDB server or the Information Layer Server. You specify the signals you wish to subscribe too. The bridge waits for the subscribed signals to be sent from the
 RemotiveLabs broker, formats them and then writes them 
 * to IoTDB using the specified IoTDB path or
-* the websocket API on the Information Layer Server. Depending on the server configuration the data is written to IoTDB or RealmDB.
+* the websocket API on the Information Layer Server. Depending on the server configuration the data is written to IoTDB or other database solution.
 
 For IoTDB the code assumes the timeseries into which the data will be written already exists in IoTDB. See the setup section for an example.
 
@@ -23,8 +23,6 @@ CREATE DATABASE root.test2
 ```
 CREATE ALIGNED TIMESERIES root.test2.dev1(`Vehicle.Speed` FLOAT, `Vehicle.Chassis.Accelerator.PedalPosition` INT32, `Vehicle.Powertrain.Transmission.CurrentGear` INT32, `Vehicle.Powertrain.TractionBattery.NominalVoltage` INT32, `Vehicle.Powertrain.TractionBattery.StateOfCharge.CurrentEnergy` FLOAT, `Vehicle.Chassis.SteeringWheel.Angle` INT32, `Vehicle.CurrentLocation.Longitude` DOUBLE, `Vehicle.CurrentLocation.Latitude` DOUBLE, `Vehicle.CurrentLocation.HorizontalAccuracy` DOUBLE)
 ```
-### RealmDB schema
-Is to be clarified
 
 ### Bridge install
 The bridge requires Python3. A list of required packages is provided that can be installed with the pip package manager.

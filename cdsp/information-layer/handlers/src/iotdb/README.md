@@ -37,8 +37,8 @@ Create (if it does not exist) `/docker/.env` and add the following environment v
     IOTDB_USER="your-iotdb-user" # Default "root"
     IOTDB_PASSWORD="your-iotdb-password" # Default "root"
     IOTDB_TIMEZONE="your-time-zone" # Default your local configured time zone
-    FETCH_SIZE=10000 #number of rows that will be fetched from the database at a time when executing a query, default 10000
-    IOTDB_POLL_INTERVAL_LEN_IN_SEC=5 #number of seconds of interval to poll for changes on the IoTDB
+    IOTDB_FETCH_SIZE=10000 #number of rows that will be fetched from the database at a time when executing a query, default 10000
+    IOTDB_POLL_INTERVAL_LEN_IN_SEC=5 #number of seconds of interval to poll for changes on the IoTDB, default "0.2"
 ```
 
 > [!WARNING] 

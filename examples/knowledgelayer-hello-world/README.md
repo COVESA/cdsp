@@ -2,7 +2,7 @@
 
 ## Why?
 
-This repository demonstrates a simple "Hello World" application of the Knowledge Layer, whose joint development was [proposed](https://wiki.covesa.global/pages/viewpage.action?pageId=71074417) in the COVESA Data Architecture working group. Given the generic nature of the underlying architecture, this use case can serve as a starting point for implementing more complex scenarios across various domains. One major advantage is that the use case is built on logical [playground components](../../cdsp/README.md). These components can often be swapped out (based on availability of alternatives) without significantly impacting other components (sometimes even not at all, e.g., whether using [RealmDB](../../cdsp/information-layer/handlers/src/realmdb/README.md) or [IoTDB](../../cdsp/information-layer/handlers/src/iotdb/README.md), it does not affect the Knowledge Layer).
+This repository demonstrates a simple "Hello World" application of the Knowledge Layer, whose joint development was [proposed](https://wiki.covesa.global/pages/viewpage.action?pageId=71074417) in the COVESA Data Architecture working group. Given the generic nature of the underlying architecture, this use case can serve as a starting point for implementing more complex scenarios across various domains. One major advantage is that the use case is built on logical [playground components](../../cdsp/README.md). These components can often be swapped out (based on availability of alternatives) without significantly impacting other components (sometimes even not at all, e.g., whether using [IoTDB](../../cdsp/information-layer/handlers/src/iotdb/README.md) or other database component, it does not affect the Knowledge Layer).
 
 ### Key Aspects Illustrated:
 - **Standardized Data Models:** Using models like [VSS](https://github.com/COVESA/vehicle_signal_specification/) and associated tools enables scalable, generic transformation of data into other formats, like graph data formats.
@@ -28,7 +28,7 @@ Live VSS data from the current drive made accessible in the [Information Layer S
 #### Logical Components and Implementation Decisions:
 - **Data Model:** [VSS](https://github.com/COVESA/vehicle_signal_specification/) - Describes vehicle data in a standardized format
 - **Simulator:** [Remotive Labs](../../examples/remotivelabs-feeder/README.md) - Provides raw data for a test drive
-- **DB Handler:** [RealmDB](../../cdsp/information-layer/handlers/src/realmdb/README.md), [IoTDB](../../cdsp/information-layer/handlers/src/iotdb/README.md) - Abstracts data store details
+- **DB Handler:** [IoTDB](../../cdsp/information-layer/handlers/src/iotdb/README.md) - Abstracts data store details
 - **DB Router:** [WebSocket Server](../../cdsp/information-layer/router/src/websocket-server.ts) - Provides read,
 write and subscribe capabilities to VSS data via a websocket server
 - **Connector:** [Knowledge Layer Connector](../../cdsp/knowledge-layer/connector/README.md) - Connects Knowledge Layer to Information Layer via websocket client and manages data tasks within Knowledge Layer
