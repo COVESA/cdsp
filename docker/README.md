@@ -23,6 +23,14 @@ Comprehensive Docker CE [installation instructions](https://docs.docker.com/engi
 
 If you have a recent version of Docker installed but without the compose plugin, please add the plugin or upgrade.
 
+### Prepare Environment Variables for Docker
+To use the provided [docker-compose-cdsp.yml](docker-compose-cdsp.yml) there must be a `.env` file in the same folder. 
+Create it and add a placeholder for the RDFox license file for now, like this:
+```
+RDFOX_LIC_PATH="."  # set path to RDFox.lic file
+```
+
+
 ## VISSR docker image build setup
 The [VISSR VISS Data Server](https://github.com/COVESA/vissr) has no pre-built image in a docker image repository and must therefore be built. Whilst the upstream documentation for VISSR is considered the reference documentation for build environment setup this section collects information that we have needed for a successful build of master branch commit 27d6de0.
 
@@ -104,28 +112,22 @@ $ sudo docker compose -f docker-compose-cdsp.yml up -d iotdb-service
 ```
 
 ## Websocket-Server (CDSP - information layer) docker image build setup
-This guide provides instructions for deploying the Information Layer Server using Docker Compose. You can choose to deploy the server with either RealmDB or IoTDB as the backend service.
+This guide provides instructions for deploying the Information Layer Server using Docker Compose. You can deploy the server only with IoTDB as the backend service for now.
 
 ### Prerequisites
 
-- Correct configuration of the `.env` file based on the database you are using (RealmDB or IoTDB)
+- Create a `.env` file in this folder (docker/.env) if it is missing and add for now the variable `RDFOX_LIC_PATH="."  # set path to RDFox.lic file`. this environment variable needs to exist for the [docker compose file](docker-compose-cdsp.yml) to work in general. 
+How to set the correct value of this variable is described later at [Knowledge Layer Prerequisites](#prerequisites-1)
+- Not only information layer service but also others services will expect the `.env` file to exist and some environment variables to be set. More details can be found in other service readme sections.
 
 ### Configuring the `.env` File
 
-The `.env` file contains environment variables that need to be configured depending on the database you are using. Detailed instructions on how to configure the `.env` file can be found in the [database handlers README](../cdsp/information-layer/handlers/README.md).
+The `.env` file contains environment variables that need to be configured depending on the database you are using. Detailed instructions on how to configure the `.env` file for the included database can be found in the [IotDB handlers README](../cdsp/information-layer/handlers/src/iotdb/README.md).
+A custom database handler can be implemented following [database handlers README](../cdsp/information-layer/handlers/src/README.md).
 
 > [!IMPORTANT] 
 > Before proceeding with the deployment, ensure that the `.env` file is correctly configured for the database you plan to use.
 
-### Using RealmDB
-
-To deploy the information-layer with RealmDB, use the following command:
-
-```shell
-$ sudo docker compose -f docker-compose-cdsp.yml up -d information-layer
-# [+] Running 1/1                                                                                                                                                                                                                                          
-# ✔ Container information-layer      Started     0.4s  
-```
 ### Using IoTDB
 
 When deploying with IoTDB, ensure that the iotdb-service is up and running before starting the Information Layer Server.
@@ -140,16 +142,16 @@ To start both the iotdb-service and information-layer, use the following command
 ```shell
 $ sudo docker compose -f docker-compose-cdsp.yml up -d iotdb-service
 # [+] Running 1/1
-#  ✔ Container iotdb-service         Started     0.4s                                                                                                                                                                                                             0.4s 
+#  ✔ Container iotdb-service         Started
 
 $ sudo docker compose -f docker-compose-cdsp.yml up -d information-layer
-# [+] Running 1/1                                                                                                                                                                                                                                          
-# ✔ Container information-layer      Started     0.4s  
+# [+] Running 1/1
+# ✔ Container information-layer      Started
 ```
 
 ### Expected result
 
-Listing should show three running containers as shown below:
+Listing should show two running containers as shown below:
 ```shell
 $ sudo docker ps
 ```
@@ -157,7 +159,7 @@ $ sudo docker ps
 ```
 CONTAINER ID   IMAGE                           COMMAND                  CREATED          STATUS          PORTS                                       NAMES
 025b5dd05c56   cdsp-information-layer          "docker-entrypoint.s…"   16 minutes ago   Up 16 minutes   0.0.0.0:8080->8080/tcp, :::8080->8080/tcp   information-layer
-e16c8ed4ed42   apache/iotdb:1.2.2-standalone   "/usr/bin/dumb-init …"   23 minutes ago   Up 19 minutes   0.0.0.0:6667->6667/tcp, :::6667->6667/tcp   iotdb-service
+e16c8ed4ed42   cdsp-iotdb-service              "/usr/bin/dumb-init …"   23 minutes ago   Up 19 minutes   0.0.0.0:6667->6667/tcp, :::6667->6667/tcp   iotdb-service
 ```
 
 ## Websocket client (CDSP - knowledge layer) docker image build setup
@@ -169,7 +171,9 @@ In order to get access to `RDFox RESTfull API` it is required to build two Docke
 ### Prerequisites
 
 - **Running Information Layer Server:** See how to start the information layer [here](#websocket-server-cdsp---information-layer-docker-image-build-setup).
-- **RDFox.lic:** this is the license file required by RDFox, containing information that authorizes the use of RDFox, expiry time and usage. **The license file must be provided when running RDFox images to activate the software.**. The path of the file should be provided using the environment variable `RDFOX_LIC_PATH="<your_path>/RDFox.lic"` in the `.env` file in this folder. The file is generally provided when you acquire a license from [Oxford Semantic Technologies](https://www.oxfordsemantic.tech/).
+- **RDFox.lic:** this is the license file required by RDFox, containing information that authorizes the use of RDFox, expiry time and usage. **The license file must be provided when running RDFox images to activate the software.**. The relative path of the file should be provided using the environment variable `RDFOX_LIC_PATH="<your_path>/RDFox.lic"` in the `.env` file in this folder. The file is generally provided when you acquire a license from [Oxford Semantic Technologies](https://www.oxfordsemantic.tech/).
+-  For example, you could create here a new folder `rdfox` and place `RDFox.lic` in it. 
+Then set the environment variable in `.env` to `RDFOX_LIC_PATH="./rdfox/RDFox.lic"`
 
 #### 1. **Initialization (`rdfox-init` Image)**:
 - The `rdfox-init` image is used to set up the RDFox server directory, define roles, and configure persistence.
@@ -191,41 +195,107 @@ In order to get access to `RDFox RESTfull API` it is required to build two Docke
 Use the following commands to start both images:
 
 ```shell
-$ docker compose -f docker-compose-cdsp.yml up -d rdfox-init
+$ sudo docker compose -f docker-compose-cdsp.yml up -d rdfox-init
 # ...
 # [+] Running 2/2
-# ✔ Volume "cdsp_rdfox-server-directory"  created     0.0s 
-# ✔ Container rdfox-init                  Started     0.4s
+# ✔ Volume "cdsp_rdfox-server-directory"  created
+# ✔ Container rdfox-init                  Started
 
-$ docker compose -f docker-compose-cdsp.yml up -d rdfox-service 
+$ sudo docker compose -f docker-compose-cdsp.yml up -d rdfox-service 
 # ...
 # [+] Running 2/2
-# ✔ Container rdfox-init     Started    0.4s 
-# ✔ Container rdfox-service  Started    0.9s 
+# ✔ Container rdfox-init     Started
+# ✔ Container rdfox-service  Started 
 ```
 
-## Deploy with Docker Compose
+#### 3. **Websocket client (CDSP - knowledge layer)**:
+- Knowledge Layer configuration needs to be added to the `.env` file, like described at [Knowledge Layer Readme](../cdsp/knowledge-layer/README.md#websocket-server-and-rdfox-configuration)
+- Keep in mind that the default values for **HOST_WEBSOCKET_SERVER** and **HOST_REASONER_SERVER** are designed for accessing all services running natively on the same machine. But this guide focuses on running all services in separate docker containers, so the host variables needs to reflect the container names. In this case the environment variables should look like this:
+```text
+# schema REQUIRED_VSS_DATA_POINTS_FILE is the TXT file containing the required data points
+REQUIRED_VSS_DATA_POINTS_FILE=vss_data_required.txt
+
+HOST_WEBSOCKET_SERVER="information-layer"
+PORT_WEBSOCKET_SERVER="8080"
+HOST_REASONER_SERVER="rdfox-service"
+PORT_REASONER_SERVER="12110"
+# The following are the default Base64-encoded string of the RDFox credentials configured in the /docker/docker-compose-cdsp.yml file
+# The credentials are: root:admin
+AUTH_REASONER_SERVER_BASE64="cm9vdDphZG1pbg=="
+REASONER_DATASTORE_NAME="ds-test"
+VEHICLE_OBJECT_ID="VINABCD1234567890" 
+```
+
+Use the following commands to start knowledge layer:
+
+```shell
+$ sudo docker compose -f docker-compose-cdsp.yml up -d knowledge-layer
+# ...
+# [+] Running 2/2
+# ✔ knowledge-layer             Created 
+# ✔ Container knowledge-layer   Started
+```
+
+#### Tip: Corporate CA security (download error "tls: failed to verify certificate:")
+If you are working behind a corporate security system that places a _man-in-the-middle_ between your host and the internet you may see security errors when artifacts are downloaded as part of the build process.
+
+For example:
+
+```
+3.254 client/client-1.0/simple_client.go:27:2: github.com/akamensky/argparse@v1.4.0: Get "https://proxy.golang.org/github.com/akamensky/argparse/@v/v1.4.0.zip": tls: failed to verify certificate: x509: certificate signed by unknown authority
+```
+This is an attribute of docker, rather than the playground and results when the CA root certificate for the security system is not known.
+
+A solution is to add the CA root certificate to the [Knowledge Layer Dockerfile](../cdsp/knowledge-layer/Dockerfile) which will update the CA store as part of the build and allow the downloads to proceed successfully.
+
+The VISSR Dockerfile already includes an example of this for a Cisco system which uses the CA root certificate `cisco.crt`, 
+[see VISSR Tip: Corporate CA security](#tip-corporate-ca-security-download-error-tls-failed-to-verify-certificate)
+
+To add your own certificate:
+1. Ask your IT for the CA root certificate for the security system they use.
+2. Copy the `.crt` file into `cdsp/knowledge-layer`
+3. Add your own line to the Dockerfile to copy the certificate so that it is included when `update-ca-certificates` is run. As shown below.
+
+```dockerfile
+COPY <my company .crt>  /usr/local/share/ca-certificates/<my company .crt>
+RUN update-ca-certificates
+```
+
+
+## Deploy All Services with Docker Compose
 ### Start/stop containers
 Start the containers:
 ```shell
 $ sudo docker compose -f docker-compose-cdsp.yml up -d
 # [+] Running 4/5
-#  ⠴ Network cdsp_default               Created                 1.5s
-#  ✔ Container vissr_container_volumes  Started                 0.5s
-#  ✔ Container iotdb-service            Started                 0.7s
-#  ✔ Container app_redis                Started                 1.0s
-#  ✔ Container vissv2server             Started                 1.3s
+#  ⠴ Network cdsp_default               Created
+#  ✔ Container vissr_container_volumes  Started
+#  ✔ Container iotdb-service            Started
+#  ✔ Container app_redis                Started
+#  ✔ Container vissv2server             Started
+#  ✔ Container rdfox-service            Started
+#  ✔ Container rdfox-init               Exited 
+#  ✔ Container information-layer        Started
+#  ✔ Container knowledge-layer          Started
+#  ✔ Container rdfox-service            Started
 ```
+Sometimes a service might not start up successfully when all are started with a single docker compose command. The reason for this are racing conditions between service startups, that docker has no control over.
+An easy fix can be to run the same startup command again.
 
 Stop and remove the containers:
 ```shell
 $ sudo docker compose -f docker-compose-cdsp.yml down
 # [+] Running 5/5
-#  ✔ Container vissv2server             Removed                 0.0s
-#  ✔ Container app_redis                Removed                 0.3s
-#  ✔ Container iotdb-service            Removed                 2.2s
-#  ✔ Container vissr_container_volumes  Removed                 0.0s
-#  ✔ Network cdsp_default               Removed                 0.1s
+#  ✔ Container vissv2server             Removed
+#  ✔ Container app_redis                Removed
+#  ✔ Container iotdb-service            Removed
+#  ✔ Container vissr_container_volumes  Removed
+#  ✔ Container rdfox-service            Removed
+#  ✔ Container rdfox-init               Removed
+#  ✔ Container information-layer        Removed
+#  ✔ Container knowledge-layer          Removed
+#  ✔ Container rdfox-service            Removed
+#  ✔ Network cdsp_default               Removed
 ```
 ### Expected Result
 Listing should show three running containers as shown below:
@@ -233,10 +303,14 @@ Listing should show three running containers as shown below:
 $ sudo docker ps
 
 
-CONTAINER ID   IMAGE                COMMAND                  CREATED              STATUS              PORTS                                                                                              NAMES
-f43ed0c6ba0a   cdsp-iotdb-service   "/usr/bin/dumb-init …"   About a minute ago   Up About a minute   0.0.0.0:6667->6667/tcp, :::6667->6667/tcp                                                          iotdb-service
-7829813bdcb8   cdsp-vissv2server    "/app/vissv2server -…"   5 days ago           Up 8 seconds        0.0.0.0:8081->8081/tcp, 0.0.0.0:8600->8600/tcp, 0.0.0.0:8887->8887/tcp, 127.0.0.1:8888->8888/tcp   vissv2server
-8e21a556e398   redis                "docker-entrypoint.s…"   5 days ago           Up 5 days           6379/tcp                                                                                           app_redis
+CONTAINER ID   IMAGE                         COMMAND                  CREATED          STATUS                    PORTS                                                                                              NAMES
+f43ed0c6ba0a   cdsp-iotdb-service            "/usr/bin/dumb-init …"   11 minutes ago   Up 10 minutes             0.0.0.0:6667->6667/tcp, :::6667->6667/tcp                                                          iotdb-service
+7829813bdcb8   cdsp-vissv2server             "/app/vissv2server -…"   11 minutes ago   Up 11 minutes             0.0.0.0:8081->8081/tcp, 0.0.0.0:8600->8600/tcp, 0.0.0.0:8887->8887/tcp, 127.0.0.1:8888->8888/tcp   vissv2server
+8e21a556e398   redis                         "docker-entrypoint.s…"   11 minutes ago   Up 11 minutes             6379/tcp                                                                                           app_redis
+37b461fcdc8f   cdsp-knowledge-layer          "/src/build/bin/reas…"   11 minutes ago   Up 11 minutes                                                                                                                knowledge-layer
+92c4eef4df32   oxfordsemantic/rdfox:latest   "/opt/RDFox/RDFox da…"   11 minutes ago   Up 11 minutes             0.0.0.0:12110->12110/tcp, [::]:12110->12110/tcp                                                    rdfox-service
+6391e41171a5   cdsp-iotdb-service            "/usr/bin/dumb-init …"   11 minutes ago   Up 11 minutes (healthy)   0.0.0.0:6667->6667/tcp, [::]:6667->6667/tcp                                                        iotdb-service
+3af122904fef   cdsp-information-layer        "docker-entrypoint.s…"   11 minutes ago   Up 11 minutes             0.0.0.0:8080->8080/tcp, [::]:8080->8080/tcp                                                        information-layer
 
 ```
 #### Apache IoTDB

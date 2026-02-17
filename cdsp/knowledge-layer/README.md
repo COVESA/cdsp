@@ -140,10 +140,10 @@ VEHICLE_OBJECT_ID="vin_to_subscribe"
 # RDFox CONFIGURATION            #
 ##################################
 
-HOST_RDFOX_SERVER="your_custom_rdfox_server_host"
-PORT_RDFOX_SERVER="your_custom_rdfox_server_port"
-AUTH_RDFOX_SERVER_BASE64="your_custom_rdfox_server_authentication"
-RDFOX_DATASTORE="your_custom_rdfox_server_data_store"
+HOST_REASONER_SERVER="your_custom_rdfox_server_host"
+PORT_REASONER_SERVER="your_custom_rdfox_server_port"
+AUTH_REASONER_SERVER_BASE64="your_custom_rdfox_server_authentication"
+REASONER_DATASTORE_NAME="your_custom_rdfox_server_data_store"
 ```
 
 ### Start the Reasoner Websocket Client

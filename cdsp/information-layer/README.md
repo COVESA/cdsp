@@ -1,6 +1,6 @@
 # Information Layer Server (IL)
 
-The information layer Server (IL) is responsible for providing a raw data access [API](#api) (read, write, subscribe).
+The information layer Server (IL) is responsible for providing a raw data access [API](#access-information-layer-server-api) (read, write, subscribe).
 Its intention is to abstract the underlying data storage database technology. It is written in Typescript.
 
 Clients can interact with it using websockets and JSON payload.
@@ -14,9 +14,7 @@ The IL consists of two logical components:
 flowchart LR
     client <--> router
     router <--> handlers
-    handlers <--> realm_handler
     handlers <--> iotdb_handler
-    realm_handler <--> realmdb
     iotdb_handler <--> iotdb
 ```
 
@@ -48,7 +46,7 @@ or
 npx jest --verbose
 ```
 
-## Run IL with backend option 1: Timeseries Data Server IoTDB
+## Run IL with IotDB: Timeseries Data Server IoTDB
 
 ### Start the database
 
@@ -101,43 +99,6 @@ docker run --rm --name information-layer --network cdsp-net -p 8080:8080 -e HAND
 npm install
 HANDLER_TYPE=iotdb IOTDB_HOST=localhost npm start
 ```
-
-## Run IL with backend option 2: Document Data Service RealmDB
-
-### Prepare cloud
-
-- Ensure that in your [ATLAS cloud](https://cloud.mongodb.com/) app there is a vehicle _document_ with an
-  `Vehicle_VehicleIdentification_VIN` in a collection named _`Vehicles`_.
-- Ensure that this document as well contains VSS data. Here you can see the data supported in this repository for a vehicle document within
-  _Vehicles_ that should be reflected in ATLAS:
-
-```
-_id: "<SOME_STRING>" (String)
-Vehicle_Speed: <SOME_DOUBLE> (Double)
-Vehicle_TraveledDistance: "<SOME_DOUBLE>" (Double)
-```
-
-### Start Information Layer Server
-
-Build the Information Layer image
-
-```bash
-docker build -t information-layer .
-```
-
-Run the Information Layer
-
-```bash
-# Docker
-docker run -d --rm --name information-layer --network cdsp-net -p 8080:8080 -e HANDLER_TYPE=realmdb -e VERSION_REALMDB_SCHEMA=0 -e REALMDB_APP_ID=<YOUR-APP-ID> -e REALMDB_API_KEY=<YOUR-API-KEY> information-layer
-# OR natively
-npm install
-HANDLER_TYPE=realmdb VERSION_REALMDB_SCHEMA=0 REALM_APP_ID=<YOUR-APP-ID> REALM_API_KEY=<YOUR-API-KEY> npm start
-```
-
-## Usage
-
-See [api](#api) how to interact with the router.
 
 # Access Information Layer Server API
 

@@ -56,7 +56,7 @@ The examples/ directory contains specific real-world test scenarios, each demons
 
 Each example directory contains:
 
-+ **docker-compose.yml**: Extends the main docker/docker-compose-cdsp.yml file without duplicating default configurations to keep things modular and maintainable. Naming of the service can reflect the use-case and configuration. ex. *Information Layer Server IotDB* vs. *Information Layer Server RealmDB*
++ **docker-compose.yml**: Extends the main docker/docker-compose-cdsp.yml file without duplicating default configurations to keep things modular and maintainable. Naming of the service can reflect the use-case and configuration. ex. *Information Layer Server IotDB* vs. *Information Layer Server otherDB*
 
 + **KL-config/**: Folder with scenario specific rules, validations, queries, etc. and a JSON config file for finding them and configuration. Will be mounted into the Knowledge-Layer on service startup.
 
