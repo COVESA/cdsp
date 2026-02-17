@@ -1,6 +1,7 @@
-# Define the websocket_client library
+# Define the data_objects library
 add_library(data_objects    
     bo/data_message.cpp
+    bo/error.cpp
     bo/get_message.cpp
     bo/message_header.cpp
     bo/node.cpp
@@ -11,6 +12,7 @@ add_library(data_objects
     bo/reasoner_settings.cpp
     bo/triple_assembler_helper.cpp
     bo/set_message.cpp
+    bo/unsubscribe_message.cpp
 )
 
 # Include directories
@@ -25,6 +27,7 @@ target_link_libraries(data_objects
     PRIVATE  
         nlohmann_json::nlohmann_json
         utils
+        common
 )
 
 # Add dependencies

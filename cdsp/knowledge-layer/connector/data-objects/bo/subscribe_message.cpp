@@ -45,7 +45,7 @@ std::vector<Node> SubscribeMessage::getNodes() const { return nodes_; }
 std::ostream& operator<<(std::ostream& os, const SubscribeMessage& message) {
     os << "SubscribeMessage {" << "\n";
     os << "  Header: \n";
-    os << "     Id: " << message.getHeader().getId() << "\n";
+    os << "     Instance: " << message.getHeader().getInstance() << "\n";
     os << "     Schema Type: " << schemaTypeToString(message.getHeader().getSchemaType()) << "\n";
     if (message.getNodes().empty()) {
         os << "  Nodes: None" << "\n";

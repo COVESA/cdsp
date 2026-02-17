@@ -8,12 +8,12 @@
 /**
  * Converts a GetMessage business object (BO) into a vector of GetMessageDTOs.
  *
- * @param bo The GetMessage business object to be converted.
+ * @param b_obj The GetMessage business object to be converted.
  * @return A vector of GetMessageDTOs representing the converted data.
  */
-std::vector<GetMessageDTO> BoToDto::convert(const GetMessage& bo) {
+std::vector<GetMessageDTO> BoToDto::convert(const GetMessage& b_obj) {
     std::vector<GetMessageDTO> dtos;
-    auto schema = schemaTypeToString(bo.getHeader().getSchemaType(), true);
+    auto schema = schemaTypeToString(b_obj.getHeader().getSchemaType(), true);
 
     /**
      * Helper lambda function to create a GetMessageDTO from a given path.
@@ -22,21 +22,19 @@ std::vector<GetMessageDTO> BoToDto::convert(const GetMessage& bo) {
      */
     auto createDto = [&](const std::optional<std::string>& path) {
         GetMessageDTO dto;
-        dto.type = "get";
         dto.schema = schema;
-        dto.instance = bo.getHeader().getId();
+        dto.instance = b_obj.getHeader().getInstance();
         dto.path = path;
         dto.format = MessageStructureFormatToString(
             MessageStructureFormat::FLAT);  // Default format for GetMessageDTO
         dtos.push_back(dto);
     };
 
-    if (bo.getNodes().empty()) {
+    if (b_obj.getNodes().empty()) {
         createDto(std::nullopt);
     } else {
-        for (const auto& node : bo.getNodes()) {
-            std::string node_name = node.getName().substr(schema.size() + 1);
-            createDto(node_name);
+        for (const auto& node : b_obj.getNodes()) {
+            createDto(node.getName());
         }
     }
 
@@ -44,12 +42,13 @@ std::vector<GetMessageDTO> BoToDto::convert(const GetMessage& bo) {
 }
 
 /**
- * Converts a SubscribeMessage business object (BO) into a vector of SubscribeMessageDTOs.
+ * Converts a SubscribeMessage business object (BO) into a vector of
+ * SubscribeMessageDTOs.
  *
- * @param bo The SubscribeMessage business object to be converted.
+ * @param b_obj The SubscribeMessage business object to be converted.
  * @return A vector of SubscribeMessageDTOs representing the converted data.
  */
-std::vector<SubscribeMessageDTO> BoToDto::convert(const SubscribeMessage& bo) {
+std::vector<SubscribeMessageDTO> BoToDto::convert(const SubscribeMessage& b_obj) {
     std::vector<SubscribeMessageDTO> dtos;
 
     /**
@@ -59,19 +58,49 @@ std::vector<SubscribeMessageDTO> BoToDto::convert(const SubscribeMessage& bo) {
      */
     auto createDto = [&](const std::optional<std::string>& path) {
         SubscribeMessageDTO dto;
-        dto.type = "subscribe";
-        dto.schema = schemaTypeToString(bo.getHeader().getSchemaType(), true);
-        dto.instance = bo.getHeader().getId();
+        dto.schema = schemaTypeToString(b_obj.getHeader().getSchemaType(), true);
+        dto.instance = b_obj.getHeader().getInstance();
         dto.path = path;
         dto.format = MessageStructureFormatToString(
             MessageStructureFormat::FLAT);  // Default format for SubscribeMessageDTO
+        dto.root = "relative";              // Default root for SubscribeMessageDTO
         dtos.push_back(dto);
     };
 
-    if (bo.getNodes().empty()) {
+    if (b_obj.getNodes().empty()) {
         createDto(std::nullopt);
     } else {
-        for (const auto& node : bo.getNodes()) {
+        for (const auto& node : b_obj.getNodes()) {
+            createDto(node.getName());
+        }
+    }
+    return dtos;
+}
+
+/**
+ * Converts an UnsubscribeMessage business object (BO) into a vector of
+ * UnsubscribeMessageDTOs.
+ *
+ * @param b_obj The UnsubscribeMessage business object to be converted.
+ * @return A vector of UnsubscribeMessageDTOs representing the converted data.
+ */
+std::vector<UnsubscribeMessageDTO> BoToDto::convert(const UnsubscribeMessage& b_obj) {
+    std::vector<UnsubscribeMessageDTO> dtos;
+    /** Helper lambda function to create an UnsubscribeMessageDTO.
+     * @param path An optional string representing the path of the node.
+     */
+    auto createDto = [&](const std::optional<std::string>& path) {
+        UnsubscribeMessageDTO dto;
+        dto.schema = schemaTypeToString(b_obj.getHeader().getSchemaType(), true);
+        dto.instance = b_obj.getHeader().getInstance();
+        dto.path = path;
+        dtos.push_back(dto);
+    };
+
+    if (b_obj.getNodes().empty()) {
+        createDto(std::nullopt);
+    } else {
+        for (const auto& node : b_obj.getNodes()) {
             createDto(node.getName());
         }
     }
@@ -81,18 +110,15 @@ std::vector<SubscribeMessageDTO> BoToDto::convert(const SubscribeMessage& bo) {
 /**
  * Converts a SetMessage business object (BO) into a SetMessageDTO.
  *
- * @param bo The SetMessage business object to be converted.
- * @return A SetMessageDTO representing the converted data.
+ * @param b_obj The SetMessage business object to be converted.
+ * @return A vector with a single SetMessageDTO representing the converted data.
  */
-SetMessageDTO BoToDto::convert(const SetMessage& bo) {
+std::vector<SetMessageDTO> BoToDto::convert(const SetMessage& b_obj) {
     SetMessageDTO dto;
+    dto.schema = schemaTypeToString(b_obj.getHeader().getSchemaType(), true);
+    dto.instance = b_obj.getHeader().getInstance();
 
-    dto.schema = schemaTypeToString(bo.getHeader().getSchemaType(), true);
-    dto.instance = bo.getHeader().getId();
-    dto.requestId = std::nullopt;
-    dto.schema = schemaTypeToString(bo.getHeader().getSchemaType(), true);
-
-    for (const auto& node : bo.getNodes()) {
+    for (const auto& node : b_obj.getNodes()) {
         DataDTO data;
         data.name = node.getName();
         if (node.getValue()) {
@@ -106,12 +132,26 @@ SetMessageDTO BoToDto::convert(const SetMessage& bo) {
         } else {
             data.value = "";
         }
-        auto [seconds, nanos] =
-            Helper::getSecondsAndNanosecondsSinceEpoch(node.getMetadata().getGenerated().value());
-        dto.metadata.nodes[node.getName()] =
-            MetadataDTO::NodeMetadata{.generated = {seconds, nanos}};
+
+        // Populate the generated timestamp if it exists
+        if (auto generated = node.getMetadata().getGenerated()) {
+            auto [seconds, nanos] = Helper::getSecondsAndNanosecondsSinceEpoch(*generated);
+            dto.metadata.nodes[node.getName()] =
+                MetadataDTO::NodeMetadata{.generated = {seconds, nanos}};
+        }
+
+        // Populate the origin type if it exists
+        if (auto origin = node.getMetadata().getOriginType()) {
+            auto name = origin->name ? *origin->name : "";
+            auto uri = origin->uri ? *origin->uri : "";
+
+            dto.metadata.nodes[node.getName()].origin_type = {.name = name, .uri = uri};
+        }
+
         dto.data.push_back(data);
     }
 
-    return dto;
+    // Returns a vector with a single SetMessageDTO object in order to match the
+    // logic of the other convert functions
+    return {dto};
 }

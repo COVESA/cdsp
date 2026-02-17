@@ -8,35 +8,28 @@
 /**
  * Parses a JSON object into a DataMessageDTO object.
  *
- * @param json The JSON object to parse, expected to contain keys: "type", "schema", "instance",
- *             and optionally "path", "metadata", and "requestId".
- * @return A DataMessageDTO object populated with data extracted from the JSON object.
+ * @param json The JSON object to parse, expected to contain keys: "type",
+ * "schema", "instance", and optionally "path", "metadata", and "requestId".
+ * @return A DataMessageDTO object populated with data extracted from the JSON
+ * object.
  */
 DataMessageDTO DtoService::parseDataJsonToDto(const nlohmann::json& json) {
     try {
-        if (!json.contains("type") || !json.contains("schema") || !json.contains("instance") ||
-            !json.contains("data")) {
-            throw std::invalid_argument("Missing required fields in DataMessageDTO");
+        if (!json.contains("id")) {
+            throw std::invalid_argument("Missing required id field in DataMessageDTO");
+        }
+
+        if (!json["result"].contains("data")) {
+            throw std::invalid_argument("Missing required result data field in DataMessageDTO");
         }
 
         DataMessageDTO dto;
-        dto.type = json["type"];
-        dto.schema = json["schema"];
-        dto.instance = json["instance"];
-        dto.path = json.contains("path")
-                       ? std::optional<std::string>(json["path"].get<std::string>())
-                       : std::nullopt;
-        dto.data = json["data"];
-        dto.metadata = json.contains("metadata")
-                           ? std::optional<MetadataDTO>(parseMetadataJsonToDto(json["metadata"]))
-                           : std::nullopt;
-
-        dto.requestId = json.contains("requestId")
-                            ? std::optional<std::string>(json["requestId"].get<std::string>())
-                            : std::nullopt;
-        if (!dto.path.has_value() && !dto.data.is_object()) {
-            throw std::invalid_argument("DataMessageDTO must have a path if data is not an object");
-        }
+        dto.id = json["id"].get<int>();
+        dto.data = json["result"]["data"].get<nlohmann::json>();
+        dto.metadata =
+            json["result"].contains("metadata")
+                ? std::optional<MetadataDTO>(parseMetadataJsonToDto(json["result"]["metadata"]))
+                : std::nullopt;
         return dto;
     } catch (const nlohmann::json::exception& e) {
         throw std::invalid_argument("Failed to parse DataMessageDTO: " + std::string(e.what()));
@@ -51,19 +44,33 @@ DataMessageDTO DtoService::parseDataJsonToDto(const nlohmann::json& json) {
  */
 StatusMessageDTO DtoService::parseStatusJsonToDto(const nlohmann::json& json) {
     try {
-        if (!json.contains("code") || !json.contains("message") || !json.contains("timestamp") ||
-            !json["timestamp"].contains("seconds") || !json["timestamp"].contains("nanos")) {
-            throw std::invalid_argument("Missing required fields in StatusMessageDTO");
-        }
         StatusMessageDTO dto;
-        dto.code = json["code"];
-        dto.message = json["message"];
-        dto.requestId = json.contains("requestId")
-                            ? std::optional<std::string>(json["requestId"].get<std::string>())
-                            : std::nullopt;
+        dto.id = json["id"];
+        if (json.contains("error")) {
+            StatusMessageErrorDTO error;
 
-        dto.timestamp.seconds = json["timestamp"]["seconds"];
-        dto.timestamp.nanos = json["timestamp"]["nanos"];
+            if (json.contains("error") && json["error"].contains("code")) {
+                error.code = json["error"]["code"].get<int>();
+            }
+
+            if (json["error"].contains("message")) {
+                error.message = json["error"]["message"].get<std::string>();
+            }
+
+            if (json["error"].contains("data")) {
+                error.data = json["error"]["data"].get<nlohmann::json>();
+            } else {
+                error.data = "";
+            }
+            dto.error = error;
+        } else if (json.contains("result")) {
+            dto.error = std::nullopt;
+        } else {
+            throw std::invalid_argument(
+                "Invalid StatusMessageDTO: missing error or "
+                "result field");
+        }
+
         return dto;
     } catch (const std::exception& e) {
         std::cout << Helper::getFormattedTimestampNow("%Y-%m-%dT%H:%M:%S", true, true)
@@ -71,7 +78,7 @@ StatusMessageDTO DtoService::parseStatusJsonToDto(const nlohmann::json& json) {
                   << json.dump() << std::endl
                   << std::endl;
         std::cerr << " Failed to parse StatusMessageDTO: " << e.what() << std::endl;
-        return StatusMessageDTO();
+        return {};
     }
 }
 
@@ -84,30 +91,55 @@ StatusMessageDTO DtoService::parseStatusJsonToDto(const nlohmann::json& json) {
 MetadataDTO DtoService::parseMetadataJsonToDto(const nlohmann::json& metadata_json) {
     MetadataDTO dto;
     try {
-        for (const auto& [node, timestamps] : metadata_json.items()) {
+        // Helper lambda to parse timestamp data
+        auto parseTimestamp = [](const nlohmann::json& timestamp_json,
+                                 const std::string& timestamp_type) -> MetadataDTO::Timestamp {
+            if (!timestamp_json.contains("seconds")) {
+                throw std::invalid_argument("Missing required seconds field into " +
+                                            timestamp_type + " timestamp in MetadataDTO");
+            }
+
+            MetadataDTO::Timestamp timestamp;
+            timestamp.seconds = timestamp_json["seconds"].get<int64_t>();
+
+            if (timestamp_json.contains("nanos")) {
+                timestamp.nanos = timestamp_json["nanos"].get<int64_t>();
+            }
+
+            return timestamp;
+        };
+
+        // Helper lambda to parse confidence data
+        auto parseConfidence =
+            [](const nlohmann::json& confidence_json) -> MetadataDTO::Confidence {
+            if (!confidence_json.contains("type") || !confidence_json.contains("value")) {
+                throw std::invalid_argument("Missing required confidence fields in MetadataDTO");
+            }
+
+            return MetadataDTO::Confidence{confidence_json["type"].get<std::string>(),
+                                           confidence_json["value"].get<int>()};
+        };
+
+        for (const auto& [node, metadata] : metadata_json.items()) {
             MetadataDTO::NodeMetadata node_metadata;
 
-            // Check and parse received timestamps
-            if (timestamps.contains("timestamps") &&
-                timestamps["timestamps"].contains("received")) {
-                if (!timestamps["timestamps"]["received"].contains("seconds") ||
-                    !timestamps["timestamps"]["received"].contains("nanos")) {
-                    throw std::invalid_argument("Missing required fields in MetadataDTO");
-                }
-                node_metadata.received.seconds = timestamps["timestamps"]["received"]["seconds"];
-                node_metadata.received.nanos = timestamps["timestamps"]["received"]["nanos"];
+            // Parse received timestamps
+            if (metadata.contains("timestamps") && metadata["timestamps"].contains("received")) {
+                node_metadata.received =
+                    parseTimestamp(metadata["timestamps"]["received"], "received");
             }
 
-            // Check and parse generated timestamps
-            if (timestamps.contains("timestamps") &&
-                timestamps["timestamps"].contains("generated")) {
-                if (!timestamps["timestamps"]["generated"].contains("seconds") ||
-                    !timestamps["timestamps"]["generated"].contains("nanos")) {
-                    throw std::invalid_argument("Missing required fields in MetadataDTO");
-                }
-                node_metadata.generated.seconds = timestamps["timestamps"]["generated"]["seconds"];
-                node_metadata.generated.nanos = timestamps["timestamps"]["generated"]["nanos"];
+            // Parse generated timestamps
+            if (metadata.contains("timestamps") && metadata["timestamps"].contains("generated")) {
+                node_metadata.generated =
+                    parseTimestamp(metadata["timestamps"]["generated"], "generated");
             }
+
+            // Parse confidence
+            if (metadata.contains("confidence")) {
+                node_metadata.confidence = parseConfidence(metadata["confidence"]);
+            }
+
             dto.nodes[node] = node_metadata;
         }
         return dto;
@@ -124,13 +156,35 @@ MetadataDTO DtoService::parseMetadataJsonToDto(const nlohmann::json& metadata_js
  */
 ModelConfigDTO DtoService::parseModelConfigJsonToDto(const nlohmann::json& json) {
     try {
-        if (!json.contains("inputs") || !json.contains("ontologies") || !json.contains("output") ||
-            !json.contains("rules") || !json.contains("shacl") || !json.contains("queries") ||
-            !json.contains("reasoner_settings")) {
-            throw std::invalid_argument("Missing required fields in ModelConfigDTO");
+        if (!json.contains("inputs")) {
+            throw std::invalid_argument("Missing required inputs field in ModelConfigDTO");
         }
-        QueriesDTO queries_dto;
-        ReasonerSettingsDTO reasoner_settings_dto;
+
+        if (!json.contains("ontologies")) {
+            throw std::invalid_argument("Missing required ontologies field in ModelConfigDTO");
+        }
+
+        if (!json.contains("output")) {
+            throw std::invalid_argument("Missing required output field in ModelConfigDTO");
+        }
+
+        if (!json.contains("rules")) {
+            throw std::invalid_argument("Missing required rules field in ModelConfigDTO");
+        }
+
+        if (!json.contains("shacl")) {
+            throw std::invalid_argument("Missing required shacl field in ModelConfigDTO");
+        }
+
+        if (!json.contains("queries")) {
+            throw std::invalid_argument("Missing required queries field in ModelConfigDTO");
+        }
+
+        if (!json.contains("reasoner_settings")) {
+            throw std::invalid_argument(
+                "Missing required reasoner_settings field in ModelConfigDTO");
+        }
+
         ModelConfigDTO model_config_dto;
 
         model_config_dto.inputs = json["inputs"];
@@ -139,6 +193,7 @@ ModelConfigDTO DtoService::parseModelConfigJsonToDto(const nlohmann::json& json)
         model_config_dto.rules = json["rules"];
         model_config_dto.shacl_shapes = json["shacl"];
 
+        QueriesDTO queries_dto;
         for (const auto& [key, value] : json["queries"]["triple_assembler_helper"].items()) {
             queries_dto.triple_assembler_helper[key] = value;
         }
@@ -146,15 +201,56 @@ ModelConfigDTO DtoService::parseModelConfigJsonToDto(const nlohmann::json& json)
         queries_dto.reasoning_output_queries_path = json["queries"]["output"];
         model_config_dto.queries = queries_dto;
 
-        reasoner_settings_dto.inference_engine = json["reasoner_settings"]["inference_engine"];
-        reasoner_settings_dto.is_ai_reasoner_inference_results =
-            json["reasoner_settings"]["is_ai_reasoner_inference_results"];
-        reasoner_settings_dto.output_format = json["reasoner_settings"]["output_format"];
-        reasoner_settings_dto.supported_schema_collections =
-            json["reasoner_settings"]["supported_schema_collections"];
+        ReasonerSettingsDTO reasoner_settings_dto;
+        reasoner_settings_dto = parseReasonerSettingsJsonToDto(json["reasoner_settings"]);
         model_config_dto.reasoner_settings = reasoner_settings_dto;
+
         return model_config_dto;
     } catch (const nlohmann::json::exception& e) {
         throw std::invalid_argument("Failed to parse ModelConfigDTO: " + std::string(e.what()));
+    }
+}
+
+/**
+ * Parses a JSON object containing reasoner settings into a ReasonerSettingsDTO.
+ *
+ * @param reasoner_settings_json The JSON object containing the reasoner
+ * settings data.
+ * @return A ReasonerSettingsDTO object populated with data from the JSON
+ * object.
+ */
+ReasonerSettingsDTO DtoService::parseReasonerSettingsJsonToDto(
+    const nlohmann::json& reasoner_settings_json) {
+    ReasonerSettingsDTO dto;
+    try {
+        if (!reasoner_settings_json.contains("inference_engine")) {
+            throw std::invalid_argument(
+                "Missing required inference_engine field in ReasonerSettingsDTO");
+        }
+
+        if (!reasoner_settings_json.contains("output_format")) {
+            throw std::invalid_argument(
+                "Missing required output_format field in ReasonerSettingsDTO");
+        }
+
+        if (!reasoner_settings_json.contains("supported_schema_collections")) {
+            throw std::invalid_argument(
+                "Missing required supported_schema_collections field in "
+                "ReasonerSettingsDTO");
+        }
+
+        dto.inference_engine = reasoner_settings_json["inference_engine"];
+        dto.output_format = reasoner_settings_json["output_format"];
+        dto.supported_schema_collections =
+            reasoner_settings_json["supported_schema_collections"].get<std::vector<std::string>>();
+
+        if (reasoner_settings_json.contains("is_ai_reasoner_inference_results")) {
+            dto.is_ai_reasoner_inference_results =
+                reasoner_settings_json["is_ai_reasoner_inference_results"];
+        }
+
+        return dto;
+    } catch (const nlohmann::json::exception& e) {
+        throw std::invalid_argument("ReasonerSettingsDTO: " + std::string(e.what()));
     }
 }

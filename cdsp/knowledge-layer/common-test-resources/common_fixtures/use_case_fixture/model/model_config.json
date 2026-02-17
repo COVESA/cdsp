@@ -1,0 +1,24 @@
+{
+  "inputs": {
+    "vehicle_data": "inputs/vehicle_data_required.txt"
+  },
+  "ontologies": ["ontologies/test_ontology.ttl"],
+  "output": "output/",
+  "queries": {
+    "triple_assembler_helper": {
+      "default": [
+        "queries/triple_assembler_helper/default/data_property.rq",
+        "queries/triple_assembler_helper/default/object_property.rq"
+      ]
+    },
+    "output": "queries/output/"
+  },
+  "rules": ["rules/test_rule.dlog"],
+  "shacl": ["shacl/vehicle_shacl.ttl"],
+  "reasoner_settings": {
+    "inference_engine": "RDFox",
+    "is_ai_reasoner_inference_results": true,
+    "output_format": "turtle",
+    "supported_schema_collections": ["vehicle"]
+  }
+}

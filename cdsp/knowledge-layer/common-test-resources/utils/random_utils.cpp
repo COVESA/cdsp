@@ -93,31 +93,38 @@ bool RandomUtils::generateRandomBool() {
 }
 
 /**
- * @brief Generates a random UTC date as an ISO 8601 string with fractional seconds.
+ * @brief Generates a random UTC date as an ISO 8601 string with fractional
+ * seconds.
  *
  * @param start_year The earliest possible year for the random date.
  * @param end_year The latest possible year for the random date.
  * @return A random UTC date in ISO 8601 format with fractional seconds.
  */
-std::chrono::system_clock::time_point RandomUtils::generateRandomTimestamp(int start_year,
-                                                                           int end_year,
+std::chrono::system_clock::time_point RandomUtils::generateRandomTimestamp(TimestampRange range,
                                                                            bool includeNanos) {
     // Convert years to time_t
-    std::tm start_tm = {0, 0, 0, 1, 0, start_year - 1900};  // Jan 1, start_year
-    std::tm end_tm = {0, 0, 0, 31, 11, end_year - 1900};    // Dec 31, end_year
+    constexpr int BASE_YEAR = 1900;
+    constexpr int LAST_DAY_OF_DECEMBER = 31;
+    constexpr int DECEMBER = 11;
+
+    std::tm start_tm = {0, 0, 0, 1, 0, range.start_year - BASE_YEAR};  // Jan 1, start_year
+
+    std::tm end_tm = {
+        0, 0, 0, LAST_DAY_OF_DECEMBER, DECEMBER, range.end_year - BASE_YEAR};  // Dec 31, end_year
 
     std::time_t start_time = std::mktime(&start_tm);
     std::time_t end_time = std::mktime(&end_tm);
 
     // Generate a random time_t value between start_time and end_time
-    std::random_device rd;
-    std::mt19937 gen(rd());
+    std::random_device random_device;
+    std::mt19937 gen(random_device());
     std::uniform_int_distribution<std::time_t> dist(start_time, end_time);
     std::time_t random_time = dist(gen);
 
     // Convert to time_point
     if (includeNanos) {
-        std::uniform_int_distribution<int> nanos_dist(0, 999999999);
+        constexpr int MAX_NANOSECONDS = 999999999;
+        std::uniform_int_distribution<int> nanos_dist(0, MAX_NANOSECONDS);
         return std::chrono::time_point_cast<std::chrono::system_clock::duration>(
             std::chrono::system_clock::from_time_t(random_time) +
             std::chrono::nanoseconds(nanos_dist(gen)));

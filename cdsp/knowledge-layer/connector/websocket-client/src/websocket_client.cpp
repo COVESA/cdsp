@@ -1,15 +1,9 @@
 #include "websocket_client.h"
 
-#include <chrono>
 #include <iostream>
-#include <thread>
-#include <variant>
 
-#include "bo_service.h"
-#include "data_message.h"
 #include "helper.h"
 #include "real_websocket_connection.h"
-#include "status_message.h"
 
 namespace {
 /**
@@ -36,17 +30,16 @@ void Fail(const boost::system::error_code& ec, const std::string& what) {
  * @param connection A shared pointer to a WebSocketClientInterface, representing the connection to
  * be used.
  */
-WebSocketClient::WebSocketClient(const SystemConfig& system_config,
+WebSocketClient::WebSocketClient(SystemConfig system_config,
                                  std::shared_ptr<ModelConfig> model_config,
                                  std::shared_ptr<ReasonerService> reasoner_service,
                                  std::shared_ptr<WebSocketClientInterface> connection)
-    : system_config_(system_config),
+    : system_config_(std::move(system_config)),
       reasoner_service_(std::move(reasoner_service)),
       model_config_(std::move(model_config)),
       connection_(std::move(connection)),
-      io_context_(),
       triple_assembler_(model_config_, *reasoner_service_, file_handler_, triple_writer_),
-      message_service_(model_config_->getInputs()),
+      request_registry_(std::make_shared<RequestRegistry>()),
       reasoner_query_service_(std::make_shared<ReasoningQueryService>(reasoner_service_)) {
     triple_assembler_.initialize();
 }
@@ -60,7 +53,7 @@ WebSocketClient::WebSocketClient(const SystemConfig& system_config,
  */
 void WebSocketClient::initializeConnection() {
     if (!connection_) {
-        auto self = shared_from_this();
+        auto self = std::enable_shared_from_this<WebSocketClient>::shared_from_this();
         connection_ = std::make_shared<RealWebSocketConnection>(io_context_, self);
     }
 }
@@ -86,10 +79,11 @@ void WebSocketClient::run() {
 const SystemConfig& WebSocketClient::getInitConfig() const { return system_config_; }
 
 // Callbacks for connection lifecycle and message handling
-void WebSocketClient::onConnect(boost::system::error_code ec,
+void WebSocketClient::onConnect(boost::system::error_code error_code,
                                 const boost::asio::ip::tcp::endpoint& endpoint) {
-    if (ec) {
-        return Fail(ec, " - Connection failed:");
+    if (error_code) {
+        Fail(error_code, " - Connection failed:");
+        return;
     }
 
     std::cout << " - Connected to Websocket Server: " << endpoint.address() << ":"
@@ -107,24 +101,20 @@ void WebSocketClient::onConnect(boost::system::error_code ec,
  *
  * @param ec The error code indicating the result of the handshake attempt.
  */
-void WebSocketClient::handshake(boost::system::error_code ec) {
-    if (ec) {
-        return Fail(ec, " - Handshake failed:");
+void WebSocketClient::handshake(boost::system::error_code error_code) {
+    if (error_code) {
+        return Fail(error_code, " - Handshake failed:");
     }
 
     for (const SchemaType& schema_type :
          model_config_->getReasonerSettings().getSupportedSchemaCollections()) {
         // Start subscribing to supported schemas
         const auto object_id = model_config_->getObjectId().at(schema_type);
-        auto subscribe_message = BoService::createSubscribeMessage(object_id, schema_type);
-        message_service_.addMessageToQueue(subscribe_message, reply_messages_queue_);
+        auto data_point_list = model_config_->getInputs().at(schema_type);
 
-        // TODO: Check if this block is needed
-        /*
-        const auto data_point_list = model_config_->getInputs().at(schema_type);
-        auto get_message = BoService::createGetMessage(object_id, schema_type, data_point_list);
-        message_service_.addMessageToQueue(get_message, reply_messages_queue_);
-        */
+        MessageService::createAndQueueSubscribeMessage(object_id, schema_type,
+                                                       data_point_list.subscribe,
+                                                       *request_registry_, reply_messages_queue_);
     }
 
     std::cout << " - Handshake succeeded!\n\n";
@@ -139,17 +129,21 @@ void WebSocketClient::handshake(boost::system::error_code ec) {
  */
 void WebSocketClient::sendMessage(const json& message) { connection_->asyncWrite(message); }
 
-void WebSocketClient::onSendMessage(boost::system::error_code ec, std::size_t bytes_transferred) {
-    if (ec) {
-        return Fail(ec, "write");
+void WebSocketClient::onSendMessage(boost::system::error_code error_code,
+                                    std::size_t bytes_transferred) {
+    if (error_code) {
+        Fail(error_code, "write");
+        return;
     }
     std::cout << "Message sent! " << bytes_transferred << " bytes transferred\n\n";
     connection_->asyncRead();
 }
 
-void WebSocketClient::onReceiveMessage(boost::beast::error_code ec, std::size_t bytes_transferred) {
-    if (ec) {
-        return Fail(ec, "read");
+void WebSocketClient::onReceiveMessage(boost::beast::error_code error_code,
+                                       std::size_t bytes_transferred) {
+    if (error_code) {
+        Fail(error_code, "read");
+        return;
     }
 
     const auto received_message = std::make_shared<std::string>(connection_->getReceivedMessage());
@@ -172,8 +166,15 @@ void WebSocketClient::processMessage(const std::shared_ptr<const std::string>& m
     auto prio_message = *response_messages_queue_.front();
     response_messages_queue_.erase(response_messages_queue_.begin());
 
-    const auto data_message = message_service_.getDataMessageOrLogStatus(prio_message);
+    // Attempt to extract a data message from the priority message
+    // or process the status message and log any errors if present
+    const auto data_message =
+        MessageService::getDataOrProcessStatusFromMessage(prio_message, *request_registry_);
+
+    // Process the data message if it is valid
     if (data_message.has_value()) {
+        // If the message is a regular data message, process it as a triple and
+        // handle the reasoning queries
         triple_assembler_.transformMessageToTriple(data_message.value());
 
         // Process reasoning query
@@ -185,11 +186,11 @@ void WebSocketClient::processMessage(const std::shared_ptr<const std::string>& m
                     model_config_->getOutput() + "/reasoning_output/");
 
                 if (!result.empty()) {
-                    auto set_messages =
-                        BoService::createSetMessage(model_config_->getObjectId(), result);
-                    for (auto& set_message : set_messages) {
-                        message_service_.addMessageToQueue(set_message, reply_messages_queue_);
-                    }
+                    auto data_point_list = model_config_->getInputs();
+
+                    MessageService::createAndQueueSetMessage(
+                        model_config_->getObjectId(), result, *request_registry_,
+                        reply_messages_queue_, system_config_.reasoner_server.origin_system_name);
                 }
             } catch (const std::exception& e) {
                 std::cerr << "Error processing reasoning query: " << e.what() << std::endl;

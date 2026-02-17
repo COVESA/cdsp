@@ -1,9 +1,12 @@
 #include "model_config_converter.h"
 
-#include <fstream>
 #include <iostream>
 #include <sstream>
 
+#include "data_types.h"
+#include "globals.h"
+#include "helper.h"
+#include "model_config.h"
 #include "triple_assembler_helper.h"
 
 // Define the static constant variable
@@ -123,30 +126,45 @@ TripleAssemblerHelper::QueryPair ModelConfigConverter::getQueriesToCreateTriples
 }
 
 /**
- * @brief Converts a vector of query rules output file paths into a vector of pairs
- *        containing the query language type and the corresponding file content.
+ * @brief Converts a vector of query rules output file paths into a vector of
+ * pairs containing the query language type and the corresponding file content.
  *
- * This function iterates over each file path in the provided vector, retrieves the
- * full path of the model configuration file, reads its content, determines the
- * query language type based on the file extension, and stores the results in a
- * vector of pairs.
+ * This function iterates over each file path in the provided vector, retrieves
+ * the full path of the model configuration file, reads its content, determines
+ * the query language type based on the file extension, and stores the results
+ * in a vector of pairs.
  *
- * @param reasoning_output_queries_path A vector of strings representing the file paths of
- *                           query rules output.
+ * @param reasoning_output_queries_path A vector of strings representing the
+ * file paths of query rules output.
  * @return A vector of pairs, where each pair consists of a QueryLanguageType
  *         and the corresponding file content as a string.
  */
-std::vector<std::pair<QueryLanguageType, std::string>>
-ModelConfigConverter::getReasoningOutputQueries(const std::string& reasoning_output_queries_path) {
+std::vector<ReasoningOutputQuery> ModelConfigConverter::getReasoningOutputQueries(
+    const std::string& reasoning_output_queries_path) {
     try {
+        if (reasoning_output_queries_path.empty()) {
+            throw std::invalid_argument("The provided reasoning output queries path is empty.");
+        }
+
         std::vector<std::string> file_list =
             file_handler_->readDirectory(getFullModelConfigPath(reasoning_output_queries_path));
-        std::vector<std::pair<QueryLanguageType, std::string>> reasoning_output_queries;
-        for (const auto& file_path : file_list) {
-            reasoning_output_queries.push_back(
-                getQueryLanguageTypeAndContent(reasoning_output_queries_path + "/" + file_path));
+
+        if (file_list.empty()) {
+            throw std::invalid_argument("The provided reasoning output queries list is empty.");
         }
-        return reasoning_output_queries;
+
+        std::vector<ReasoningOutputQuery> queries;
+        queries.reserve(file_list.size());
+
+        for (const auto& file_path : file_list) {
+            auto [query_type, file_content] = getQueryLanguageTypeAndContent(
+                (reasoning_output_queries_path + "/").append(file_path));
+
+            ReasoningOutputQuery query{query_type, file_content};
+            queries.push_back(std::move(query));
+        }
+        return queries;
+
     } catch (const std::runtime_error& e) {
         std::cerr << "Failed to read the query rules output directory: " << e.what() << std::endl;
         return {};
@@ -185,13 +203,13 @@ std::pair<QueryLanguageType, std::string> ModelConfigConverter::getQueryLanguage
  * @param inputs The map of input data points from the ModelConfigDTO object.
  * @return A map of SchemaType and vector of strings containing the converted data.
  */
-std::map<SchemaType, std::vector<std::string>> ModelConfigConverter::getInputsFromDto(
+std::map<SchemaType, SchemaInputList> ModelConfigConverter::getInputsFromDto(
     const std::map<std::string, std::string>& inputs) {
-    std::map<SchemaType, std::vector<std::string>> inputs_map;
+    std::map<SchemaType, SchemaInputList> inputs_map;
     for (const auto& [collection, data] : inputs) {
         auto collection_name = collection.substr(0, collection.find(INPUT_SUFFIX));
         auto schema_type = stringToSchemaType(collection_name);
-        auto data_points = getSupportedDataPoints(data);
+        auto data_points = getSupportedDataPoints(data, schema_type);
         inputs_map[schema_type] = data_points;
     }
     return inputs_map;
@@ -232,20 +250,33 @@ ModelConfigConverter::getReasonerSyntaxTypeAndContent(const std::vector<std::str
  * It throws a runtime error if the file cannot be opened.
  *
  * @param file_name The name of the file containing the data points.
- * @return A vector of strings, each representing a supported data point.
+ * @return A SchemaInputList, each representing a supported data point.
  * @throws std::runtime_error If the file cannot be opened.
  */
-std::vector<std::string> ModelConfigConverter::getSupportedDataPoints(std::string file_name) {
+SchemaInputList ModelConfigConverter::getSupportedDataPoints(std::string file_name,
+                                                             SchemaType schema_type) {
     try {
-        std::vector<std::string> required_data;
         std::string root = getFullModelConfigPath(file_name);
         auto file_content = file_handler_->readFile(root);
+        if (file_content.empty()) {
+            throw std::runtime_error(" - Model configuration file is empty");
+        }
+        SchemaInputList schema_input_list;
         std::istringstream file(file_content);
         std::string line;
         while (std::getline(file, line)) {
-            required_data.push_back(line);
+            // Attempt to detect schema type prefix in the line
+            auto str_schema_type = schemaTypeToString(schema_type);
+            auto get_chars_number = str_schema_type.length() + 1;  // +1 for the dot separator
+            auto line_prefix = line.substr(0, get_chars_number);
+            if (Helper::toLowerCase(line_prefix) == Helper::toLowerCase(str_schema_type) + ".") {
+                schema_input_list.subscribe.push_back(
+                    line.substr(get_chars_number, line.length() - get_chars_number));
+                continue;
+            }
+            schema_input_list.subscribe.push_back(line);
         }
-        return required_data;
+        return schema_input_list;
     } catch (const std::exception& e) {
         std::cerr << "Failed to read the file " << file_name << ": " << e.what() << std::endl;
         return {};
@@ -311,5 +342,5 @@ std::string ModelConfigConverter::getFullModelConfigPath(const std::string& mode
     if (model_config_file.empty()) {
         return "";  // Failure will provide from the BO for each specific case
     }
-    return PATH_TO_MODEL_FILES + model_config_file;
+    return getProjectRoot() + getPathToUseCases() + model_config_file;
 }

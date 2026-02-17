@@ -1,6 +1,8 @@
 # Docker generated files
 data/
 logs/
+iotdb-data/
+iotdb-logs/
 test-model/
 rdfox/
 scripts/

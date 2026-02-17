@@ -1,0 +1,18 @@
+PREFIX car: <http://example.ontology.com/car#> .
+PREFIX sosa: <http://www.w3.org/ns/sosa/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT ?Vehicle_Speed ?Vehicle_Chassis_SteeringWheel_Angle
+WHERE {
+    ?speedObs a sosa:Observation ;
+              sosa:observedProperty car:speed ;
+              sosa:hasSimpleResult ?Vehicle_Speed ;
+              sosa:hasFeatureOfInterest ?vehicle .
+    ?angleObs a sosa:Observation ;
+               sosa:observedProperty car:angle ;
+               sosa:hasSimpleResult ?Vehicle_Chassis_SteeringWheel_Angle ;
+               sosa:hasFeatureOfInterest ?steeringWheel .
+    ?vehicle car:hasPart ?chassis .
+    ?chassis car:hasPart ?steeringWheel .
+    FILTER(?Vehicle_Speed > 80 && ABS(?Vehicle_Chassis_SteeringWheel_Angle) > 45)
+}

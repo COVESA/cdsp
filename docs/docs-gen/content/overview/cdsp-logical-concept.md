@@ -78,7 +78,7 @@ At its core the service has requirements in three key areas:
 3. Application logic / APIs: standardized APIs for accessing the data such as the [Vehicle Information Service Specification (VISS)](https://github.com/COVESA/vehicle-information-service-specification)
  or GraphQL.
 
-_Additional requirements:_ It is recognized that additional features, such as synchronization are absolutely desirable and have been a part of discussions in the Data Architecture team. Such features may also already be part of the feature set of the playground components. For example, both the Apache IoTDB and MongoDB Realm databases have sync capabilities. A base feature set is described as a starting point to help readers quickly grasp the concept. Additional features will be created or illustrated collectively based on interest and participation.
+_Additional requirements:_ It is recognized that additional features, such as synchronization are absolutely desirable and have been a part of discussions in the Data Architecture team. Such features may also already be part of the feature set of the playground components. For example, the Apache IoTDB databases have sync capabilities. A base feature set is described as a starting point to help readers quickly grasp the concept. Additional features will be created or illustrated collectively based on interest and participation.
 
 ### Components
 

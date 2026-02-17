@@ -4,10 +4,7 @@
 #include "mock_i_file_handler.h"
 #include "random_utils.h"
 
-class JSONWriterTest : public ::testing::Test {
-   protected:
-    JSONWriter jsonWriter;
-};
+class JSONWriterTest : public ::testing::Test {};
 
 /**
  * @brief Test case for writing JSON data to a file.
@@ -27,9 +24,9 @@ TEST_F(JSONWriterTest, WriteJsonToFile) {
     auto mockFileHandler = std::make_shared<MockIFileHandler>();
     EXPECT_CALL(*mockFileHandler, writeFile(::testing::_, ::testing::_, false)).Times(1);
 
-    nlohmann::json result =
-        jsonWriter.writeToJson(csv_input, DataQueryAcceptType::TEXT_CSV,
-                               is_ai_reasoner_inference_results, output_file_path, mockFileHandler);
+    nlohmann::json result = JSONWriter::writeToJson(csv_input, DataQueryAcceptType::TEXT_CSV,
+                                                    is_ai_reasoner_inference_results,
+                                                    output_file_path, mockFileHandler);
 
     ASSERT_FALSE(result.empty());
 }
@@ -53,8 +50,8 @@ TEST_F(JSONWriterTest, WriteJsonWithoutFilePath) {
     EXPECT_CALL(*mockFileHandler, writeFile(::testing::_, ::testing::_, ::testing::_)).Times(0);
 
     nlohmann::json result =
-        jsonWriter.writeToJson(csv_input, DataQueryAcceptType::TEXT_CSV,
-                               is_ai_reasoner_inference_results, output_file_path);
+        JSONWriter::writeToJson(csv_input, DataQueryAcceptType::TEXT_CSV,
+                                is_ai_reasoner_inference_results, output_file_path);
 
     ASSERT_FALSE(result.empty());
 }
@@ -69,21 +66,20 @@ TEST_F(JSONWriterTest, WriteJsonWithoutFilePath) {
  * headers and data. The test specifically uses an invalid
  * DataQueryAcceptType (999) to trigger the error.
  */
+
 TEST_F(JSONWriterTest, WriteJsonWithInvalidFormat) {
     std::string query_result = "id,name,age\n1,Alice,30\n2,Bob,25";
     bool is_ai_reasoner_inference_results = RandomUtils::generateRandomBool();
 
-    ASSERT_THROW(
-        {
-            try {
-                jsonWriter.writeToJson(query_result, static_cast<DataQueryAcceptType>(999),
-                                       is_ai_reasoner_inference_results, std::nullopt);
-            } catch (const std::runtime_error& e) {
-                EXPECT_THAT(e.what(), testing::HasSubstr("Unsupported query result format"));
-                throw;
-            }
+    EXPECT_THAT(
+        [&]() {
+            JSONWriter::writeToJson(query_result,
+                                    // NOLINTNEXTLINE(clang-analyzer-optin.core.EnumCastOutOfRange)
+                                    static_cast<DataQueryAcceptType>(999),
+                                    is_ai_reasoner_inference_results, std::nullopt);
         },
-        std::runtime_error);
+        ::testing::ThrowsMessage<std::runtime_error>(
+            ::testing::HasSubstr("Unsupported query result format")));
 }
 
 /**
@@ -100,14 +96,15 @@ TEST_F(JSONWriterTest, WriteJsonWithEmptyValues) {
 
     ASSERT_NO_THROW({
         nlohmann::json result =
-            jsonWriter.writeToJson(query_result, DataQueryAcceptType::TEXT_CSV,
-                                   is_ai_reasoner_inference_results, std::nullopt);
+            JSONWriter::writeToJson(query_result, DataQueryAcceptType::TEXT_CSV,
+                                    is_ai_reasoner_inference_results, std::nullopt);
         ASSERT_TRUE(result.empty());
     });
 }
 
 /**
- * @brief Test case for JSONWriter's behavior when writing JSON with an empty result.
+ * @brief Test case for JSONWriter's behavior when writing JSON with an empty
+ * result.
  *
  * This test verifies that when an empty query result is provided to the
  * jsonWriter's writeToJson method, it throws a runtime_error. The test
@@ -115,13 +112,13 @@ TEST_F(JSONWriterTest, WriteJsonWithEmptyValues) {
  * indicating that no results were found.
  */
 TEST_F(JSONWriterTest, WriteJsonWithEmptyResult) {
-    std::string query_result = "";
+    std::string query_result;
     bool is_ai_reasoner_inference_results = RandomUtils::generateRandomBool();
 
     ASSERT_NO_THROW({
         nlohmann::json result =
-            jsonWriter.writeToJson(query_result, DataQueryAcceptType::TEXT_CSV,
-                                   is_ai_reasoner_inference_results, std::nullopt);
+            JSONWriter::writeToJson(query_result, DataQueryAcceptType::TEXT_CSV,
+                                    is_ai_reasoner_inference_results, std::nullopt);
         ASSERT_TRUE(result.empty());
     });
 }
@@ -138,17 +135,13 @@ TEST_F(JSONWriterTest, InvalidSparqlJson) {
     std::string invalid_sparql_json = R"({ "invalid": "format" })";
     bool is_ai_reasoner_inference_results = RandomUtils::generateRandomBool();
 
-    ASSERT_THROW(
-        {
-            try {
-                jsonWriter.writeToJson(invalid_sparql_json, DataQueryAcceptType::SPARQL_JSON,
-                                       is_ai_reasoner_inference_results, std::nullopt);
-            } catch (const std::runtime_error& e) {
-                EXPECT_THAT(e.what(), testing::HasSubstr("Invalid SPARQL JSON response format"));
-                throw;
-            }
+    EXPECT_THAT(
+        [&]() {
+            JSONWriter::writeToJson(invalid_sparql_json, DataQueryAcceptType::SPARQL_JSON,
+                                    is_ai_reasoner_inference_results, std::nullopt);
         },
-        std::runtime_error);
+        ::testing::ThrowsMessage<std::runtime_error>(
+            ::testing::HasSubstr("Invalid SPARQL JSON response format")));
 }
 
 /**
@@ -163,15 +156,11 @@ TEST_F(JSONWriterTest, InvalidSparqlXml) {
     std::string invalid_sparql_xml = R"(<sparql><invalid></sparql>)";
     bool is_ai_reasoner_inference_results = RandomUtils::generateRandomBool();
 
-    ASSERT_THROW(
-        {
-            try {
-                jsonWriter.writeToJson(invalid_sparql_xml, DataQueryAcceptType::SPARQL_XML,
-                                       is_ai_reasoner_inference_results, std::nullopt);
-            } catch (const std::runtime_error& e) {
-                EXPECT_THAT(e.what(), testing::HasSubstr("Failed to parse SPARQL XML response"));
-                throw;
-            }
+    EXPECT_THAT(
+        [&]() {
+            JSONWriter::writeToJson(invalid_sparql_xml, DataQueryAcceptType::SPARQL_XML,
+                                    is_ai_reasoner_inference_results, std::nullopt);
         },
-        std::runtime_error);
+        ::testing::ThrowsMessage<std::runtime_error>(
+            ::testing::HasSubstr("Failed to parse SPARQL XML response")));
 }

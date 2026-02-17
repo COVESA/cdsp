@@ -10,11 +10,11 @@
 
 #include "data_types.h"
 #include "file_handler_impl.h"
-#include "json_writer.h"
 #include "message_service.h"
 #include "model_config.h"
 #include "reasoner_service.h"
 #include "reasoning_query_service.h"
+#include "request_registry.h"
 #include "triple_assembler.h"
 #include "triple_writer.h"
 #include "websocket_interface.h"
@@ -26,7 +26,7 @@ using json = nlohmann::json;
 
 class WebSocketClient : public std::enable_shared_from_this<WebSocketClient> {
    public:
-    WebSocketClient(const SystemConfig& system_config, std::shared_ptr<ModelConfig> model_config,
+    WebSocketClient(SystemConfig system_config, std::shared_ptr<ModelConfig> model_config,
                     std::shared_ptr<ReasonerService> reasoner_service,
                     std::shared_ptr<WebSocketClientInterface> connection = nullptr);
 
@@ -43,14 +43,13 @@ class WebSocketClient : public std::enable_shared_from_this<WebSocketClient> {
     SystemConfig system_config_;
     net::io_context io_context_;
     std::shared_ptr<WebSocketClientInterface> connection_;
-    std::shared_ptr<ReasonerService> reasoner_service_;
     std::shared_ptr<ModelConfig> model_config_;
-    TripleAssembler triple_assembler_;
+    std::shared_ptr<ReasonerService> reasoner_service_;
     std::shared_ptr<ReasoningQueryService> reasoner_query_service_;
-    FileHandlerImpl file_handler_;
+    std::shared_ptr<RequestRegistry> request_registry_;
     TripleWriter triple_writer_;
-    MessageService message_service_;
-
+    TripleAssembler triple_assembler_;
+    FileHandlerImpl file_handler_;
     std::vector<json> reply_messages_queue_;
     std::vector<std::shared_ptr<const std::string>> response_messages_queue_;
 

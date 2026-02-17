@@ -29,8 +29,8 @@ services:
     volumes:
       - ./iotdb-data:/iotdb/data
       - ./iotdb-logs:/iotdb/logs
-    healthcheck: 
-      test: [ "CMD", "./start-cli.sh", "-h", "iotdb-service", "-p", "6667", "-u", "root", "-pw", "root", "-e", "SHOW DATABASES;" ]
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://iotdb-service:18080/ping" ]
       interval: 10s
       timeout: 10s
       retries: 5
@@ -63,7 +63,7 @@ services:
       - RDFOX_ROLE=root
       - RDFOX_PASSWORD=admin
     command: |
-      -persistence file
+      -persistence file -channel unsecure init
     restart: "no"
 
   # RDFox Daemon (persistent service)
@@ -141,6 +141,13 @@ services:
       dockerfile: Dockerfile
     container_name: knowledge-layer
     entrypoint: ["/src/build/bin/reasoner_client"]
+    depends_on:
+      rdfox-service:
+        condition: service_started
+      information-layer:
+        condition: service_started
+    env_file:
+      - .env
 
 volumes:
   rdfox-server-directory:
