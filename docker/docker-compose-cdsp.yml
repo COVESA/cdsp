@@ -100,6 +100,7 @@ services:
       chmod -R 777 /tmp/docker/
     volumes:
       - /tmp/docker/
+      - /var/tmp/vissv2/
 
   redis:
     image: redis
