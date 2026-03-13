@@ -1,8 +1,67 @@
-baseURL: https://example.org/
+#baseURL: https://example.org/
 languageCode: en-us
-title: My New Hugo Project
+
+# Hugo configuration file
+title: Central Data Service Playground (CDSP)
 
 # import hextra as module
 module:
   imports:
   - path: github.com/imfing/hextra
+
+markup:
+  # allow raw html
+  goldmark:
+    renderer:
+      unsafe: true
+
+  # enable hextra syntax highlight
+  highlight:
+    noClasses: false
+
+menu:
+  main:
+    - name: Docs
+      pageRef: /docs
+      weight: 1
+    - name: About
+      pageRef: /about
+      weight: 2
+    - name: Contact ↗
+      url: "https://github.com/COVESA/cdsp/blob/main/README.md#project-resources"
+      weight: 3
+    - name: Search
+      weight: 4
+      params:
+        type: search
+    - name: GitHub
+      weight: 5
+      url: "https://github.com/COVESA/cdsp"
+      params:
+        icon: github
+    - name: Slack
+      weight: 6
+      url: "https://covesacommunity.slack.com/archives/C06353TRF5F"
+      params:
+        icon: slack
+    - name: LinkedIn
+      weight: 7
+      url: "https://www.linkedin.com/company/covesa-alliance/"
+      params:
+        icon: linkedin
+
+params:
+  navbar:
+    displayTitle: true
+    displayLogo: false
+
+  footer:
+    displayCopyright: false
+    displayPoweredBy: true
+
+  editURL:
+    enable: true
+    base: "https://github.com/COVESA/cdsp/edit/main/docs/doc-site/content"
+
+  imageZoom:
+    enable: true
