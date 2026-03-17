@@ -7,8 +7,10 @@ project(knowledge-layer VERSION 1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Set the policy related to changes in handling the FindBoost module
-cmake_policy(SET CMP0167 NEW)
+# Set the safety policy related to changes in handling the FindBoost module
+if(POLICY CMP0167)
+    cmake_policy(SET CMP0167 NEW)
+endif()
 
 # Find Boost libraries
 find_package(Boost 1.87 REQUIRED COMPONENTS system filesystem thread)
