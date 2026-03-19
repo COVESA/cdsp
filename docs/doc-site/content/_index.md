@@ -1,17 +1,13 @@
 ---
-title: My Site
+title: "Welcome"
 toc: false
 ---
 
-This is the landing page.
+Welcome to the documentation site for the COVESA Central Data Service Playground (CDSP)
 
 ## Explore
 
 {{< cards >}}
-  {{< card link="docs" title="Docs" icon="book-open" >}}
+  {{< card link="docs" title="Documentation" icon="book-open" >}}
   {{< card link="about" title="About" icon="user" >}}
 {{< /cards >}}
-
-## Documentation
-
-For more information, visit [Hextra](https://imfing.github.io/hextra).
