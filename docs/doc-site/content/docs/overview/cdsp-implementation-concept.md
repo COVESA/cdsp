@@ -35,7 +35,7 @@ _"Apache IoTDB (Database for Internet of Things) is an IoT native database with 
 
 The diagram below summarizes some of the features that make it an attractive addition to the playground.
 
-{{< figure src="/images/Apache-IoTDB-feature-summary.drawio.svg" title="Summary of Apache IoTDB features" >}}
+![Summary of Apache IoTDB features](/images/Apache-IoTDB-feature-summary.drawio.svg "Summary of Apache IoTDB features")
 
 + The focus on timeseries IoT data delivering high throughput, with low latency are a good fit with the automotive domain. The availability of a single node (Edge) server build is critical for in-vehicle investigations and is supported by the existence of a cluster build for the cloud if needed.
 
