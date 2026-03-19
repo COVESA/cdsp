@@ -49,8 +49,7 @@ The following sections address the Why, What and How in more detail.
 
 + VSS is a mechanism of abstraction. The COVESA logical architecture for the VSS eco-system shown below places operation in the 'big ECUs', in zonal ECUs and above. Discussion of next-gen and data-centric architectures suggests investigation into data services in zone, domain and HPC controller scenarios and the cooperation between them. Hence _Central_.
 
-{{< figure src="/images/Logical-Architecture-Overview.drawio.svg" title="The COVESA Logical Architecture">}}
-
+![The COVESA Logical Architecture](/images/Logical-Architecture-Overview.drawio.svg "The COVESA Logical Architecture")
 
 + A repeating pattern of discussion in the COVESA Data Architecture team is the combination of VSS Data Server and VSS Data Store with advanced features and their connection southbound to feeders/native data and northbound to clients and off-board. Hence _Data Service_.
 
@@ -68,7 +67,7 @@ The following sections address the Why, What and How in more detail.
 
 ### Requirements
 
-{{< figure src="/images/cdsp-logical-concept.drawio.svg" title="The data service core requirements" >}}
+![The data service core requirements](/images/cdsp-logical-concept.drawio.svg "The data service core requirements")
 
 At its core the service has requirements in three key areas:
 
