@@ -2,11 +2,13 @@ This directory contains the project documentation including the sources for the 
 
 # Central Data Service Playground (CDSP) documentation site
 
-The [CDSP documentation site](https://covesa.github.io/cdsp/) is realized with GitHub Pages. It is generated from
-the files in the ```/docs-gen``` directory tree of this repository.
-The `assets` folder within that tree contains assets such as architectural diagrams that will be referenced from multiple pages. The `content` folder contains the files such as the markdown files that provide the rest of the content.
-The static webpage is generated automatically after every PR merged to master
-and deployed into a branch called `gh-pages`.
+The [CDSP documentation site](https://covesa.github.io/cdsp/) is generated using the Hugo static website generator and is hosted with GitHub Pages.
+
+It is generated from
+the files in the ```/doc-site``` directory tree of this repository.
+The `static/images` folder within that tree contains assets such as architectural diagrams that will be referenced from multiple pages. The `content` folder contains the files such as the markdown files that provide the rest of the content.
+
+The static web pages are generated automatically after every PR merged to main and deployed using a github workflow.
 
 ## Known limitations
 
@@ -40,21 +42,21 @@ Run the check with the option `Check linked documents recursively` enabled.
 
 ## Dependencies
 
-The static page is generated with:
+The static pages are generated with:
 
-- [HUGO](https://gohugo.io/)
-- [Learn Theme](https://github.com/matcornic/hugo-theme-learn)
+- [Hugo](https://gohugo.io/)
+- [Hextra Hugo Theme](https://github.com/imfing/hextra)
 
-Please follow the [documentation](https://gohugo.io/documentation/) for installation and further questions around the framework.
-Currently, the HUGO version used for generating VSS documentation is `0.124.0`,
-as controlled by the [buildcheck.yml](https://github.com/COVESA/cdsp/blob/main/.github/workflows/buildcheck.yaml)
+Please follow the [Hugo](https://gohugo.io/documentation/) and [Hextra](https://imfing.github.io/hextra/) documentation for installation and further questions around the framework.
+Currently, the Hugo version used for generating VSS documentation is `0.156.0`,
+as controlled by the Github Workflow [pages.yaml](https://github.com/COVESA/cdsp/blob/main/.github/workflows/pages.yaml)
 
 
 ## Run the documentation server locally
 
 Once hugo is installed please follow the following steps:
 
-### Check that HUGO is working:
+### Check that Hugo is working:
 ```
 hugo version
 ```
@@ -64,33 +66,21 @@ The following outcome is expected:
 hugo v0.xx.xx ...
 ```
 
-### Clone the submodule containing the theme
-
-Run the following git commands to init and fetch the submodules:
-
-```
-git submodule init
-git submodule update
-```
-
-Reference: [Git Documentation](https://git-scm.com/book/en/v2/Git-Tools-Submodules).
-
 ### Test locally with your Hugo server:
 
 Within the repository
 
 ```
-hugo server --disableFastRender -D -s ./docs-gen/
+hugo server --disableFastRender -D -s ./docs/doc-site/
 ```
 
-Optional ```-D``` include draft pages as well. Afterwards, you can access the
-page under http://localhost:1313/cdsp/.
+Optional ```-D``` include draft pages as well. Afterwards, you can access the page under http://localhost:1313/cdsp/.
 
 ## Contribute
 
 If you want to contribute, do the following:
 
-1. Change documentation in ```/docs-gen```
+1. Change documentation in ```/doc-site```
 
 1. Test your changes locally, as described above
 
