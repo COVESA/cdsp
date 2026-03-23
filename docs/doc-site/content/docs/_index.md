@@ -11,8 +11,8 @@ This section contains user guides and reference manuals for the playground
 
 {{< cards >}}
   {{< card link="manuals" title="Overview" icon="document-text" subtitle="Explore the available guides" >}}
-  {{< card link="apache-iotdb" title="Apache IoTDB data store" icon="document-text" subtitle="Apache IoTDB timeseries database guide" >}}
-  {{< card link="vissr-viss" title="VISSR (VISS data server)" icon="document-text" subtitle="VISSR (VISS data server) guide" >}}
+  {{< card link="manuals/apache-iotdb" title="Apache IoTDB data store" icon="document-text" subtitle="Apache IoTDB timeseries database guide" >}}
+  {{< card link="manuals/vissr-viss" title="VISSR (VISS data server)" icon="document-text" subtitle="VISSR (VISS data server) guide" >}}
 {{< /cards >}}
 
 ### Examples
