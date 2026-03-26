@@ -9,5 +9,5 @@ Welcome to the documentation site for the COVESA Central Data Service Playground
 
 {{< cards >}}
   {{< card link="docs" title="Documentation" icon="book-open" >}}
-  {{< card link="about" title="About" icon="user" >}}
+  {{< card link="docs/overview" title="About" icon="user" >}}
 {{< /cards >}}
