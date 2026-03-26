@@ -25,7 +25,7 @@ menu:
       pageRef: /docs
       weight: 1
     - name: About
-      pageRef: /about
+      pageRef: /docs/overview
       weight: 2
     - name: Contact ↗
       url: "https://github.com/COVESA/cdsp/blob/main/README.md#project-resources"
