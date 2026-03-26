@@ -14,7 +14,6 @@ Note: There is not a separate section for the VSS data model because the vast ma
 | Name | Relationship to the category |
 |------|-------------|
 | [Docker sanity test](https://github.com/COVESA/cdsp/tree/main/docker#deploy-with-docker-compose) | Simple sanity test for the Playground Docker deployment |
-| [Hello-world](https://github.com/COVESA/cdsp/tree/main/examples/cdsp-hello-world) | Simple "hello-world" example|
 
 ## Data Layer, Processing and Analysis
 Topic examples: Data Reduction, Data Quality, Events, Data Streams etc.
@@ -25,8 +24,12 @@ Topic examples: Data Reduction, Data Quality, Events, Data Streams etc.
 
 Tip: well you wait for more examples consider how you could use the [IoTDB data processing functions]({{< ref "apache-iotdb#data-processing-functions" >}} "IoTDB data processing").
 
-## Knowledge Layer, Reasoning and Data Models
-Topic examples: Knowledge Layer Connector, Data Layer Connector etc.
+## Information/Knowledge Layers and Reasoning
+Topic examples: AI, Knowledge Layer Connector, Data Layer Connector etc.
+
+| Name | Relationship to the category |
+|------|-------------|
+| [knowledgelayer-hello-world](https://github.com/COVESA/cdsp/tree/main/examples/knowledgelayer-hello-world) | Simple hello-world example that uses the AI semantic reasoning of the Knowledge Layer to detect aggressive driving behaviours|
 
 ## Feeders
 Topic examples: Virtual signal platforms, VISSR etc.
