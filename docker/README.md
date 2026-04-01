@@ -3,13 +3,6 @@ This directory contains files related to the Docker deployment of the Central Da
 # Central Data Service Playground
 The compose file `docker-compose-cdsp.yml` provides a containerized deployment of the playground using docker.
 
-## Table of contents
-- [Docker installation](#docker-installation)
-- [VISSR docker image build setup](#vissr-docker-image-build-setup)
-- [Websocket-Server (CDSP - information layer) docker image build setup](#websocket-server-cdsp---information-layer-docker-image-build-setup)
-- [Websocket-Client (CDSP - knowledge layer) docker image build setup](#websocket-client-cdsp---knowledge-layer-docker-image-build-setup)
-- [Deploy with Docker Compose](#deploy-with-docker-compose)
-
 ## Docker installation
 If you are not familiar with Docker it is a widely deployed and well documented technology. For which you should find numerous tutorials on its use on the internet.
 
@@ -261,8 +254,7 @@ COPY <my company .crt>  /usr/local/share/ca-certificates/<my company .crt>
 RUN update-ca-certificates
 ```
 
-
-## Deploy All Services with Docker Compose
+## Deploy All Services with Docker Compose<a id="deploy-with-docker-compose"></a>
 ### Start/stop containers
 Start the containers:
 ```shell
@@ -279,7 +271,7 @@ $ sudo docker compose -f docker-compose-cdsp.yml up -d
 #  ✔ Container knowledge-layer          Started
 #  ✔ Container rdfox-service            Started
 ```
-Sometimes a service might not start up successfully when all are started with a single docker compose command. The reason for this are racing conditions between service startups, that docker has no control over.
+Sometimes a service might not start up successfully when all are started with a single docker compose command. The reason for this is race conditions between service startups, that docker has no control over.
 An easy fix can be to run the same startup command again.
 
 Stop and remove the containers:
@@ -298,13 +290,12 @@ $ sudo docker compose -f docker-compose-cdsp.yml down
 #  ✔ Network cdsp_default               Removed
 ```
 ### Expected Result
-Listing should show three running containers as shown below:
+Listing should show six running containers as shown below:
 ```shell
 $ sudo docker ps
 
 
 CONTAINER ID   IMAGE                         COMMAND                  CREATED          STATUS                    PORTS                                                                                              NAMES
-f43ed0c6ba0a   cdsp-iotdb-service            "/usr/bin/dumb-init …"   11 minutes ago   Up 10 minutes             0.0.0.0:6667->6667/tcp, :::6667->6667/tcp                                                          iotdb-service
 7829813bdcb8   cdsp-vissv2server             "/app/vissv2server -…"   11 minutes ago   Up 11 minutes             0.0.0.0:8081->8081/tcp, 0.0.0.0:8600->8600/tcp, 0.0.0.0:8887->8887/tcp, 127.0.0.1:8888->8888/tcp   vissv2server
 8e21a556e398   redis                         "docker-entrypoint.s…"   11 minutes ago   Up 11 minutes             6379/tcp                                                                                           app_redis
 37b461fcdc8f   cdsp-knowledge-layer          "/src/build/bin/reas…"   11 minutes ago   Up 11 minutes                                                                                                                knowledge-layer
