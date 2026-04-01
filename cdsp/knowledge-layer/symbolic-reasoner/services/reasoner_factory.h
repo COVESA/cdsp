@@ -6,6 +6,7 @@
 #include "data_types.h"
 #include "i_reasoner_adapter.h"
 #include "rdfox_adapter.h"
+#include "rdf4j_adapter.h"
 #include "reasoner_service.h"
 
 class ReasonerFactory {

@@ -15,6 +15,7 @@
  */
 enum class InferenceEngineType {
     RDFOX,
+    RDF4J
 };
 
 /**
@@ -58,6 +59,7 @@ enum class QueryLanguageType {
  */
 enum class RuleLanguageType {
     DATALOG,
+    SHACL
 };
 
 /**
@@ -388,7 +390,9 @@ inline RuleLanguageType fileExtensionToRuleLanguageType(const std::string& exten
     std::string lowerCaseExtension = Helper::toLowerCase(extension);
     if (lowerCaseExtension == ".dlog") {
         return RuleLanguageType::DATALOG;
-    } else {
+    }else if(lowerCaseExtension == ".shacl") {
+         return RuleLanguageType::SHACL;
+    }else {
         throw std::invalid_argument("Unsupported rule file extension: " + extension);
     }
 }
@@ -458,6 +462,8 @@ inline InferenceEngineType stringToInferenceEngineType(const std::string& type) 
     std::string lowerCaseType = Helper::toLowerCase(type);
     if (lowerCaseType == "rdfox") {
         return InferenceEngineType::RDFOX;
+    } else if (lowerCaseType == "rdf4j") {
+        return InferenceEngineType::RDF4J;
     } else {
         throw std::invalid_argument("Unsupported inference engine string type: " + type);
     }
@@ -467,6 +473,8 @@ inline std::string inferenceEngineTypeToString(const InferenceEngineType& type) 
     switch (type) {
         case InferenceEngineType::RDFOX:
             return "RDFox";
+        case InferenceEngineType::RDF4J:
+            return "RDF4J";
         default:
             throw std::invalid_argument("Unsupported inference engine type");
     }

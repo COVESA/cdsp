@@ -22,14 +22,14 @@ boost::uuids::random_generator uuidGenerator;
 constexpr char DEFAULT_HOST_WEB_SOCKET_SERVER[] = "127.0.0.1";
 constexpr char DEFAULT_PORT_WEB_SOCKET_SERVER[] = "8080";
 const std::string DEFAULT_TARGET_WEB_SOCKET_SERVER = "";
-const std::string MODEL_CONFIGURATION_FILE =
-    getProjectRoot() + "/symbolic-reasoner/examples/use-case/model/model_config.json";
-constexpr char DEFAULT_REASONER_SERVER[] = "127.0.0.1";
-constexpr char DEFAULT_PORT_REASONER_SERVER[] = "12110";
-constexpr char DEFAULT_AUTH_REASONER_SERVER_BASE64[] =
+const std::string DEFAULT_REASONER_SERVER = "127.0.0.1";
+const std::string DEFAULT_PORT_REASONER_SERVER = "12110";
+const std::string DEFAULT_AUTH_REASONER_SERVER_BASE64 =
     "cm9vdDphZG1pbg==";  // 'root:admin' in base64
-constexpr char DEFAULT_REASONER_DATASTORE_NAME[] = "ds-test";
+const std::string DEFAULT_REASONER_DATASTORE_NAME = "ds-test";
+const std::string DEFAULT_REASONER_ORIGIN_SYSTEM_NAME = "SemanticReasoner";
 bool RESET_REASONER_DATASTORE = false;
+const std::string DEFAULT_MODEL_CONFIGURATION_PATH = getPathToUseCases();
 
 void printBanner() {
     std::cout << "\033[1;36m"  // Bright blue color
@@ -126,6 +126,19 @@ void displayEnvVariables() {
               << "Datastore name of the reasoner server" << std::setw(40)
               << Helper::getEnvVariable("REASONER_DATASTORE_NAME", DEFAULT_REASONER_DATASTORE_NAME)
               << "\n";
+
+    std::cout << std::left << std::setw(35) << "REASONER_ORIGIN_SYSTEM_NAME" << std::setw(65)
+              << "Origin system name for the reasoner server" << std::setw(40)
+              << Helper::getEnvVariable("REASONER_ORIGIN_SYSTEM_NAME",
+                                        DEFAULT_REASONER_ORIGIN_SYSTEM_NAME)
+              << "\n";
+
+    std::cout << std::left << std::setw(35) << "MODEL_CONFIGURATION_PATH" << std::setw(65)
+              << "Path to the model configuration directory containing model_config.json"
+              << std::setw(40)
+              << Helper::getEnvVariable("MODEL_CONFIGURATION_PATH",
+                                        DEFAULT_MODEL_CONFIGURATION_PATH)
+              << "\n";
 }
 
 void displayHelpXOptions() {
@@ -184,11 +197,15 @@ int main(int argc, char* argv[]) {
         SystemConfig system_config = SystemConfigurationService::loadSystemConfig(
             DEFAULT_HOST_WEB_SOCKET_SERVER, DEFAULT_PORT_WEB_SOCKET_SERVER,
             DEFAULT_TARGET_WEB_SOCKET_SERVER, DEFAULT_REASONER_SERVER, DEFAULT_PORT_REASONER_SERVER,
-            DEFAULT_AUTH_REASONER_SERVER_BASE64, DEFAULT_REASONER_DATASTORE_NAME);
+            DEFAULT_AUTH_REASONER_SERVER_BASE64, DEFAULT_REASONER_DATASTORE_NAME,
+            DEFAULT_REASONER_ORIGIN_SYSTEM_NAME, DEFAULT_MODEL_CONFIGURATION_PATH);
 
         // Initialize Model Configuration
+        const std::string model_config_file =
+            getProjectRoot() + getPathToUseCases() + "model_config.json";
+
         std::shared_ptr<ModelConfig> model_config = std::make_shared<ModelConfig>(
-            SystemConfigurationService::loadModelConfig(MODEL_CONFIGURATION_FILE));
+            SystemConfigurationService::loadModelConfig(model_config_file));
 
         // Initialize Reasoner Service
         std::shared_ptr<ReasonerService> reasoner_service = ReasonerFactory::initReasoner(

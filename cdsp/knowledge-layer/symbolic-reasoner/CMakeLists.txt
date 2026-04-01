@@ -1,12 +1,14 @@
 add_library(reasoner
-    ${CMAKE_CURRENT_SOURCE_DIR}/rdfox/src/rdfox_adapter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/adapters/rdfox/src/rdfox_adapter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/adapters/rdf4j/src/rdf4j_adapter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utils/request_builder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/services/reasoner_factory.cpp
 )
 
 target_include_directories(reasoner 
     PUBLIC 
-        ${CMAKE_CURRENT_SOURCE_DIR}/rdfox/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/adapters/rdfox/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/adapters/rdf4j/src
         ${Boost_INCLUDE_DIRS}
         ${CMAKE_CURRENT_SOURCE_DIR}/utils
         ${CMAKE_CURRENT_SOURCE_DIR}/services
