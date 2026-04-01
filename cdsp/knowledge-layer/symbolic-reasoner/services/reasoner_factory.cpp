@@ -24,9 +24,16 @@ std::shared_ptr<ReasonerService> ReasonerFactory::initReasoner(
     const bool reset_datastore) {
     std::shared_ptr<IReasonerAdapter> reasoner_adapter;
 
-    if (inference_engine == InferenceEngineType::RDFOX) {
+    if (inference_engine == InferenceEngineType::RDFOX) 
+    {
         reasoner_adapter = std::make_shared<RDFoxAdapter>(server_data);
-    } else {
+
+    } else if (inference_engine == InferenceEngineType::RDF4J)
+    {
+        reasoner_adapter = std::make_shared<RDF4JAdapter>(server_data);
+        
+    } else
+     {
         throw std::invalid_argument("Unsupported inference engine in `model_config.json`.");
     }
 
@@ -76,7 +83,7 @@ void ReasonerFactory::loadRules(
  * ReasonerService. Each ontology is represented as a pair consisting of a
  * ReasonerSyntaxType and a string. The function counts and outputs the number
  * of successfully loaded ontologies.
- *
+ * 
  * @param reasoner_service A shared pointer to the ReasonerService where the
  *                        ontologies will be loaded. Must be initialized.
  * @param ontologies A vector of pairs, where each pair contains a ReasonerSyntaxType
