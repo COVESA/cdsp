@@ -157,8 +157,8 @@ std::vector<ReasoningOutputQuery> ModelConfigConverter::getReasoningOutputQuerie
         queries.reserve(file_list.size());
 
         for (const auto& file_path : file_list) {
-            auto [query_type, file_content] = getQueryLanguageTypeAndContent(
-                (reasoning_output_queries_path + "/").append(file_path));
+            auto [query_type, file_content] =
+                getQueryLanguageTypeAndContent((reasoning_output_queries_path + file_path));
 
             ReasoningOutputQuery query{query_type, file_content};
             queries.push_back(std::move(query));

@@ -27,7 +27,7 @@ class DtoToModelConfigIntegrationTest : public ::testing::Test {
         {"datalog", "dlog"}};
 
     const std::string MODEL_CONFIG_PATH =
-        getProjectRoot() + "/symbolic-reasoner/examples/use-case/model/";
+        getProjectRoot() + "/common-test-resources/common_fixtures/use_case_fixture/model/";
     static constexpr int MAX_RANDOM_POINTS = 5;
 
     // NOLINTEND(cppcoreguidelines-non-private-member-variables-in-classes)
