@@ -9,7 +9,7 @@ bool IS_PROJECT_ROOT_SET = false;
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 std::string JSON_RPC_VERSION = "2.0";
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-std::string USE_CASES_PATH = "/symbolic-reasoner/examples/use-case/model/";
+std::string USE_CASES_PATH = "/symbolic-reasoner/examples/use-case/rdfox_model/";
 }  // namespace
 
 /**
@@ -79,6 +79,5 @@ void setPathToUseCases(const std::string &path) { USE_CASES_PATH = path; }
  * @return const std::string& A constant reference to the path to use cases.
  */
 const std::string &getPathToUseCases() {
-    static const std::string use_cases_path = USE_CASES_PATH;
-    return use_cases_path;
+    return USE_CASES_PATH;
 }

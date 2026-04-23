@@ -123,6 +123,7 @@ The project requires certain environment variables to work with the WebSocket se
 - **AUTH_REASONER_SERVER_BASE64:** Base64-encoded credentials for RDFox authentication. The default is `cm9vdDphZG1pbg==` (For `root:admin` encoded in base64).
 - **REASONER_DATASTORE_NAME:** Data store used in RDFox server to store the generated data. The default is `ds-test`.
 - **REASONER_ORIGIN_SYSTEM_NAME:** Origin system name for the reasoner server used to identify the source of the data. The default is `SemanticReasoner`.
+- **MODEL_CONFIGURATION_PATH:** Path to the model configuration file used by the reasoner client. The default is `/symbolic-reasoner/examples/use-case/rdfox_model/`.
 
 You can customize the WebSocket server configuration by adding the following environment variables in the `/docker/.env` file. Below is an example of what the file could look like:
 
@@ -144,6 +145,7 @@ HOST_REASONER_SERVER="your_custom_rdfox_server_host"
 PORT_REASONER_SERVER="your_custom_rdfox_server_port"
 AUTH_REASONER_SERVER_BASE64="your_custom_rdfox_server_authentication"
 REASONER_DATASTORE_NAME="your_custom_rdfox_server_data_store"
+MODEL_CONFIGURATION_PATH="path_to_your_model_config"
 ```
 
 ### Start the Reasoner Websocket Client

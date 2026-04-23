@@ -1,3 +1,38 @@
+x-knowledge-layer-common: &knowledge-layer-common
+  build:
+    context: ../../cdsp/knowledge-layer
+    dockerfile: Dockerfile
+  container_name: knowledge-layer
+  entrypoint: ["/src/build/bin/reasoner_client"]
+  env_file:
+    - .env
+  command: -X reset_ds
+
+x-rl-bridge-common: &rl-bridge-common
+  build: ../remotivelabs-feeder
+  container_name: rl-bridge
+  command:
+    - "--url"
+    - "${REMOTIVE_LABS_BROKER_URL}"
+    - "--x_api_key"
+    - "${REMOTIVE_LABS_BROKER_API_KEY}"
+    - "-o"
+    - "information-layer"
+    - "-ilu"
+    - "ws://information-layer:8080"
+    - "-i"
+    - "${VEHICLE_OBJECT_ID}"
+    - "--signals"
+    - "vss:Vehicle.Chassis.SteeringWheel.Angle"
+    - "vss:Vehicle.CurrentLocation.Latitude"
+    - "vss:Vehicle.CurrentLocation.Longitude"
+    - "vss:Vehicle.Powertrain.TractionBattery.NominalVoltage"
+    - "vss:Vehicle.Powertrain.TractionBattery.StateOfCharge.CurrentEnergy"
+    - "vss:Vehicle.Powertrain.Transmission.CurrentGear"
+    - "vss:Vehicle.Speed"
+  env_file:
+    - .env
+
 services:
   # Timeseries Data Server
   iotdb-service:
@@ -13,6 +48,7 @@ services:
     extends:
       service: rdfox-init
       file: ../../docker/docker-compose-cdsp.yml
+    profiles: ["rdfox"]
     volumes:
       - ${RDFOX_LIC_PATH}:/opt/RDFox/RDFox.lic  # License file on host
 
@@ -21,6 +57,7 @@ services:
     extends:
       service: rdfox-service
       file: ../../docker/docker-compose-cdsp.yml
+    profiles: ["rdfox"]
     container_name: rdfox-service
     volumes:
       - ${RDFOX_LIC_PATH}:/opt/RDFox/RDFox.lic  # License file on host
@@ -28,6 +65,14 @@ services:
       # Depends on rdfox-init successfully created working directory. Docker compose extend function does not take depends_on config over.
       rdfox-init:
         condition: service_completed_successfully
+
+  # RDF4J Stream Reasoner
+  rdf4j-stream-reasoner-service:
+    profiles: ["rdf4j"]
+    image: rdf4j-stream-reasoner:latest
+    container_name: rdf4j-stream-reasoner-service
+    ports:
+      - "12110:12110"
 
 
   # Information Layer Server exposing websocket API
@@ -46,51 +91,56 @@ services:
       - HANDLER_TYPE=iotdb
 
   # Remotive Labs Bridge
-  rl-bridge:
-    build: ../remotivelabs-feeder
-    container_name: rl-bridge
-    command:
-      - "--url"
-      - "${REMOTIVE_LABS_BROKER_URL}"
-      - "--x_api_key"
-      - "${REMOTIVE_LABS_BROKER_API_KEY}"
-      - "-o"
-      - "information-layer"
-      - "-ilu"
-      - "ws://information-layer:8080"
-      - "-i"
-      - "${VEHICLE_OBJECT_ID}"
-      - "--signals"
-      - "vss:Vehicle.Chassis.SteeringWheel.Angle"
-      - "vss:Vehicle.CurrentLocation.Latitude"
-      - "vss:Vehicle.CurrentLocation.Longitude"
-      - "vss:Vehicle.Powertrain.TractionBattery.NominalVoltage"
-      - "vss:Vehicle.Powertrain.TractionBattery.StateOfCharge.CurrentEnergy"
-      - "vss:Vehicle.Powertrain.Transmission.CurrentGear"
-      - "vss:Vehicle.Speed"
+  rl-bridge-rdfox:
+    <<: *rl-bridge-common
+    profiles: ["rdfox"]
     depends_on:
-     - information-layer
-     - iotdb-service
-     - knowledge-layer
-    env_file:
-     - .env
+      knowledge-layer-rdfox:
+        condition: service_started
+      information-layer:
+        condition: service_started
+      iotdb-service:
+        condition: service_healthy
 
-  # Knowledge Layer Server 
-  knowledge-layer:
-    extends:
-      service: knowledge-layer
-      file: ../../docker/docker-compose-cdsp.yml
-    container_name: knowledge-layer
+  # Remotive Labs Bridge
+  rl-bridge-rdf4j:
+    <<: *rl-bridge-common
+    profiles: ["rdf4j"]
+    depends_on:
+      knowledge-layer-rdf4j:
+        condition: service_started
+      information-layer:
+        condition: service_started
+      iotdb-service:
+        condition: service_healthy
+
+  # Knowledge Layer Server using RDFox
+  knowledge-layer-rdfox:
+    <<: *knowledge-layer-common
+    profiles: ["rdfox"]
     volumes:
-      - ./KL-config:/src/symbolic-reasoner/examples/use-case/model:rshared
+      - ./KL-config/rdfox_model:/src/symbolic-reasoner/examples/use-case/model
     depends_on:
       rdfox-service:
         condition: service_started
       information-layer:
         condition: service_started
-    env_file:
-      - .env
-    command: -X reset_ds
+    environment:
+      - HOST_REASONER_SERVER=rdfox-service
+
+  # Knowledge Layer Server using RDF4J
+  knowledge-layer-rdf4j:
+    <<: *knowledge-layer-common
+    profiles: ["rdf4j"]
+    volumes:
+      - ./KL-config/rdf4j_model:/src/symbolic-reasoner/examples/use-case/model
+    depends_on:
+      rdf4j-stream-reasoner-service:
+        condition: service_started
+      information-layer:
+        condition: service_started
+    environment:
+      - HOST_REASONER_SERVER=rdf4j-stream-reasoner-service
 
 volumes:
   rdfox-server-directory:

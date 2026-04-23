@@ -1,6 +1,6 @@
 # RDF Triple Assembler
 
-RDF Triple Assembler transforms structured data into RDF triples using the [RDFAdapter](/cdsp/knowledge-layer/symbolic-reasoner/rdfox/README.md) and `TripleWriter` components. It enables developers to convert messages into RDF (Resource Description Framework) triples for semantic data storage and query purposes.
+RDF Triple Assembler transforms structured data into RDF triples using the [RDFAdapter](/cdsp/knowledge-layer/symbolic-reasoner/adapters/rdfox/README.md) and `TripleWriter` components. It enables developers to convert messages into RDF (Resource Description Framework) triples for semantic data storage and query purposes.
 
 ## Components
 
@@ -18,6 +18,7 @@ RDF Triple Assembler transforms structured data into RDF triples using the [RDFA
 - [TriG](https://www.w3.org/TR/trig/) provides a structured way to group related triples, making it useful for complex datasets with multiple contexts or named graphs.
 
 **Example Usage**
+
 ```cpp
 TripleWriter writer;
 writer.setTripleIdentifier("ExampleID");
