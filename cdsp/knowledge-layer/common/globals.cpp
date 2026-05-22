@@ -79,6 +79,5 @@ void setPathToUseCases(const std::string &path) { USE_CASES_PATH = path; }
  * @return const std::string& A constant reference to the path to use cases.
  */
 const std::string &getPathToUseCases() {
-    static const std::string use_cases_path = USE_CASES_PATH;
-    return use_cases_path;
+    return USE_CASES_PATH;
 }
