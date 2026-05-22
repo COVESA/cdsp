@@ -1,6 +1,7 @@
 #include "rdfox_adapter.h"
 
 #include <iostream>
+#include <sstream>
 
 RDFoxAdapter::RDFoxAdapter(const ReasonerServerData& server_data)
     : host_(server_data.host),
@@ -66,7 +67,11 @@ bool RDFoxAdapter::checkDataStore() {
             .setTarget(target)
             .setAcceptType("text/csv; charset=UTF-8")
             .sendRequest(nullptr, &response_body)) {
-        return response_body.find(data_store_) != std::string::npos;
+        std::istringstream ss(response_body);
+        std::string token;
+        while (ss >> token) {
+            if (token == data_store_) return true;
+        }
     }
     return false;
 }
