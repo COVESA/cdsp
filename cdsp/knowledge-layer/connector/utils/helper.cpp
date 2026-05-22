@@ -125,7 +125,11 @@ std::tuple<std::optional<std::tm>, std::optional<int>> Helper::parseISO8601ToTim
     // Check for milliseconds in the format .sss
     if (iso_string.find('.') != std::string::npos) {
         std::string millisStr = iso_string.substr(iso_string.find('.') + 1, 3);
-        milliseconds = std::stoi(millisStr);
+        try {
+            milliseconds = std::stoi(millisStr);
+        } catch (const std::exception&) {
+            milliseconds = std::nullopt;
+        }
     }
 
     return {tm, milliseconds};
@@ -204,8 +208,12 @@ std::optional<NtmCoord> Helper::getCoordInNtm(const std::string& latitude,
     }
 
     Wgs84Coord coord_to_convert;
-    coord_to_convert.latitude = std::stod(latitude);
-    coord_to_convert.longitude = std::stod(longitude);
+    try {
+        coord_to_convert.latitude = std::stod(latitude);
+        coord_to_convert.longitude = std::stod(longitude);
+    } catch (const std::exception&) {
+        return std::nullopt;
+    }
 
     return CoordinateTransform::ntmPoseFromWgs84(ZONE_ORIGIN, coord_to_convert);
 }
