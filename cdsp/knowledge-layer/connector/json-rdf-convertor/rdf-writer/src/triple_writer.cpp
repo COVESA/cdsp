@@ -6,23 +6,19 @@
 
 #include "helper.h"
 
-// Global string to store the Serd output
-std::string serd_output;
-
 /**
  * @brief Writes serialized data to a string.
  *
- * This function appends the serialized data from the buffer to the internal
- * string representation. It is used to capture the output of a serialization
- * process into a string.
+ * This function appends the serialized data from the buffer to the string
+ * pointed to by the stream argument, which is passed through by serd_writer_new.
  *
  * @param buf Pointer to the buffer containing the serialized data.
  * @param len The length of the data in the buffer.
- * @param stream A pointer to the stream, not used in this implementation.
+ * @param stream A pointer to the std::string that accumulates the output.
  * @return The number of bytes written to the string, which is equal to len.
  */
 unsigned long write_serd_output_to_string(const void* buf, unsigned long len, void* stream) {
-    serd_output.append(static_cast<const char*>(buf), len);
+    static_cast<std::string*>(stream)->append(static_cast<const char*>(buf), len);
     return len;
 }
 
@@ -208,14 +204,14 @@ void TripleWriter::addElementDataToTriple(
  * @return A string containing the serialized RDF triples.
  */
 std::string TripleWriter::generateTripleOutput(const ReasonerSyntaxType& format) {
-    serd_output.clear();
+    std::string local_output;
 
     SerdEnv* serd_env = serd_env_new(nullptr);
     SerdSyntax serd_format = getSerdSyntax(format);
 
     // Create the writer with the base URI
     SerdWriter* serd_writer = serd_writer_new(serd_format, SERD_STYLE_ABBREVIATED, serd_env,
-                                              nullptr, write_serd_output_to_string, this);
+                                              nullptr, write_serd_output_to_string, &local_output);
 
     // Declare namespaces
     for (const auto& [prefix, uri] : unique_rdf_prefix_definitions_) {
@@ -251,7 +247,7 @@ std::string TripleWriter::generateTripleOutput(const ReasonerSyntaxType& format)
     serd_writer_free(serd_writer);
     serd_env_free(serd_env);
 
-    return Helper::trimTrailingNewlines(serd_output);
+    return Helper::trimTrailingNewlines(local_output);
 }
 
 /**
