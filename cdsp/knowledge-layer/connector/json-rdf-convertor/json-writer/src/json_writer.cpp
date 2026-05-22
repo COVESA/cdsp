@@ -178,7 +178,7 @@ nlohmann::json JSONWriter::groupItem(const nlohmann::json &item,
  * the value.
  */
 void JSONWriter::handleAIReasonerInferenceResults(nlohmann::json &grouped) {
-    for (const auto &[schema, section] : grouped.items()) {
+    for (auto &[schema, section] : grouped.items()) {
         if (section.contains("AI.Reasoner.InferenceResults")) {
             section["AI.Reasoner.InferenceResults"] =
                 section["AI.Reasoner.InferenceResults"].dump();
@@ -371,7 +371,7 @@ void JSONWriter::storeJsonToFile(const nlohmann::json &json_data,
 
     // Create file name
     const std::string file_name = output_file_path + "gen_from_sparql_query_" +
-                                  Helper::getFormattedTimestampNow("%H:%M:%S", true, true) +
+                                  Helper::getFormattedTimestampNow("%H-%M-%S", true, true) +
                                   ".json";
 
     // Write the file
