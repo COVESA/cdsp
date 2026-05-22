@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <nlohmann/json.hpp>
+#include <regex>
 #include <sstream>
 
 #include "data_message.h"
@@ -203,6 +204,17 @@ void TripleAssembler::generateTriplesFromNode(const Node& node, const SchemaType
     try {
         // Split node data point into object and data elements
         const auto [object_elements, data_element] = extractObjectsAndDataElements(node.getName());
+
+        // Validate each component against an identifier pattern to guard against SPARQL injection
+        static const std::regex valid_id{R"([A-Za-z][A-Za-z0-9_]*)"};
+        for (const auto& elem : object_elements) {
+            if (!std::regex_match(elem, valid_id)) {
+                throw std::runtime_error("Invalid node name component: " + elem);
+            }
+        }
+        if (!std::regex_match(data_element, valid_id)) {
+            throw std::runtime_error("Invalid node name component: " + data_element);
+        }
 
         const auto queries = model_config_->getQueriesTripleAssemblerHelper().getQueries();
         TripleAssemblerHelper::QueryPair query_pair;
