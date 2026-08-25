@@ -1,0 +1,281 @@
+# Custom CDSP GraphQL SDL for S2DM export.
+#
+# Reproduces, via S2DM, the vehicle signals and shapes originally hand-authored in
+# IL-config/schema-files/vss_data_points.yaml and KL-config/*/shacl/vehicle_shacl.ttl.
+#
+# Uses the Int8/UInt8/Int16/UInt16 scalars (declared below) instead of plain Int for
+# fields IL requires a specific width for.
+#
+# See ../README.md for usage, generation details, and known gaps.
+
+# ── Directives (required by S2DM) ──────────────────────────────────────────
+
+"""Annotation directive for Vspec mapping information."""
+directive @vspec(
+  element: VspecElement
+  fqn: String
+  originalName: String
+) on OBJECT | FIELD_DEFINITION | ENUM | ENUM_VALUE
+
+directive @range(min: Float, max: Float) on FIELD_DEFINITION
+
+# ── Fixed-width integer scalars (see header note on integer width) ─────────
+
+scalar Int8
+scalar UInt8
+scalar Int16
+scalar UInt16
+
+# ── VSS element types ───────────────────────────────────────────────────────
+
+enum VspecElement {
+  BRANCH
+  ATTRIBUTE
+  SENSOR
+  ACTUATOR
+  QUANTITY_KIND
+  UNIT
+}
+
+# ── Unit enums (only the ones used below) ───────────────────────────────────
+
+"""Units for velocity."""
+enum VelocityUnitEnum @vspec(element: QUANTITY_KIND) {
+  KILOMETER_PER_HOUR @vspec(element: UNIT)
+}
+
+"""Units for angle."""
+enum AngleUnitEnum @vspec(element: QUANTITY_KIND) {
+  DEGREE @vspec(element: UNIT)
+}
+
+"""Units for energy."""
+enum WorkUnitEnum @vspec(element: QUANTITY_KIND) {
+  KILOWATT_HOURS @vspec(element: UNIT)
+}
+
+"""Units for voltage."""
+enum VoltageUnitEnum @vspec(element: QUANTITY_KIND) {
+  VOLT @vspec(element: UNIT)
+}
+
+# ── Root query ──────────────────────────────────────────────────────────────
+
+type Query {
+  vehicle: Vehicle
+}
+
+# ── Vehicle ─────────────────────────────────────────────────────────────────
+
+"""High-level vehicle data."""
+type Vehicle @vspec(element: BRANCH, fqn: "Vehicle") {
+  """Vehicle speed."""
+  speed(unit: VelocityUnitEnum = KILOMETER_PER_HOUR): Float
+    @vspec(element: SENSOR, fqn: "Vehicle.Speed")
+
+  vehicleIdentification: VehicleIdentification
+    @vspec(element: BRANCH, fqn: "Vehicle.VehicleIdentification")
+
+  chassis: Chassis
+    @vspec(element: BRANCH, fqn: "Vehicle.Chassis")
+
+  currentLocation: CurrentLocation
+    @vspec(element: BRANCH, fqn: "Vehicle.CurrentLocation")
+
+  powertrain: Powertrain
+    @vspec(element: BRANCH, fqn: "Vehicle.Powertrain")
+
+  cabin: Cabin
+    @vspec(element: BRANCH, fqn: "Vehicle.Cabin")
+
+  ai: AI
+    @vspec(element: BRANCH, fqn: "Vehicle.AI")
+
+  """Power/Wake-up/Fall-asleep status (CDSP-specific, not in standard VSS)."""
+  pwfStatus: String
+    @vspec(element: ATTRIBUTE, fqn: "Vehicle.PWFStatus")
+}
+
+# ── VehicleIdentification ───────────────────────────────────────────────────
+
+"""Attributes that identify a vehicle."""
+type VehicleIdentification
+  @vspec(element: BRANCH, fqn: "Vehicle.VehicleIdentification") {
+  """17-character Vehicle Identification Number (VIN) as defined by ISO 3779."""
+  vin: String
+    @vspec(element: ATTRIBUTE, fqn: "Vehicle.VehicleIdentification.VIN")
+}
+
+# ── Chassis ─────────────────────────────────────────────────────────────────
+
+"""All data concerning steering, suspension, wheels, and brakes."""
+type Chassis @vspec(element: BRANCH, fqn: "Vehicle.Chassis") {
+  steeringWheel: SteeringWheel
+    @vspec(element: BRANCH, fqn: "Vehicle.Chassis.SteeringWheel")
+}
+
+"""Steering wheel signals."""
+type SteeringWheel @vspec(element: BRANCH, fqn: "Vehicle.Chassis.SteeringWheel") {
+  """Steering wheel angle. Positive = degrees to the left. Negative = degrees to the right."""
+  angle(unit: AngleUnitEnum = DEGREE): Int16
+    @vspec(element: SENSOR, fqn: "Vehicle.Chassis.SteeringWheel.Angle")
+}
+
+# ── CurrentLocation ─────────────────────────────────────────────────────────
+
+"""The current latitude and longitude of the vehicle."""
+type CurrentLocation @vspec(element: BRANCH, fqn: "Vehicle.CurrentLocation") {
+  """Current latitude of vehicle in WGS 84 geodetic coordinates, as measured at the position of GNSS receiver antenna."""
+  latitude(unit: AngleUnitEnum = DEGREE): Float
+    @vspec(element: SENSOR, fqn: "Vehicle.CurrentLocation.Latitude")
+    @range(min: -90, max: 90)
+
+  """Current longitude of vehicle in WGS 84 geodetic coordinates, as measured at the position of GNSS receiver antenna."""
+  longitude(unit: AngleUnitEnum = DEGREE): Float
+    @vspec(element: SENSOR, fqn: "Vehicle.CurrentLocation.Longitude")
+    @range(min: -180, max: 180)
+
+  """Timestamp from GNSS system for current location, formatted according to ISO 8601 with UTC time zone."""
+  timestamp: String
+    @vspec(element: SENSOR, fqn: "Vehicle.CurrentLocation.Timestamp")
+
+  """Current heading relative to geographic north. 0 = North, 90 = East, 180 = South, 270 = West."""
+  heading(unit: AngleUnitEnum = DEGREE): Float
+    @vspec(element: SENSOR, fqn: "Vehicle.CurrentLocation.Heading")
+    @range(min: 0, max: 360)
+}
+
+# ── Powertrain ───────────────────────────────────────────────────────────────
+
+"""Powertrain data for battery management, etc."""
+type Powertrain @vspec(element: BRANCH, fqn: "Vehicle.Powertrain") {
+  tractionBattery: TractionBattery
+    @vspec(element: BRANCH, fqn: "Vehicle.Powertrain.TractionBattery")
+
+  transmission: Transmission
+    @vspec(element: BRANCH, fqn: "Vehicle.Powertrain.Transmission")
+}
+
+"""Battery Management data."""
+type TractionBattery
+  @vspec(element: BRANCH, fqn: "Vehicle.Powertrain.TractionBattery") {
+  """Nominal Voltage of the battery. Nominal voltage typically refers to voltage of fully charged battery when delivering rated capacity."""
+  nominalVoltage(unit: VoltageUnitEnum = VOLT): UInt16
+    @vspec(element: ATTRIBUTE, fqn: "Vehicle.Powertrain.TractionBattery.NominalVoltage")
+
+  stateOfCharge: StateOfCharge
+    @vspec(element: BRANCH, fqn: "Vehicle.Powertrain.TractionBattery.StateOfCharge")
+}
+
+"""Information on the state of charge of the vehicle's high voltage battery."""
+type StateOfCharge
+  @vspec(element: BRANCH, fqn: "Vehicle.Powertrain.TractionBattery.StateOfCharge") {
+  """Physical state of charge of high voltage battery expressed in kWh."""
+  currentEnergy(unit: WorkUnitEnum = KILOWATT_HOURS): Float
+    @vspec(element: SENSOR, fqn: "Vehicle.Powertrain.TractionBattery.StateOfCharge.CurrentEnergy")
+}
+
+"""Transmission-specific data, stopping at the drive shafts."""
+type Transmission
+  @vspec(element: BRANCH, fqn: "Vehicle.Powertrain.Transmission") {
+  """The current gear. 0=Neutral, 1/2/..=Forward, -1/-2/..=Reverse."""
+  currentGear: Int8
+    @vspec(element: SENSOR, fqn: "Vehicle.Powertrain.Transmission.CurrentGear")
+}
+
+# ── Cabin ────────────────────────────────────────────────────────────────────
+
+"""Cabin signals."""
+type Cabin @vspec(element: BRANCH, fqn: "Vehicle.Cabin") {
+  door: Door
+    @vspec(element: BRANCH, fqn: "Vehicle.Cabin.Door")
+
+  light: CabinLight
+    @vspec(element: BRANCH, fqn: "Vehicle.Cabin.Light")
+}
+
+"""Door signals."""
+type Door @vspec(element: BRANCH, fqn: "Vehicle.Cabin.Door") {
+  """Door position (Row1, Row2, Driver, Passenger)."""
+  position: String
+    @vspec(element: ATTRIBUTE, fqn: "Vehicle.Cabin.Door.Position")
+
+  window: Window
+    @vspec(element: BRANCH, fqn: "Vehicle.Cabin.Door.Window")
+}
+
+"""Window signals."""
+type Window @vspec(element: BRANCH, fqn: "Vehicle.Cabin.Door.Window") {
+  """Is item open or closed? True = Fully or partially open. False = Fully closed."""
+  isOpen: Boolean
+    @vspec(element: SENSOR, fqn: "Vehicle.Cabin.Door.Window.IsOpen")
+
+  """Item position. 0 = Start position, 100 = End position."""
+  windowPosition: UInt8
+    @vspec(element: SENSOR, fqn: "Vehicle.Cabin.Door.Window.Position")
+    @range(min: 0, max: 100)
+
+  """Switch controlling sliding action such as window, sunroof, or blind."""
+  switch: String
+    @vspec(element: ACTUATOR, fqn: "Vehicle.Cabin.Door.Window.Switch")
+}
+
+"""Cabin light signals."""
+type CabinLight @vspec(element: BRANCH, fqn: "Vehicle.Cabin.Light") {
+  ambientLight: AmbientLight
+    @vspec(element: BRANCH, fqn: "Vehicle.Cabin.Light.AmbientLight")
+
+  spotLight: SpotLight
+    @vspec(element: BRANCH, fqn: "Vehicle.Cabin.Light.SpotLight")
+}
+
+"""Ambient light signals."""
+type AmbientLight @vspec(element: BRANCH, fqn: "Vehicle.Cabin.Light.AmbientLight") {
+  """Light position (Row1, Row2, Driver, Passenger)."""
+  position: String
+    @vspec(element: ATTRIBUTE, fqn: "Vehicle.Cabin.Light.AmbientLight.Position")
+
+  """Hexadecimal color code represented as a 3-byte RGB value preceded by a hash symbol '#'."""
+  lightColor: String
+    @vspec(element: ATTRIBUTE, fqn: "Vehicle.Cabin.Light.AmbientLight.Color")
+
+  """How much of the maximum possible brightness of the light is used. 1 = Maximum attenuation, 100 = No attenuation."""
+  lightIntensity: UInt8
+    @vspec(element: SENSOR, fqn: "Vehicle.Cabin.Light.AmbientLight.Intensity")
+    @range(min: 1, max: 100)
+
+  """Indicates whether the light is turned on. True = On, False = Off."""
+  lightIsLightOn: Boolean
+    @vspec(element: SENSOR, fqn: "Vehicle.Cabin.Light.AmbientLight.IsLightOn")
+}
+
+"""Spot light signals."""
+type SpotLight @vspec(element: BRANCH, fqn: "Vehicle.Cabin.Light.SpotLight") {
+  """Hexadecimal color code represented as a 3-byte RGB value preceded by a hash symbol '#'."""
+  lightColor: String
+    @vspec(element: ATTRIBUTE, fqn: "Vehicle.Cabin.Light.SpotLight.Color")
+
+  """How much of the maximum possible brightness of the light is used. 1 = Maximum attenuation, 100 = No attenuation."""
+  lightIntensity: UInt8
+    @vspec(element: SENSOR, fqn: "Vehicle.Cabin.Light.SpotLight.Intensity")
+    @range(min: 1, max: 100)
+
+  """Indicates whether the light is turned on. True = On, False = Off."""
+  lightIsLightOn: Boolean
+    @vspec(element: SENSOR, fqn: "Vehicle.Cabin.Light.SpotLight.IsLightOn")
+}
+
+# ── AI (custom CDSP signal) ──────────────────────────────────────────────────
+
+"""Custom CDSP AI branch (not in standard VSS/VDM)."""
+type AI @vspec(element: BRANCH, fqn: "Vehicle.AI") {
+  reasoner: Reasoner
+    @vspec(element: BRANCH, fqn: "Vehicle.AI.Reasoner")
+}
+
+"""AI Reasoner signals."""
+type Reasoner @vspec(element: BRANCH, fqn: "Vehicle.AI.Reasoner") {
+  """Inference results from the AI reasoner."""
+  inferenceResults: String
+    @vspec(element: ATTRIBUTE, fqn: "Vehicle.AI.Reasoner.InferenceResults")
+}
