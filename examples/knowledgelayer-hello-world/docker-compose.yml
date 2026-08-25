@@ -34,6 +34,17 @@ x-rl-bridge-common: &rl-bridge-common
     - .env
 
 services:
+  # S2DM Config Generator (run once, generates IL/KL config from the GraphQL schema)
+  s2dm-config-gen:
+    build:
+      context: ./s2dm
+    container_name: s2dm-config-gen
+    restart: "no" # one-shot, same as rdfox-init
+    volumes:
+      - ./IL-config/schema-files:/out/il
+      - ./KL-config/rdfox_model/shacl:/out/kl-rdfox
+      - ./KL-config/rdf4j_model/shacl:/out/kl-rdf4j
+
   # Timeseries Data Server
   iotdb-service:
     extends:
@@ -94,6 +105,8 @@ services:
     depends_on:
       iotdb-service:
         condition: service_healthy
+      s2dm-config-gen:
+        condition: service_completed_successfully
     environment:
       - IOTDB_POLL_INTERVAL_LEN_IN_SEC=0.2 # Time between messages to subscribers on changed data point values
       - HANDLER_TYPE=iotdb
@@ -132,6 +145,8 @@ services:
         condition: service_started
       information-layer:
         condition: service_started
+      s2dm-config-gen:
+        condition: service_completed_successfully
     environment:
       - HOST_REASONER_SERVER=rdfox-service
 
@@ -146,6 +161,8 @@ services:
         condition: service_healthy
       information-layer:
         condition: service_started
+      s2dm-config-gen:
+        condition: service_completed_successfully
     environment:
       - HOST_REASONER_SERVER=rdf4j-stream-reasoner-service
 

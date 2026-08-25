@@ -41,6 +41,14 @@ Live VSS data from the current drive made accessible in the [Information Layer S
 
 ![The Use Case in a DIKW,logical and implementation view](KL-example-readme-graphic.png)
 
+#### Config generation
+
+`IL-config/schema-files/vss_data_points.yaml` and both `KL-config/*/shacl/vehicle_shacl.ttl`
+copies are generated from a single GraphQL schema rather than hand-maintained (see
+[s2dm/README.md](s2dm/README.md)). This runs automatically as part of `docker compose
+up` (see step 5 below); you don't need to do anything extra unless you're editing the schema
+yourself.
+
 #### Input, Use Case Logic and Output:
 
 Our input data for the use case includes:
@@ -86,6 +94,11 @@ Derived output data:
    docker compose --profile rdfox up
    ```
 
+   This first runs `s2dm-config-gen`, a one-shot step that (re)generates the IL/KL config files
+   from the GraphQL schema (see [s2dm/README.md](s2dm/README.md)) before anything else starts.
+   Nothing new to type, it's part of the same command. If you've edited the schema yourself, add
+   `--build` (or run `docker compose build s2dm-config-gen` first) so the change is picked up.
+
 6. Wait until all containers are created and started.
 7. Continue playing the `Night drive to Luftkastellet` on `Remotive Labs` page. You should see a lot of logs in the terminal indicating that data is flowing.
 8. Knowledge Layer will generate triples in `KL-config/<reasoner>/output/triples` folder and the reasoner responses that are send to Information Layer in `KL-config/<reasoner>/output/reasoning_output`
@@ -97,6 +110,25 @@ Derived output data:
    ```bash
    docker compose --profile rdfox down
    ```
+
+### Verifying the Setup Without Remotive Labs
+
+`test/feed_test_data.py` exists so you can confirm the stack works end to end without needing a
+Remotive Labs account or driving recording. It feeds synthetic signal data straight into the
+Information Layer over its websocket API (the same `set`/`get` protocol Remotive Labs' bridge
+uses), triggers the driving-style reasoning rules with a steering-angle swing large enough to
+qualify as aggressive driving, and reads the result back out to prove the whole loop (including
+the S2DM-generated IL/KL config from step 5) actually works, not just that the containers started.
+
+With the stack already running (step 5 above, either profile):
+
+```bash
+cd examples/knowledgelayer-hello-world/test
+uv run --with websockets python feed_test_data.py
+```
+
+A successful run prints `PASS` along with the inferred driving-style result. A failure raises
+with a clear error explaining what didn't match, rather than leaving you to guess.
 
 ---
 
