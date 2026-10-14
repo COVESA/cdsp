@@ -226,6 +226,9 @@ void TripleAssembler::generateTriplesFromNode(const Node& node, const SchemaType
 
         const auto node_timestamp = getTimestampFromNode(node);
 
+        if (!node.getValue().has_value()) {
+            throw std::runtime_error("Node value is absent for node: " + node.getName());
+        }
         triple_writer_.addElementDataToTriple(prefixes, data_values, node.getValue().value(),
                                               node_timestamp, ntm_coord_value);
     } catch (const std::exception& e) {
@@ -255,6 +258,15 @@ void TripleAssembler::generateTriplesFromCoordinates(
     const DataMessage& message) {
     {
         try {
+            if (!valid_coordinates.has_value()) {
+                throw std::runtime_error("Coordinate pair is absent");
+            }
+            if (!valid_coordinates.value().latitude.getValue().has_value()) {
+                throw std::runtime_error("Latitude value is absent");
+            }
+            if (!valid_coordinates.value().longitude.getValue().has_value()) {
+                throw std::runtime_error("Longitude value is absent");
+            }
             auto ntm_coord =
                 Helper::getCoordInNtm(valid_coordinates.value().latitude.getValue().value(),
                                       valid_coordinates.value().longitude.getValue().value());
