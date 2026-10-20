@@ -1,25 +1,10 @@
 #!/usr/bin/env python3
 import argparse
+import shutil
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
-from ruamel.yaml import YAML
-from rdflib import Graph, Literal
-from rdflib.namespace import SH, XSD
-
-# Workaround for an S2DM issue: its PascalCase converter treats acronyms as regular
-# words (Ai/Vin/PwfStatus instead of AI/VIN/PWFStatus). Remove fix_vspec_acronyms
-# and fix_shacl_acronyms below once S2DM's own PascalCase conversion handles acronyms.
-ACRONYM_FILES = {"Ai": "AI", "Vin": "VIN", "PwfStatus": "PWFStatus"}
-
-# Workaround for an S2DM issue: its SHACL exporter doesn't map the Int8/UInt8/Int16/
-# UInt16 scalars (used in cdsp-custom.graphql for fields IL requires a specific
-# width for) to an XSD type, so it falls back to xsd:string. These fields are all
-# real integers on the vspec side (S2DM maps those scalars correctly there). Remove
-# fix_shacl_int_datatypes below once S2DM's SHACL exporter maps these scalars to
-# xsd:integer itself.
-SHACL_INTEGER_FIELDS = {"Angle", "NominalVoltage", "CurrentGear", "LightIntensity", "WindowPosition"}
 
 PACKAGE_DIR = Path(__file__).parent.resolve()
 PROJECT_DIR = PACKAGE_DIR.parent.parent
@@ -69,54 +54,6 @@ def parse_args():
     )
     return parser.parse_args()
 
-# Workaround for S2DM's acronym-casing bug (see ACRONYM_FILES above).
-def fix_vspec_acronyms(raw_path, out_path):
-    yaml = YAML()
-    yaml.preserve_quotes = True
-    with raw_path.open("r") as f:
-        data = yaml.load(f)
-
-    for idx, key in enumerate(list(data.keys())):
-        fixed_segments = [ACRONYM_FILES.get(seg, seg) for seg in key.split(".")]
-        if fixed_segments != key.split("."):
-            value = data.pop(key)
-            data.insert(idx, ".".join(fixed_segments), value)
-
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    with out_path.open("w") as f:
-        yaml.dump(data, f)
-
-# Workaround for S2DM's acronym-casing bug (see ACRONYM_FILES above).
-def fix_shacl_acronyms(raw_path):
-    graph = Graph()
-    graph.parse(raw_path, format="turtle")
-
-    for s, p, o in list(graph.triples((None, SH.name, None))):
-        fixed = ACRONYM_FILES.get(str(o))
-        if fixed:
-            graph.remove((s, p, o))
-            graph.add((s, p, Literal(fixed)))
-
-    return graph
-
-# Workaround for S2DM's SHACL scalar-to-XSD mapping gap (see SHACL_INTEGER_FIELDS above).
-def fix_shacl_int_datatypes(graph):
-    for s, _, name in list(graph.triples((None, SH.name, None))):
-        if str(name) not in SHACL_INTEGER_FIELDS:
-            continue
-        for _, p, dtype in list(graph.triples((s, SH.datatype, None))):
-            if dtype == XSD.string:
-                graph.remove((s, p, dtype))
-                graph.add((s, p, XSD.integer))
-
-    return graph
-
-def write_shacl(graph, *out_paths):
-    serialized = graph.serialize(format="turtle")
-    for out_path in out_paths:
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-        out_path.write_text(serialized)
-
 def run_export(subcommand_args):
     cmd = ["s2dm"] + subcommand_args
     try:
@@ -130,16 +67,16 @@ def run_export(subcommand_args):
 def main():
     args = parse_args()
 
-    with tempfile.TemporaryDirectory() as temp_dir:
-        raw_vspec = Path(temp_dir) / "raw_vspec.yaml"
-        raw_shacl = Path(temp_dir) / "raw_shacl.ttl"
+    args.il_out.parent.mkdir(parents=True, exist_ok=True)
+    run_export([
+        "export", "vspec",
+        "-s", str(args.schema),
+        "--naming-config", str(args.naming_config),
+        "-o", str(args.il_out)
+    ])
 
-        run_export([
-            "export", "vspec",
-            "-s", str(args.schema),
-            "--naming-config", str(args.naming_config),
-            "-o", str(raw_vspec)
-        ])
+    with tempfile.TemporaryDirectory() as temp_dir:
+        raw_shacl = Path(temp_dir) / "raw_shacl.ttl"
 
         run_export([
             "export", "shacl",
@@ -152,10 +89,11 @@ def main():
             "-o", str(raw_shacl),
         ])
 
-        fix_vspec_acronyms(raw_vspec, args.il_out)
-        fixed_shacl_graph = fix_shacl_acronyms(raw_shacl)
-        fix_shacl_int_datatypes(fixed_shacl_graph)
-        write_shacl(fixed_shacl_graph, args.kl_rdfox_out, args.kl_rdf4j_out)
+        # Both SHACL copies come from the same export run, so RDFox and RDF4J always
+        # get byte-identical files.
+        for out_path in (args.kl_rdfox_out, args.kl_rdf4j_out):
+            out_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(raw_shacl, out_path)
 
 if __name__ == "__main__":
     main()

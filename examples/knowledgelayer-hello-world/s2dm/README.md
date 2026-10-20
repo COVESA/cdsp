@@ -69,24 +69,18 @@ already regenerates both config files before anything else starts.
 If the schema is invalid, `s2dm-config-gen` exits non-zero and Compose correctly refuses to start
 IL/KL at all, rather than running them against stale or half-written config.
 
-## Post-processing: what gets fixed and why
+## Naming exceptions and integer types
 
-S2DM's raw export output has a few gaps that would otherwise break IL or KL. `s2dmc` (`src/s2dmc/main.py`)
-corrects them after export:
+`naming.yaml`'s `exceptions` key lists literal name overrides applied before S2DM's case
+conversion, for any identifier that must keep an exact casing instead of being reshaped into
+PascalCase/camelCase, such as acronyms (`AI`, `VIN`, `PWFStatus`). Add an entry there whenever
+the schema introduces a new one that needs preserving.
 
-- **Acronym casing** (`Ai`→`AI`, `Vin`→`VIN`, `PwfStatus`→`PWFStatus`): S2DM's PascalCase
-  converter treats acronyms as regular words. Fixed in both the vspec path segments and the SHACL
-  `sh:name` values.
-- **Integer width**: `cdsp-custom.graphql` uses `Int8`/`UInt8`/`Int16`/`UInt16` scalars (instead
-  of plain `Int`) for fields IL requires a specific width for. IL's IoTDB handler only accepts
-  `boolean/string/float/double/int8/int16/uint8/uint16`, and a plain `Int` (→ vspec `int32`)
-  crashes it outright at startup. S2DM's vspec exporter maps those scalars correctly, but its
-  SHACL exporter doesn't yet map them to an XSD type (falls back to `xsd:string`). This script
-  restores `sh:datatype xsd:integer` for those fields.
-
-Both of these are workarounds for confirmed upstream S2DM issues, not permanent design choices.
-They're tracked with the S2DM maintainer; once fixed there, the corresponding functions in
-`src/s2dmc/main.py` (marked with a comment naming exactly what to remove) can go away.
+`cdsp-custom.graphql` uses the `Int8`/`UInt8`/`Int16`/`UInt16` scalars (instead of plain `Int`)
+for fields IL requires a specific width for, since IL's IoTDB handler only accepts
+`boolean/string/float/double/int8/int16/uint8/uint16`. S2DM maps each of these scalars to its
+precise XSD type (`xsd:byte`, `xsd:unsignedByte`, `xsd:short`, `xsd:unsignedShort`) in the
+generated SHACL shapes.
 
 ## Known gaps (not fixed but confirmed non-blocking)
 
