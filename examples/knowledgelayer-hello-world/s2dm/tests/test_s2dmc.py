@@ -24,8 +24,7 @@ def generated(tmp_path_factory):
             "--schema", str(SCHEMA),
             "--naming-config", str(NAMING_CONFIG),
             "--il-out", str(il_out),
-            "--kl-rdfox-out", str(shacl_out),
-            "--kl-rdf4j-out", str(out_dir / "vehicle_shacl_rdf4j.ttl"),
+            "--kl-out", str(shacl_out),
         ],
         check=True,
     )
