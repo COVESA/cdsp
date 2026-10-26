@@ -4,24 +4,36 @@ Generates the two config files the Information Layer (IL) and Knowledge Layer (K
 startup, from a single GraphQL schema (`cdsp-custom.graphql`), using
 [S2DM](https://github.com/COVESA/s2dm):
 
-| Generated file                                | Consumed by                            |
-| --------------------------------------------- | -------------------------------------- |
-| `KL-config/shared/shacl/vehicle_shacl.ttl`    | Knowledge Layer (every reasoner)       |
-| `IL-config/schema-files/vss_data_points.yaml` | Information Layer                      |
+| Generated file                                | Consumed by                                                                               |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------- | -------------------------------- |
+| Setup                                         | Generated file                                                                            | Consumed by                      |
+| -----                                         | --------------                                                                            | -----------                      |
+| Main setup (`docker/docker-compose-cdsp.yml`) | `cdsp/knowledge-layer/symbolic-reasoner/examples/use-case/shared/shacl/vehicle_shacl.ttl` | Knowledge Layer (every reasoner) |
+| Main setup                                    | `cdsp/information-layer/handlers/config/schema-files/vss_data_points.yaml`                | Information Layer                |
+| Hello-world example                           | `examples/knowledgelayer-hello-world/KL-config/shared/shacl/vehicle_shacl.ttl`            | Knowledge Layer (every reasoner) |
+| Hello-world example                           | `examples/knowledgelayer-hello-world/IL-config/schema-files/vss_data_points.yaml`         | Information Layer                |
 
-The SHACL file is written once into `KL-config/shared/`, which every reasoner configuration (`rdfox_model`, `rdf4j_model`) reads.
+The SHACL file is written once into the `shared/` folder of each setup, which every reasoner configuration (`rdfox_model`, `rdf4j_model`) reads. None of the generated files is tracked in git.
 
 This replaces hand-maintaining those files independently. Change the schema once, regenerate, and both layers stay in sync.
 
 ## Running it standalone
 
 ```bash
-cd examples/knowledgelayer-hello-world/s2dm
+cd cdsp/s2dm
 uv sync
 uv run s2dmc
 ```
 
-This writes directly onto the two paths above (relative to this folder's parent), so no
+Without options this writes the two hello-world files. For the main setup, pass the output paths:
+
+```bash
+uv run s2dmc \
+  --kl-out ../knowledge-layer/symbolic-reasoner/examples/use-case/shared/shacl/vehicle_shacl.ttl \
+  --il-out ../information-layer/handlers/config/schema-files/vss_data_points.yaml
+```
+
+The generator writes directly onto these paths, so no
 further copy step is needed. Start the stack with `docker compose up` right after and IL/KL
 will read the freshly generated files.
 
@@ -33,22 +45,22 @@ uv run pytest
 
 > [!NOTE]
 > You can also run a full end-to-end test, feeding real signal data through IL/KL and confirming KL's
-> reasoning rules produce a result that lives in `../test/feed_test_data.py`.
+> reasoning rules produce a result that lives in `examples/knowledgelayer-hello-world/test/feed_test_data.py`.
 
 ## CLI parameters
 
-| Flag              | Default                                                  | Notes                                                                                                                    |
-| ----------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `--schema`        | bundled `cdsp-custom.graphql`                            | any compatible SDL accepted                                                                                              |
-| `--naming-config` | bundled `naming.yaml`                                    | passed as-is to S2DM                                                                                                     |
-| `--il-out`        | `../IL-config/schema-files/vss_data_points.yaml`         |                                                                                                                          |
-| `--kl-out`        | `../KL-config/shared/shacl/vehicle_shacl.ttl`            | shared by all reasoners                                                                                                  |
+| Flag              | Default                                                                           | Notes                       |
+| ----------------- | --------------------------------------------------------------------------------- | --------------------------- |
+| `--schema`        | bundled `cdsp-custom.graphql`                                                     | any compatible SDL accepted |
+| `--naming-config` | bundled `naming.yaml`                                                             | passed as-is to S2DM        |
+| `--il-out`        | `examples/knowledgelayer-hello-world/IL-config/schema-files/vss_data_points.yaml` |                             |
+| `--kl-out`        | `examples/knowledgelayer-hello-world/KL-config/shared/shacl/vehicle_shacl.ttl`    | shared by all reasoners     |
 
 S2DM itself always runs at the version pinned in `pyproject.toml`.
 
 ## Docker Compose (automatic)
 
-`docker-compose.yml` wires this in as the `s2dm-config-gen` service, a one-shot init container
+`docker/docker-compose-cdsp.yml` and `examples/knowledgelayer-hello-world/docker-compose.yml` both wire this in as the `s2dm-config-gen` service, a one-shot init container
 (same pattern as `rdfox-init`) that runs before `information-layer` and both `knowledge-layer-*`
 services, which wait on `service_completed_successfully`. Nothing new to run, `docker compose up`
 already regenerates both config files before anything else starts.

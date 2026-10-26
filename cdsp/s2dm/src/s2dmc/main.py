@@ -6,7 +6,9 @@ from pathlib import Path
 
 PACKAGE_DIR = Path(__file__).parent.resolve()
 PROJECT_DIR = PACKAGE_DIR.parent.parent
-EXAMPLES_DIR = PROJECT_DIR.parent
+REPO_ROOT = PROJECT_DIR.parent.parent
+# Default outputs for standalone runs; Docker Compose passes explicit paths.
+EXAMPLES_DIR = REPO_ROOT / "examples" / "knowledgelayer-hello-world"
 
 # Fixed values, not user-configurable: must match the car:/val: namespace prefixes the
 # KL rules and SPARQL queries expect.

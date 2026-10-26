@@ -37,7 +37,7 @@ services:
   # S2DM Config Generator (run once, generates IL/KL config from the GraphQL schema)
   s2dm-config-gen:
     build:
-      context: ./s2dm
+      context: ../../cdsp/s2dm
     container_name: s2dm-config-gen
     restart: "no" # one-shot, same as rdfox-init
     volumes:

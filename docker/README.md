@@ -42,6 +42,15 @@ cp .env.example .env
 > [!NOTE]
 > The reasoner used by the Knowledge Layer is selected via a Docker Compose [profile](https://docs.docker.com/compose/how-tos/profiles/): `rdfox` (commercial, requires the license above) or `rdf4j` (open-source, no license required). See [Websocket client (CDSP - knowledge layer) docker image build setup](#websocket-client-cdsp---knowledge-layer-docker-image-build-setup). `RDFOX_LIC_PATH` is only needed if you use the `rdfox` profile, but the variable must still exist in `.env` for Docker Compose to parse the file.
 
+### Generated configuration (S2DM)
+
+The Information Layer schema (`vss_data_points.yaml`) and the Knowledge Layer SHACL shapes (`vehicle_shacl.ttl`) are generated from one GraphQL schema by the [S2DM generator](../cdsp/s2dm/README.md). Docker Compose runs it as the one-shot service `s2dm-config-gen` before the Information Layer and the Knowledge Layer start, so nothing extra is needed. The generated files are not tracked in git:
+
+- `cdsp/information-layer/handlers/config/schema-files/vss_data_points.yaml`, mounted into the Information Layer
+- `cdsp/knowledge-layer/symbolic-reasoner/examples/use-case/shared/shacl/vehicle_shacl.ttl`, mounted into the Knowledge Layer
+
+After changing the schema, rebuild the generator image so the change is picked up: `docker compose -f docker-compose-cdsp.yml build s2dm-config-gen`.
+
 ## VISSR docker image build setup
 
 The [VISSR VISS Data Server](https://github.com/COVESA/vissr) has no pre-built image in a docker image repository and must therefore be built. Whilst the upstream documentation for VISSR is considered the reference documentation for build environment setup this section collects information that we have needed for a successful build of master branch commit 27d6de0.
@@ -148,7 +157,7 @@ This guide provides instructions for deploying the Information Layer Server usin
 
 ### Configuring the `.env` File
 
-The `.env` file contains environment variables that need to be configured depending on the database you are using. Detailed instructions on how to configure the `.env` file for the included database can be found in the [IotDB handlers README](../cdsp/information-layer/handlers/src/iotdb/README.md).
+The `.env` file contains environment variables that need to be configured depending on the database you are using. The template [.env.example](.env.example) already contains working values for IoTDB. The variables and their defaults are described in the [IoTDB handler README](../cdsp/information-layer/handlers/src/iotdb/README.md).
 A custom database handler can be implemented following [database handlers README](../cdsp/information-layer/handlers/src/README.md).
 
 > [!IMPORTANT]
@@ -200,9 +209,8 @@ In order to get access to `RDFox RESTfull API` it is required to build two Docke
 ### Prerequisites
 
 - **Running Information Layer Server:** See how to start the information layer [here](#websocket-server-cdsp---information-layer-docker-image-build-setup).
-- **RDFox.lic:** this is the license file required by RDFox, containing information that authorizes the use of RDFox, expiry time and usage. **The license file must be provided when running RDFox images to activate the software.**. The relative path of the file should be provided using the environment variable `RDFOX_LIC_PATH="<your_path>/RDFox.lic"` in the `.env` file in this folder. The file is generally provided when you acquire a license from [Oxford Semantic Technologies](https://www.oxfordsemantic.tech/).
-- For example, you could create here a new folder `rdfox` and place `RDFox.lic` in it.
-  Then set the environment variable in `.env` to `RDFOX_LIC_PATH="./rdfox/RDFox.lic"`
+- **RDFox.lic:** this is the license file required by RDFox, containing information that authorizes the use of RDFox, expiry time and usage. **The license file must be provided when running RDFox images to activate the software.**. Its path is set with `RDFOX_LIC_PATH` in `docker/.env`, relative to this folder. The file is generally provided when you acquire a license from [Oxford Semantic Technologies](https://www.oxfordsemantic.tech/).
+- The template [.env.example](.env.example) expects the file at `examples/shared-config/rdfox/RDFox.lic` (`RDFOX_LIC_PATH="../examples/shared-config/rdfox/RDFox.lic"`), the same place the hello-world example uses. If you keep it elsewhere, change the path in your `docker/.env`.
 
 #### 1. **Initialization (`rdfox-init` Image)**:
 

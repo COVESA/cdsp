@@ -45,7 +45,7 @@ Live VSS data from the current drive made accessible in the [Information Layer S
 
 `IL-config/schema-files/vss_data_points.yaml` and `KL-config/shared/shacl/vehicle_shacl.ttl`
 are generated from a single GraphQL schema rather than hand-maintained (see
-[s2dm/README.md](s2dm/README.md)). This runs automatically as part of `docker compose
+[cdsp/s2dm/README.md](../../cdsp/s2dm/README.md)). This runs automatically as part of `docker compose
 up` (see step 5 below); you don't need to do anything extra unless you're editing the schema
 yourself.
 
@@ -117,7 +117,7 @@ The example needs Docker Compose 2.24 or newer.
    ```
 
    This first runs `s2dm-config-gen`, a one-shot step that (re)generates the IL/KL config files
-   from the GraphQL schema (see [s2dm/README.md](s2dm/README.md)) before anything else starts.
+   from the GraphQL schema (see [cdsp/s2dm/README.md](../../cdsp/s2dm/README.md)) before anything else starts.
    Nothing new to type, it's part of the same command. If you've edited the schema yourself, add
    `--build` (or run `docker compose build s2dm-config-gen` first) so the change is picked up.
 
