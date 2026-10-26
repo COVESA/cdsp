@@ -135,7 +135,8 @@ void WebSocketClient::sendMessage(const json& message) { connection_->asyncWrite
 void WebSocketClient::onSendMessage(boost::system::error_code error_code,
                                     std::size_t bytes_transferred) {
     if (error_code) {
-        Fail(error_code, "write");
+        Fail(error_code, " - Writing to Information Layer " + system_config_.websocket_server.host +
+                             ":" + system_config_.websocket_server.port + " failed");
         return;
     }
     std::cout << "Message sent! " << bytes_transferred << " bytes transferred\n\n";
@@ -145,7 +146,9 @@ void WebSocketClient::onSendMessage(boost::system::error_code error_code,
 void WebSocketClient::onReceiveMessage(boost::beast::error_code error_code,
                                        std::size_t bytes_transferred) {
     if (error_code) {
-        Fail(error_code, "read");
+        Fail(error_code, " - Connection to Information Layer " +
+                             system_config_.websocket_server.host + ":" +
+                             system_config_.websocket_server.port + " lost");
         return;
     }
 
@@ -170,15 +173,25 @@ void WebSocketClient::processMessage(const std::shared_ptr<const std::string>& m
     response_messages_queue_.erase(response_messages_queue_.begin());
 
     // Attempt to extract a data message from the priority message
-    // or process the status message and log any errors if present
-    const auto data_message =
-        MessageService::getDataOrProcessStatusFromMessage(prio_message, *request_registry_);
+    // or process the status message and log any errors if present.
+    // A message that cannot be parsed, or whose triples cannot be stored (for example because
+    // the datastore is not reachable), is skipped so the client keeps running.
+    std::optional<DataMessage> data_message;
+    try {
+        data_message =
+            MessageService::getDataOrProcessStatusFromMessage(prio_message, *request_registry_);
+        if (data_message.has_value()) {
+            triple_assembler_.transformMessageToTriple(data_message.value());
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Skipping message: " << e.what() << "\nMessage: " << prio_message.substr(0, 200)
+                  << std::endl;
+        data_message.reset();
+    }
 
     // Process the data message if it is valid
     if (data_message.has_value()) {
-        // If the message is a regular data message, process it as a triple and
-        // handle the reasoning queries
-        triple_assembler_.transformMessageToTriple(data_message.value());
+        // The message has been stored as triples, handle the reasoning queries
 
         // Process reasoning query
         for (const auto& reasoning_output_query : model_config_->getReasoningOutputQueries()) {

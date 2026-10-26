@@ -4,6 +4,9 @@ x-knowledge-layer-common: &knowledge-layer-common
     dockerfile: Dockerfile
   container_name: knowledge-layer
   entrypoint: ["/src/build/bin/reasoner_client"]
+  # The client exits with an error when the connection to the Information Layer is lost;
+  # Docker starts it again, and it reconnects and subscribes again.
+  restart: on-failure
   env_file:
     - .env
   command: -X reset_ds

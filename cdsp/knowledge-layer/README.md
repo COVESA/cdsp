@@ -189,6 +189,15 @@ To display a list of available environment variables and their default values, r
 ./reasoner_client --help
 ```
 
+### Errors and Exit Codes
+
+- **A message that cannot be processed** (invalid JSON or JSON-RPC, or the reasoner datastore is not reachable while storing its triples) is logged as `Skipping message: ...` and skipped. The client keeps running and continues with the next message.
+- **The connection to the Information Layer cannot be established or is lost:** the client logs the host and port it used and exits with exit code `1`. In the Docker Compose setups it is restarted automatically (`restart: on-failure`) and connects and subscribes again; when running natively, start it again.
+- **Invalid configuration at start-up** (for example a missing `VEHICLE_OBJECT_ID`) ends with exit code `1` and an `Error: ...` message. In the Docker Compose setups the container then keeps restarting with growing pauses, because Docker cannot tell this from a lost connection; a restart does not fix it. Correct the configuration in `docker/.env` and start the service again.
+- **A reasoner that is not reachable yet at start-up** also ends with exit code `1`. Here the restart helps: the next start succeeds once the reasoner is up.
+
+The client never exits with `0`: every exit is a failure and reported as such. Whether to restart is decided by the restart policy of the compose files, not by the client.
+
 ### Using the Reasoner API in the Client
 
 The WebSocket client integrates with the [TripleAssembler](./connector/json-rdf-convertor/rdf-writer/README.md) component, which converts incoming data into RDF triples and pushes them to the configured reasoner server via its REST API. The reasoner applies inference rules and makes results available for querying.

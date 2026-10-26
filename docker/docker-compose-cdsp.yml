@@ -6,6 +6,9 @@ x-knowledge-layer-common: &knowledge-layer-common
     dockerfile: Dockerfile
   container_name: knowledge-layer
   entrypoint: ["/src/build/bin/reasoner_client"]
+  # The client exits with an error when the connection to the Information Layer is lost;
+  # Docker starts it again, and it reconnects and subscribes again.
+  restart: on-failure
   # Start with an empty datastore: the RDFox datastore is persistent and would keep rules and data
   # from earlier runs (RDF4J is in-memory anyway).
   command: -X reset_ds

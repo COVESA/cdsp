@@ -301,6 +301,8 @@ $ sudo docker compose -f docker-compose-cdsp.yml --profile rdf4j up -d knowledge
 # ✔ Container knowledge-layer         Started
 ```
 
+The Knowledge Layer services restart automatically when the client exits with an error (`restart: on-failure`). If the Information Layer stops, the Knowledge Layer exits and keeps restarting until the Information Layer is back, then connects and subscribes again. A configuration error (for example a missing `VEHICLE_OBJECT_ID`) also leads to repeated restarts, which do not fix it: the container shows `Restarting` in `docker ps`, `docker logs knowledge-layer` shows the `Error: ...` message, and the fix is to correct `docker/.env`. Messages it cannot process are skipped and logged as `Skipping message: ...`. See [Errors and Exit Codes](../cdsp/knowledge-layer/README.md#errors-and-exit-codes).
+
 #### Tip: Corporate CA security (download error "tls: failed to verify certificate:")
 
 If you are working behind a corporate security system that places a _man-in-the-middle_ between your host and the internet you may see security errors when artifacts are downloaded as part of the build process.
