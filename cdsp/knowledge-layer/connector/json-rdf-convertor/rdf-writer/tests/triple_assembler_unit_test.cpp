@@ -240,8 +240,10 @@ car:Observation20181116155027123456789
         .Times(1)
         .WillOnce(testing::Return(dummy_ttl));
 
-    // Mock logging the generated TTL triples to RDFox
-    EXPECT_CALL(*mock_reasoner_service_, loadData(::testing::StrEq(dummy_ttl), ::testing::_))
+    // The vehicle data is loaded as observations, with the time of the observation
+    const auto expected_observation_time = nodes_.front().getMetadata().getReceived();
+    EXPECT_CALL(*mock_reasoner_service_, loadObservations(::testing::StrEq(dummy_ttl), ::testing::_,
+                                                          ::testing::Eq(expected_observation_time)))
         .Times(1)
         .WillOnce(testing::Return(true));
 
@@ -335,7 +337,8 @@ TEST_F(TripleAssemblerUnitTest,
         .WillOnce(testing::Return(dummy_ttl));
 
     // Mock logging the generated TTL triples to RDFox
-    EXPECT_CALL(*mock_reasoner_service_, loadData(::testing::StrEq(dummy_ttl), ::testing::_))
+    EXPECT_CALL(*mock_reasoner_service_,
+                loadObservations(::testing::StrEq(dummy_ttl), ::testing::_, ::testing::_))
         .Times(1)
         .WillOnce(testing::Return(true));
 
@@ -478,7 +481,8 @@ TEST_F(TripleAssemblerUnitTest, TransformMessageToRDFTripleWithCoordinatesSucces
         .WillOnce(testing::Return(dummy_ttl));
 
     // Mock logging the generated TTL triples to RDFox
-    EXPECT_CALL(*mock_reasoner_service_, loadData(::testing::StrEq(dummy_ttl), ::testing::_))
+    EXPECT_CALL(*mock_reasoner_service_,
+                loadObservations(::testing::StrEq(dummy_ttl), ::testing::_, ::testing::_))
         .Times(1)
         .WillOnce(testing::Return(true));
 
@@ -533,7 +537,8 @@ TEST_F(TripleAssemblerUnitTest, TransformMessageToTripleFailsWhenCoordinatesAreN
         .WillRepeatedly(testing::Return(dummy_ttl));
 
     // Mock logging the generated TTL triples to RDFox
-    EXPECT_CALL(*mock_reasoner_service_, loadData(::testing::StrEq(dummy_ttl), ::testing::_))
+    EXPECT_CALL(*mock_reasoner_service_,
+                loadObservations(::testing::StrEq(dummy_ttl), ::testing::_, ::testing::_))
         .Times(1)
         .WillOnce(testing::Return(true));
 

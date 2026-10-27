@@ -165,6 +165,8 @@ class MyReasonerAdapter : public IReasonerAdapter {
 #endif  // MY_REASONER_ADAPTER_H
 ```
 
+`loadObservations(data, content_type, observation_time)` receives the vehicle observations, while `loadData` receives static data such as ontologies and SHACL shapes. Its default calls `loadData` and ignores `observation_time`, which is correct for engines that keep all data in one datastore (RDFox, RDF4J); a stream reasoner such as CQELS must override it to push the observations onto its stream with their time.
+
 **File:** `/cdsp/knowledge-layer/symbolic-reasoner/adapters/my-reasoner/src/my_reasoner_adapter.cpp`
 
 ```cpp
