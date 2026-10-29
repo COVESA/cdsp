@@ -41,31 +41,26 @@ Node client support for native topic consumer APIs is limited for our target sta
 
 ## Configuration
 
-Create `/docker/.env` (if missing) and configure:
+The handler reads these variables from `docker/.env`. Create it from the template with `cp docker/.env.example docker/.env`; the template already contains working values for the Docker Compose setup.
 
-```shell
-#########################
-# GENERAL CONFIGURATION #
-#########################
+| Variable                         | Default               | Meaning                                            |
+| -------------------------------- | --------------------- | -------------------------------------------------- |
+| `HANDLER_TYPE`                   | none, required        | Must be `iotdb` to use this handler                |
+| `IOTDB_HOST`                     | `iotdb-service`       | IoTDB host                                         |
+| `IOTDB_PORT`                     | `6667`                | IoTDB port                                         |
+| `IOTDB_USER`                     | `root`                | IoTDB user                                         |
+| `IOTDB_PASSWORD`                 | `root`                | IoTDB password                                     |
+| `IOTDB_FETCH_SIZE`               | `10000`               | Rows fetched per query                             |
+| `IOTDB_TIME_ZONE_ID`             | time zone of the host | Time zone of the IoTDB session                     |
+| `IOTDB_POLL_INTERVAL_LEN_IN_SEC` | `0.2`                 | Seconds between two checks for changed data points |
 
-HANDLER_TYPE=iotdb
-DATA_POINTS_SCHEMA_FILE=vss_data_points.yaml
+The defaults are set in [`config/database-params.ts`](config/database-params.ts).
 
-#######################
-# IOTDB CONFIGURATION #
-#######################
-
-IOTDB_HOST="your-iotdb-host"
-IOTDB_PORT=6667
-IOTDB_USER="your-iotdb-user"
-IOTDB_PASSWORD="your-iotdb-password"
-IOTDB_TIMEZONE="your-time-zone"
-IOTDB_FETCH_SIZE=10000
-IOTDB_POLL_INTERVAL_LEN_IN_SEC=5
-```
+> [!IMPORTANT]
+> On every poll, subscribers only receive the **latest** value of each data point that changed since the previous poll; values in between are not sent. Keep the poll interval well below the time windows of the reasoning rules (the driving-style rules look at changes within 3 seconds), otherwise they never see the changes they look for.
 
 > [!WARNING]
-> Do not commit /docker/.env to GitHub.
+> Do not commit `docker/.env`; it is not tracked in git.
 
 ### Running
 
