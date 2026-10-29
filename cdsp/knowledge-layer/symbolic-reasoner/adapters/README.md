@@ -52,9 +52,7 @@ covesa.cdsp/
 │           └── rdf4j_model/                # Config for RDF4J
 │               └── model_config.json
 │
-└── docker/
-    ├── rdfox/                              # RDFox external engine
-    │   └── RDFox.lic
+└── cdsp/reasoner-services/
     └── rdf4j/                              # RDF4J external engine
         ├── Dockerfile
         ├── README.md
@@ -66,8 +64,8 @@ covesa.cdsp/
 
 | Reasoner | Enum Value | Adapter Location | Engine Location |
 | -------- | ---------- | ---------------- | --------------- |
-| RDFox    | `RDFOX`    | `rdfox/src/`     | `docker/rdfox/` |
-| RDF4J    | `RDF4J`    | `rdf4j/src/`     | `docker/rdf4j/` |
+| RDFox    | `RDFOX`    | `rdfox/src/`     | published image `oxfordsemantic/rdfox` (licence file via `RDFOX_LIC_PATH`) |
+| RDF4J    | `RDF4J`    | `rdf4j/src/`     | `cdsp/reasoner-services/rdf4j/` |
 
 ---
 
@@ -332,16 +330,7 @@ This will prevent debug generated triples from being committed to the repository
 
 ### Step 8: (Optional) Add External Engine
 
-If your reasoner runs as an external service:
-
-**Folder:** `docker/my-reasoner/`
-
-```
-docker/my-reasoner/
-├── Dockerfile
-├── README.md
-└── ... (engine-specific files)
-```
+If your reasoner runs as an external service, put it in `cdsp/reasoner-services/my-reasoner/` with a `Dockerfile` and a `README.md`, and add it to the compose files under its own profile. See [Reasoner Services](../../../reasoner-services/README.md) for the common conventions.
 
 ---
 

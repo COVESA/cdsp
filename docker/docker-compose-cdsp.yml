@@ -136,7 +136,7 @@ services:
   rdf4j-stream-reasoner-service:
     profiles: ["rdf4j"]
     build:
-      context: rdf4j
+      context: ../cdsp/reasoner-services/rdf4j
     image: rdf4j-stream-reasoner:latest
     container_name: rdf4j-stream-reasoner-service
     ports:

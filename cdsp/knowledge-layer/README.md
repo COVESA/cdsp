@@ -173,7 +173,7 @@ Files that are the same for every engine (required signals, SHACL shapes, ontolo
 To switch engines, set `HOST_REASONER_SERVER` to the target service and point `MODEL_CONFIGURATION_PATH` to the corresponding model directory. No code changes are required.
 
 - RDFox uses Datalog rules (`.dlog`) and requires a license file. See [docker/README.md](/docker/README.md#rdfox-restful-api).
-- RDF4J uses SHACL `sh:SPARQLRule` CONSTRUCT patterns (`.shacl`) and requires no license. See [docker/rdf4j/README.md](/docker/rdf4j/README.md).
+- RDF4J uses SHACL `sh:SPARQLRule` CONSTRUCT patterns (`.shacl`) and requires no license. See the [RDF4J service README](../reasoner-services/rdf4j/README.md).
 
 ### Start the Reasoner Websocket Client
 

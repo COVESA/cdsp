@@ -249,7 +249,7 @@ $ sudo docker compose -f docker-compose-cdsp.yml --profile rdfox up -d rdfox-ser
 
 ### RDF4J Reasoner
 
-[RDF4J](rdf4j/README.md) is an open-source reasoner and requires no license, making it the simplest way to try out the Knowledge Layer. It runs as a single service, `rdf4j-stream-reasoner-service`, built from [docker/rdf4j](rdf4j), and is only started when the `rdf4j` profile is selected:
+[RDF4J](../cdsp/reasoner-services/rdf4j/README.md) is an open-source reasoner and requires no license, making it the simplest way to try out the Knowledge Layer. It runs as a single service, `rdf4j-stream-reasoner-service`, built from [cdsp/reasoner-services/rdf4j](../cdsp/reasoner-services/rdf4j), and is only started when the `rdf4j` profile is selected:
 
 ```shell
 $ sudo docker compose -f docker-compose-cdsp.yml --profile rdf4j up -d rdf4j-stream-reasoner-service
