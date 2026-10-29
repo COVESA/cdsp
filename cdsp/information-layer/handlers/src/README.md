@@ -14,7 +14,6 @@ functionality to handle WebSocket messages (`get`, `set`, `subscribe`, `unsubscr
 
 2. **Implement the handler methods**
    You must implement the following methods in your new handler:
-
    - `authenticateAndConnect()`: Establish a connection with the database and authenticate.
    - `getKnownDatapointsByPrefix(prefix)`: Return all known datapoint names that begin with the specified prefix.
    - `getDataPointsFromDB(dataPoints, vin)`: Return datapoints from DB based on requested datapoints and VIN.
@@ -88,7 +87,7 @@ export class MyDBHandler extends HandlerBase {
 
 5. **Work with the handler**:
 
-Create (if it does not exist) `/docker/.env` and add:
+Create `docker/.env` from the template if it does not exist (`cp docker/.env.example docker/.env`), then set `HANDLER_TYPE` to your handler and add its variables, for example:
 
 ```sh
 #########################
@@ -96,7 +95,6 @@ Create (if it does not exist) `/docker/.env` and add:
 #########################
 
 HANDLER_TYPE=mydb
-DATA_POINTS_SCHEMA_FILE=vss_data_points.yaml
 
 #########################
 # MYDB CONFIGURATION    #
@@ -105,8 +103,10 @@ DATA_POINTS_SCHEMA_FILE=vss_data_points.yaml
 OPTIONAL_CUSTOM_VARIABLES="value"
 ```
 
+Add the new variables with example values (no secrets) to `docker/.env.example` as well, so the template stays the reference for everyone.
+
 > [!WARNING]
-> Do not commit this file to GitHub!
+> Do not commit `docker/.env`; it is not tracked in git.
 
 To use your custom handler, register it in [HandlerCreator.ts](./HandlerCreator.ts):
 

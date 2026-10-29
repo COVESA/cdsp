@@ -1,0 +1,2 @@
+# Local settings with secrets, created from .env.example
+.env
