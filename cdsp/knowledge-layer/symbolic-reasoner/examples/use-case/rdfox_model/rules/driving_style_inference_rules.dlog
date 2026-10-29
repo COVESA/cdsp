@@ -11,9 +11,10 @@
 # angle value: 1 1 1 1 4 5
 # lat,long:    a b c d e f
 # segment:           st  ed  (segment4_6 hasStartPont d, hasEndPoint f, angle_diff 4)
- 
- 
-#2. Identify Current Observations
+  
+# ----------------------------------------------------------------------------
+# Rule 1: Identify Current Observations
+# ----------------------------------------------------------------------------
 car:CurrentObservation[?obs1]:-
     sosa:Observation[?obs],
     AGGREGATE(
@@ -25,9 +26,10 @@ car:CurrentObservation[?obs1]:-
     sosa:Observation[?obs1],
     sosa:observedProperty[?obs1, ?op],
     sosa:phenomenonTime[?obs1, ?max_diff].
- 
- 
-# 3. Identify Observations Within 3 Seconds
+  
+# ----------------------------------------------------------------------------
+# Rule 2: Identify Observations Within 3 Seconds (Slide Window)
+# ----------------------------------------------------------------------------
 car:within3s[?obs1, ?sw],
 car:within3s[?obs2, ?sw]:-
     car:3SecSlideWindow[?sw],
@@ -44,7 +46,9 @@ car:within3s[?obs2, ?sw]:-
         xsd:dateTime(?pt1) - xsd:dateTime(?pt2)) AS ?diff),
     FILTER(?diff <= ?size ).
  
-#4.Detect Large Steering Angle Changes
+# ----------------------------------------------------------------------------
+# Rule 3: Detect Large Steering Angle Changes
+# ----------------------------------------------------------------------------
 car:LargeAngleChange[?lac],
 car:hasFirstAngleChangeObservationDatetime[?lac, ?pt1_trimmed],
 car:hasFirstAngle[?lac, ?angle1],
@@ -53,9 +57,9 @@ car:hasSecondAngle[?lac, ?angle2],
 car:hasAngleDiff[?lac, ?angle_diff],
 car:hasTimeWindowSize[?lac, ?sw] :-
     car:within3s[?obs1, ?sw],
-    sosa:observedProperty[?obs1, car:angle],
+    sosa:observedProperty[?obs1, car:Angle],
     car:within3s[?obs2, ?sw],
-    sosa:observedProperty[?obs2, car:angle],
+    sosa:observedProperty[?obs2, car:Angle],
     FILTER(?obs1 != ?obs2),
     # Extract angle values
     sosa:hasSimpleResult[?obs1, ?angle1],
@@ -70,41 +74,44 @@ car:hasTimeWindowSize[?lac, ?sw] :-
     FILTER(?angle_diff > 210),
     SKOLEM("LargeAngleChange", ?pt1_trimmed, ?pt2_trimmed, ?angle_diff, ?lac).
  
-#5. Identify High-Speed Observations
+# ----------------------------------------------------------------------------
+# Rule 4: Identify High-Speed Observations
+# ----------------------------------------------------------------------------
 car:HighSpeedObservation[?hs],
 car:hasObservation[?hs, ?obs],
 car:hasSpeed[?hs, ?speed_value],
 car:hasObservationDatetime[?hs, ?pt_speed_trimmed] :-
     car:CurrentObservation[?obs],
-    sosa:observedProperty[?obs, car:speed],
+    sosa:observedProperty[?obs, car:Speed],
     sosa:hasSimpleResult[?obs, ?speed_value],
     sosa:phenomenonTime[?obs, ?pt_speed],
     BIND(SUBSTR(STR(?pt_speed), 1, 19) AS ?pt_speed_trimmed),
     FILTER(xsd:float(?speed_value) > 10),
     SKOLEM("HighSpeedObservation", ?obs, ?speed_value, ?hs).
  
-#6. Identify FixPoints (Location)
+# ----------------------------------------------------------------------------
+# Rule 5: Identify FixPoints (Location)
+# ----------------------------------------------------------------------------
 car:FixPoint[?loc],
 car:hasLatObservation[?loc, ?obs_lat],
 car:hasLongObservation[?loc, ?obs_long],
 car:latitude[?loc, ?lat],
 car:longitude[?loc, ?long],
 car:fixPointDatetime[?loc, ?pt_fix_trimmed] :-
-    sosa:observedProperty[?obs_lat, car:latitude],
+    sosa:observedProperty[?obs_lat, car:Latitude],
     sosa:hasSimpleResult[?obs_lat, ?lat],
     sosa:phenomenonTime[?obs_lat, ?pt1],
     BIND(SUBSTR(STR(?pt1), 1, 19) AS ?pt_fix_trimmed),
-    sosa:observedProperty[?obs_long, car:longitude],
+    sosa:observedProperty[?obs_long, car:Longitude],
     sosa:hasSimpleResult[?obs_long, ?long],
     sosa:phenomenonTime[?obs_long, ?pt2],
     BIND(SUBSTR(STR(?pt2), 1, 19) AS ?pt_fix_trimmed),
     FILTER(?pt1 = ?pt2),
     SKOLEM("FixPoint", ?lat, ?long, ?loc).
- 
- 
- 
- 
-#7. Identify Aggressive Driving
+  
+# ----------------------------------------------------------------------------
+# Rule 6: Identify Aggressive Driving
+# ----------------------------------------------------------------------------
 car:AggressiveDriving[?ad],
 car:hasLargeAngleChange[?ad, ?lac],
 car:hasHighSpeed[?ad, ?hs] :-
@@ -117,7 +124,9 @@ car:hasHighSpeed[?ad, ?hs] :-
     SKOLEM("AggressiveDriving", ?lac, ?hs, ?ad).
  
  
-#8. Generate Driving Segments
+# ----------------------------------------------------------------------------
+# Rule 7: Generate Driving Segments
+# ----------------------------------------------------------------------------
 car:Segment[?seg],
 car:hasDrivingStyle[?seg, ?ad],
 car:hasStartFixPoint[?seg, ?start_loc],
@@ -143,10 +152,9 @@ car:timeWindowSize[?seg, ?time_window_size] :-
     #SKOLEM("Segment", ?ad, ?start_loc, ?end_loc, ?seg).
     BIND(IRI(CONCAT("http://example.ontology.com/car#segment", str(?pt1_trimmed),str(?pt2_trimmed), str(?angle_diff))) as ?seg).
  
- 
- 
- 
-#9. Compute Average Angle Change Per Segment
+# ----------------------------------------------------------------------------
+# Rule 8: Compute Average Angle Change Per Segment
+# ----------------------------------------------------------------------------
 car:avgAngleChange[?segment, ?avg_angle_diff] :-
     car:Segment[?segment],
     AGGREGATE(
