@@ -22,7 +22,7 @@ In this use case, we have implemented an AI-powered solution to detect aggressiv
 
 ## How?
 
-Live VSS data from the current drive made accessible in the [Information Layer Server](../../cdsp/information-layer/README.md) via [Websocket](../../cdsp/information-layer/router/src/websocket-server.ts) are converted by a [JSON-RDF-Convertor](../../cdsp/knowledge-layer/connector/README.md) in real-time into a graph data format ([RDF](https://www.w3.org/RDF/)) and stored within the Knowledge Layer in a [Knowledge Graph](https://en.wikipedia.org/wiki/Knowledge_Graph). At any point, every data point (needed for the use case) in the Information Layer has a graph representation. This data representation allows us to attach a [symbolic reasoner](../../cdsp/knowledge-layer/symbolic-reasoner/README.md) ([RDFox](../../cdsp/knowledge-layer/symbolic-reasoner/rdfox/README.md) or [RDF4J](../../../docker/rdf4j/README.md)) to the Knowledge Graph, which can link, evaluate, and infer new facts based on rules, such as deriving the driving style. As soon as an aggressive driving style is detected, the result is converted back from the graph data format to an Information Layer tree format in real time and, in our case, stored in the appropriate data field in the VSS tree. The information "aggressive driving style" can then be shared with other interested applications for example via a data sync middleware.
+Live VSS data from the current drive made accessible in the [Information Layer Server](../../cdsp/information-layer/README.md) via [Websocket](../../cdsp/information-layer/router/src/websocket-server.ts) are converted by a [JSON-RDF-Convertor](../../cdsp/knowledge-layer/connector/README.md) in real-time into a graph data format ([RDF](https://www.w3.org/RDF/)) and stored within the Knowledge Layer in a [Knowledge Graph](https://en.wikipedia.org/wiki/Knowledge_Graph). At any point, every data point (needed for the use case) in the Information Layer has a graph representation. This data representation allows us to attach a [symbolic reasoner](../../cdsp/knowledge-layer/symbolic-reasoner/README.md) ([RDFox](../../cdsp/knowledge-layer/symbolic-reasoner/rdfox/README.md) or [RDF4J](../../cdsp/reasoner-services/rdf4j/README.md)) to the Knowledge Graph, which can link, evaluate, and infer new facts based on rules, such as deriving the driving style. As soon as an aggressive driving style is detected, the result is converted back from the graph data format to an Information Layer tree format in real time and, in our case, stored in the appropriate data field in the VSS tree. The information "aggressive driving style" can then be shared with other interested applications for example via a data sync middleware.
 
 ### Implementation Details
 
@@ -35,11 +35,29 @@ Live VSS data from the current drive made accessible in the [Information Layer S
   write and subscribe capabilities to VSS data via a websocket server
 - **Connector:** [Knowledge Layer Connector](../../cdsp/knowledge-layer/connector/README.md) - Connects Knowledge Layer to Information Layer via websocket client and manages data tasks within Knowledge Layer
 - **Convertor:** [JSON-RDF-Converter](../../cdsp/knowledge-layer/connector/json-rdf-convertor/README.md) - Converts tree-like data (json) into graph data (RDF) and vice versa
-- **Reasoner Adapter:** [RDF4J](../../../docker/rdf4j/README.md) (default, open-source) or [RDFox](../../cdsp/knowledge-layer/symbolic-reasoner/README.md) (requires commercial license) adapter - Selected via `model_config.json`; both expose the same REST interface to the Knowledge Layer
+- **Reasoner Adapter:** [RDF4J](../../cdsp/reasoner-services/rdf4j/README.md) (default, open-source) or [RDFox](../../cdsp/knowledge-layer/symbolic-reasoner/README.md) (requires commercial license) adapter - Selected via `model_config.json`; both expose the same REST interface to the Knowledge Layer
 - **Rules Language:** [SHACL](https://www.w3.org/TR/shacl/) `sh:SPARQLRule` (RDF4J, default) or [Datalog](https://en.wikipedia.org/wiki/Datalog) (RDFox) - Allows describing IF-ELSE like rules in a data-near language
-- **Knowledge Graph and Reasoner:** [RDF4J](../../../docker/rdf4j/README.md) (default) or [RDFox](../../cdsp/knowledge-layer/symbolic-reasoner/rdfox/README.md) (licensed) - Stores the transformed and newly generated graph data, reasons based on rules and graph data, potentially inferring new graph data
+- **Knowledge Graph and Reasoner:** [RDF4J](../../cdsp/reasoner-services/rdf4j/README.md) (default) or [RDFox](../../cdsp/knowledge-layer/symbolic-reasoner/rdfox/README.md) (licensed) - Stores the transformed and newly generated graph data, reasons based on rules and graph data, potentially inferring new graph data
 
 ![The Use Case in a DIKW,logical and implementation view](KL-example-readme-graphic.png)
+
+#### Config generation
+
+`IL-config/schema-files/vss_data_points.yaml` and `KL-config/shared/shacl/vehicle_shacl.ttl`
+are generated from a single GraphQL schema rather than hand-maintained (see
+[cdsp/s2dm/README.md](../../cdsp/s2dm/README.md)). This runs automatically as part of `docker compose
+up` (see step 5 below); you don't need to do anything extra unless you're editing the schema
+yourself.
+
+#### Knowledge Layer configuration
+
+`KL-config/shared/` holds the files every reasoner uses: required signals, SHACL shapes,
+ontology and Triple Assembler helper queries. `KL-config/rdfox_model/` and
+`KL-config/rdf4j_model/` only hold what is specific to the engine: `model_config.json`, rules
+and output queries. Docker Compose mounts the folder of the selected profile and the shared
+folder into the Knowledge Layer; `model_config.json` refers to the shared files with
+`../shared/`. The layout is the same as in the main use case, see the
+[use-case README](../../cdsp/knowledge-layer/symbolic-reasoner/examples/use-case/README.md#folder-layout).
 
 #### Input, Use Case Logic and Output:
 
@@ -60,12 +78,24 @@ Derived output data:
 
 ## Installation and Running
 
+### Local Configuration
+
+The example reads its settings from a `.env` file in this folder. Create it from the template:
+
+```bash
+cp .env.example .env
+```
+
+`.env` is not tracked in git, so your Remotive Labs credentials stay on your machine. Never put them into `.env.example`. The example only uses its own `.env`; it does not need the `docker/.env` of the main setup.
+
+The example needs Docker Compose 2.24 or newer.
+
 ### Remotive Labs and Reasoner Setup
 
 1. Create a [Remotive Labs](https://remotivelabs.com/) account.
 2. Navigate to `Recordings`, select `Night drive to Luftkastellet`, and start the recording with the `Play` button. Wait until it starts playing, then stop the recording for now. This creates a broker for you, and we need its credentials next.
 3. Navigate to the `Brokers` section and open `My personal broker`.
-4. Copy the URL and API key to the environment variables in the [.env](.env) file: `REMOTIVE_LABS_BROKER_URL` and `REMOTIVE_LABS_BROKER_API_KEY`.
+4. Copy the URL and API key into your local `.env` (see [Local Configuration](#local-configuration)): `REMOTIVE_LABS_BROKER_URL` and `REMOTIVE_LABS_BROKER_API_KEY`.
 5. *(Optional, only for the `rdfox` profile)* Acquire the `RDFox.lic` license file from [Oxford Semantic Technologies](https://www.oxfordsemantic.tech/) and place it in [examples/shared-config/rdfox](../shared-config/rdfox). This step is **not** required for the default RDF4J profile.
 
 ### Run Use Case
@@ -74,7 +104,7 @@ Derived output data:
 2. Select `Night drive to Luftkastellet` in the `Recordings` section, open the `Files` tab, and drag and drop the zip file `examples/shared-config/remotive-labs/config_vss_aggressive_driving.zip` into the `Signal Transformations` section.
 3. Navigate to the `Playback` tab, select `config_vss_aggressive_driving` as the `signal transformation`, and press the `Play` button.
 4. If the recording starts playing, stop it for now to proceed with setup.
-5. Start all services from the current folder ([knowledgelayer-hello-world]()). Make sure you have installed `Docker` and `Docker Compose`.
+5. Start all services from the current folder ([knowledgelayer-hello-world]()). Make sure you have installed `Docker` and `Docker Compose` (2.24 or newer) and created your `.env` (see [Local Configuration](#local-configuration)).
 
    ```bash
    docker compose --profile rdf4j up
@@ -85,6 +115,11 @@ Derived output data:
    ```bash
    docker compose --profile rdfox up
    ```
+
+   This first runs `s2dm-config-gen`, a one-shot step that (re)generates the IL/KL config files
+   from the GraphQL schema (see [cdsp/s2dm/README.md](../../cdsp/s2dm/README.md)) before anything else starts.
+   Nothing new to type, it's part of the same command. If you've edited the schema yourself, add
+   `--build` (or run `docker compose build s2dm-config-gen` first) so the change is picked up.
 
 6. Wait until all containers are created and started.
 7. Continue playing the `Night drive to Luftkastellet` on `Remotive Labs` page. You should see a lot of logs in the terminal indicating that data is flowing.
@@ -97,6 +132,25 @@ Derived output data:
    ```bash
    docker compose --profile rdfox down
    ```
+
+### Verifying the Setup Without Remotive Labs
+
+`test/feed_test_data.py` exists so you can confirm the stack works end to end without needing a
+Remotive Labs account or driving recording. It feeds synthetic signal data straight into the
+Information Layer over its websocket API (the same `set`/`get` protocol Remotive Labs' bridge
+uses), triggers the driving-style reasoning rules with a steering-angle swing large enough to
+qualify as aggressive driving, and reads the result back out to prove the whole loop (including
+the S2DM-generated IL/KL config from step 5) actually works, not just that the containers started.
+
+You still need the `.env` from [Local Configuration](#local-configuration), but the Remotive Labs values can stay empty. With the stack already running (step 5 above, either profile):
+
+```bash
+cd examples/knowledgelayer-hello-world/test
+uv run --with websockets python feed_test_data.py
+```
+
+A successful run prints `PASS` along with the inferred driving-style result. A failure raises
+with a clear error explaining what didn't match, rather than leaving you to guess.
 
 ---
 

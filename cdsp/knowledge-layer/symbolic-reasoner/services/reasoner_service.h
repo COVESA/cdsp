@@ -26,6 +26,12 @@ class ReasonerService {
         return adapter_->loadData(data, content_type_str);
     }
 
+    virtual bool loadObservations(const std::string& data, const ReasonerSyntaxType& content_type,
+                                  std::chrono::system_clock::time_point observation_time) {
+        const std::string content_type_str = reasonerSyntaxTypeToContentType(content_type);
+        return adapter_->loadObservations(data, content_type_str, observation_time);
+    }
+
     virtual bool loadRules(const std::string& rules, const RuleLanguageType& content_type) {
         const std::string content_type_str = ruleLanguageTypeToContentType(content_type);
         return adapter_->loadRules(rules, content_type_str);
