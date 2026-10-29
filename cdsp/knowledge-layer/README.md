@@ -118,14 +118,16 @@ The project requires certain environment variables to work with the WebSocket se
 - **PORT_WEBSOCKET_SERVER:** Specifies the port for connecting to the WebSocket server. The default is `8080`.
 - **TARGET_WEBSOCKET_SERVER:** The target endpoint on the WebSocket server to which the client will connect. The default is empty string.
 - **[SCHEMA]\_OBJECT_ID:** The Object ID environment variable is required to subscribe and retrieve information for a specific object, such as a VIN (Vehicle Identification Number) when working with Vehicle Signal Specification (VSS) data. [SCHEMA] represents the schema type being used, such as VEHICLE. For example, if you are working with Vehicle data under the VSS schema, the environment variable should be set as: `VEHICLE_OBJECT_ID`. Use the Object ID configured in the [`information-layer`](../information-layer/README.md).
-- **HOST_REASONER_SERVER:** Hostname of the reasoner server. The default is `127.0.0.1`.
+- **HOST_REASONER_SERVER:** Hostname of the reasoner server. The default is `127.0.0.1`. In the Docker Compose setup it is set per profile by the compose file.
 - **PORT_REASONER_SERVER:** Port for the reasoner server. The default is `12110`.
 - **AUTH_REASONER_SERVER_BASE64:** Base64-encoded credentials for reasoner authentication. The default is `cm9vdDphZG1pbg==` (`root:admin` in base64). Required for RDFox; ignored by RDF4J.
 - **REASONER_DATASTORE_NAME:** Data store used in the reasoner server to store the generated data. The default is `ds-test`.
 - **REASONER_ORIGIN_SYSTEM_NAME:** Origin system name for the reasoner server used to identify the source of the data. The default is `SemanticReasoner`.
-- **MODEL_CONFIGURATION_PATH:** Path to the model configuration file used by the reasoner client. The default is `/symbolic-reasoner/examples/use-case/rdfox_model/`.
+- **MODEL_CONFIGURATION_PATH:** Path to the model configuration folder used by the reasoner client. The default is `/symbolic-reasoner/examples/use-case/rdfox_model/`. In the Docker Compose setup it is set per profile by the compose file (`rdfox_model/` or `rdf4j_model/`).
 
-You can customize the configuration by adding the following environment variables in the `/docker/.env` file. Below is an example of what the file could look like:
+At start-up the client prints the configuration it uses (credentials only as set or not set). If it cannot reach the WebSocket server or the reasoner, the error names the host, port and the variables to check.
+
+When running the client natively, set these variables in your shell. Below is an example with all of them. For the Docker Compose setup, `docker/.env` holds them instead; which ones are needed there, and which ones the compose file sets per profile, is described in the [Docker README](../../docker/README.md#3-websocket-client-cdsp---knowledge-layer).
 
 ```text
 ##################################
@@ -152,10 +154,12 @@ MODEL_CONFIGURATION_PATH="path_to_your_model_config"
 
 The reasoning engine is selected via the `inference_engine` field in `model_config.json` inside the model directory pointed to by `MODEL_CONFIGURATION_PATH`. Two engines are supported:
 
-| Engine | `inference_engine` | Docker service | Model path (Hello World example) |
-|--------|-------------------|----------------|----------------------------------|
-| RDFox  | `"RDFox"`  | `rdfox-service` (requires license) | `KL-config/rdfox_model/` |
-| RDF4J  | `"RDF4J"`  | `rdf4j-stream-reasoner-service` | `KL-config/rdf4j_model/` |
+| Engine | `inference_engine` | Docker service | Model path (main setup) | Model path (Hello World example) |
+|--------|-------------------|----------------|-------------------------|----------------------------------|
+| RDFox  | `"RDFox"`  | `rdfox-service` (requires license) | `/symbolic-reasoner/examples/use-case/rdfox_model/` | `KL-config/rdfox_model/` |
+| RDF4J  | `"RDF4J"`  | `rdf4j-stream-reasoner-service` | `/symbolic-reasoner/examples/use-case/rdf4j_model/` | `KL-config/rdf4j_model/` |
+
+Files that are the same for every engine (required signals, SHACL shapes, ontologies, Triple Assembler helper queries) live once in `symbolic-reasoner/examples/use-case/shared/`. See the [use-case README](./symbolic-reasoner/examples/use-case/README.md#folder-layout).
 
 To switch engines, set `HOST_REASONER_SERVER` to the target service and point `MODEL_CONFIGURATION_PATH` to the corresponding model directory. No code changes are required.
 

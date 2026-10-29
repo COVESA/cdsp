@@ -82,7 +82,10 @@ const SystemConfig& WebSocketClient::getInitConfig() const { return system_confi
 void WebSocketClient::onConnect(boost::system::error_code error_code,
                                 const boost::asio::ip::tcp::endpoint& endpoint) {
     if (error_code) {
-        Fail(error_code, " - Connection failed:");
+        Fail(error_code, " - Connection to Information Layer " +
+                             system_config_.websocket_server.host + ":" +
+                             system_config_.websocket_server.port +
+                             " failed (check HOST_WEBSOCKET_SERVER and PORT_WEBSOCKET_SERVER)");
         return;
     }
 

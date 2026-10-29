@@ -31,12 +31,13 @@ If you have a recent version of Docker installed but without the compose plugin,
 
 ### Prepare Environment Variables for Docker
 
-To use the provided [docker-compose-cdsp.yml](docker-compose-cdsp.yml) there must be a `.env` file in the same folder.
-Create it and add a placeholder for the RDFox license file for now, like this:
+To use the provided [docker-compose-cdsp.yml](docker-compose-cdsp.yml) there must be a `.env` file in the same folder. Create it from the template and adjust the values to your setup:
 
+```shell
+cp .env.example .env
 ```
-RDFOX_LIC_PATH="."  # set path to RDFox.lic file
-```
+
+`.env` is not tracked in git, so your values and any secrets stay local. Do not put them into `.env.example`. The variables are explained in the sections of the services that use them: [Information Layer](#configuring-the-env-file) and [Knowledge Layer](#3-websocket-client-cdsp---knowledge-layer).
 
 > [!NOTE]
 > The reasoner used by the Knowledge Layer is selected via a Docker Compose [profile](https://docs.docker.com/compose/how-tos/profiles/): `rdfox` (commercial, requires the license above) or `rdf4j` (open-source, no license required). See [Websocket client (CDSP - knowledge layer) docker image build setup](#websocket-client-cdsp---knowledge-layer-docker-image-build-setup). `RDFOX_LIC_PATH` is only needed if you use the `rdfox` profile, but the variable must still exist in `.env` for Docker Compose to parse the file.
@@ -142,9 +143,8 @@ This guide provides instructions for deploying the Information Layer Server usin
 
 ### Prerequisites
 
-- Create a `.env` file in this folder (docker/.env) if it is missing and add for now the variable `RDFOX_LIC_PATH="."  # set path to RDFox.lic file`. this environment variable needs to exist for the [docker compose file](docker-compose-cdsp.yml) to work in general.
-  How to set the correct value of this variable is described later at [Knowledge Layer Prerequisites](#prerequisites-1)
-- Not only information layer service but also others services will expect the `.env` file to exist and some environment variables to be set. More details can be found in other service readme sections.
+- Create `docker/.env` from the template if it is missing, see [Prepare Environment Variables for Docker](#prepare-environment-variables-for-docker). `RDFOX_LIC_PATH` must exist for the [docker compose file](docker-compose-cdsp.yml) to work in general; how to set its value is described at [Knowledge Layer Prerequisites](#prerequisites-1).
+- Not only the information layer service but also other services read `docker/.env`. Their variables are described in the service sections below.
 
 ### Configuring the `.env` File
 
@@ -252,24 +252,28 @@ $ sudo docker compose -f docker-compose-cdsp.yml --profile rdf4j up -d rdf4j-str
 
 #### 3. **Websocket client (CDSP - knowledge layer)**:
 
-- Knowledge Layer configuration needs to be added to the `.env` file, like described at [Knowledge Layer Readme](../cdsp/knowledge-layer/README.md#websocket-server-and-rdfox-configuration)
-- Keep in mind that the default values for **HOST_WEBSOCKET_SERVER** and **HOST_REASONER_SERVER** are designed for accessing all services running natively on the same machine. But this guide focuses on running all services in separate docker containers, so the host variables needs to reflect the container names. `HOST_REASONER_SERVER` depends on which reasoner profile you use: `rdfox-service` for the `rdfox` profile, or `rdf4j-stream-reasoner-service` for the `rdf4j` profile. In this case the environment variables should look like this:
+The Knowledge Layer reads its settings from `docker/.env`, created from [.env.example](.env.example). This file is not tracked in git, so keep your own values there. The variables are the same for both profiles; the ones that depend on the profile are set by [docker-compose-cdsp.yml](docker-compose-cdsp.yml).
 
-```text
-# schema REQUIRED_VSS_DATA_POINTS_FILE is the TXT file containing the required data points
-REQUIRED_VSS_DATA_POINTS_FILE=vss_data_required.txt
+| Variable                      | Needed | Value for this setup              | Notes                                                                                                                                                                                         |
+| ----------------------------- | ------ | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VEHICLE_OBJECT_ID`           | yes    | for example `"VINABCD1234567890"` | Vehicle to subscribe to. Without it the Knowledge Layer stops at start-up.                                                                                                                    |
+| `HOST_WEBSOCKET_SERVER`       | yes    | `"information-layer"`             | The default `127.0.0.1` only works when the services run natively, not in containers.                                                                                                         |
+| `PORT_WEBSOCKET_SERVER`       | no     | `"8080"`                          | Default `8080`.                                                                                                                                                                               |
+| `PORT_REASONER_SERVER`        | no     | `"12110"`                         | Default `12110`.                                                                                                                                                                              |
+| `AUTH_REASONER_SERVER_BASE64` | no     | `"cm9vdDphZG1pbg=="`              | Base64 of `root:admin`, the RDFox credentials in the compose file. This is also the default. Not used by RDF4J.                                                                               |
+| `REASONER_DATASTORE_NAME`     | no     | `"ds-test"`                       | Default `ds-test`.                                                                                                                                                                            |
+| `RDFOX_LIC_PATH`              | yes    | path to `RDFox.lic`               | Only used by the `rdfox` profile, but the variable must exist for Docker Compose to read the file. See [Prepare Environment Variables for Docker](#prepare-environment-variables-for-docker). |
 
-HOST_WEBSOCKET_SERVER="information-layer"
-PORT_WEBSOCKET_SERVER="8080"
-# Use "rdfox-service" with the rdfox profile, or "rdf4j-stream-reasoner-service" with the rdf4j profile
-HOST_REASONER_SERVER="rdfox-service"
-PORT_REASONER_SERVER="12110"
-# The following are the default Base64-encoded string of the RDFox credentials configured in the /docker/docker-compose-cdsp.yml file
-# The credentials are: root:admin
-AUTH_REASONER_SERVER_BASE64="cm9vdDphZG1pbg=="
-REASONER_DATASTORE_NAME="ds-test"
-VEHICLE_OBJECT_ID="VINABCD1234567890"
-```
+Set by the compose file per profile, so do not put them in `.env` (the compose value wins):
+
+| Variable                   | `rdfox` profile                                     | `rdf4j` profile                                     |
+| -------------------------- | --------------------------------------------------- | --------------------------------------------------- |
+| `HOST_REASONER_SERVER`     | `rdfox-service`                                     | `rdf4j-stream-reasoner-service`                     |
+| `MODEL_CONFIGURATION_PATH` | `/symbolic-reasoner/examples/use-case/rdfox_model/` | `/symbolic-reasoner/examples/use-case/rdf4j_model/` |
+
+The values for this setup are already in [.env.example](.env.example).
+
+At start-up the Knowledge Layer prints the configuration it uses (credentials only as set or not set). If it cannot reach the Information Layer or the reasoner, the error names the host, port and the variables to check. All variables are described in the [Knowledge Layer README](../cdsp/knowledge-layer/README.md#websocket-server-and-reasoner-configuration).
 
 Use the following commands to start the knowledge layer with the reasoner of your choice (the service name matches the profile: `knowledge-layer-rdfox` or `knowledge-layer-rdf4j`):
 
@@ -392,7 +396,6 @@ CONTAINER ID   IMAGE                         COMMAND                  CREATED   
 ```
 
 #### Apache IoTDB
-
 
 You can confirm the Apache IoTDB server is running by connecting to it with the IoTDB CLI client (_quit_ to exit the client):
 
