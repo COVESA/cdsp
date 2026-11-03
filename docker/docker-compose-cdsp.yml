@@ -148,6 +148,25 @@ services:
       retries: 10
       start_period: 20s
 
+  # CQELS stream reasoner (open-source, no license required). Only the server for now;
+  # the Knowledge Layer service for CQELS follows with the CQELS adapter.
+  cqels-reasoner-service:
+    profiles: ["cqels"]
+    build:
+      context: ../cdsp/reasoner-services/cqels
+    image: cqels-reasoner:latest
+    container_name: cqels-reasoner-service
+    env_file:
+      - .env
+    ports:
+      - "12110:12110"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:12110/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 20s
+
  # VISSR acting as VISS Data Server
 
   tmp:

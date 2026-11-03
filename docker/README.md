@@ -12,6 +12,7 @@ The compose file `docker-compose-cdsp.yml` provides a containerized deployment o
 - [Websocket-Client (CDSP - knowledge layer) docker image build setup](#websocket-client-cdsp---knowledge-layer-docker-image-build-setup)
   - [RDFox reasoner (`rdfox` profile, licensed)](#rdfox-restful-api)
   - [RDF4J reasoner (`rdf4j` profile, open-source)](#rdf4j-reasoner)
+  - [CQELS reasoner (`cqels` profile, open-source, server only)](#cqels-reasoner)
 - [Deploy with Docker Compose](#deploy-with-docker-compose)
 
 ## Docker installation
@@ -257,6 +258,36 @@ $ sudo docker compose -f docker-compose-cdsp.yml --profile rdf4j up -d rdf4j-str
 # [+] Running 1/1
 # ✔ Container rdf4j-stream-reasoner-service   Started
 ```
+
+### CQELS Reasoner
+
+[CQELS](../cdsp/reasoner-services/cqels/README.md) is an open-source stream reasoner and requires no license. It runs as a single service, `cqels-reasoner-service`, built from [cdsp/reasoner-services/cqels](../cdsp/reasoner-services/cqels), and is only started when the `cqels` profile is selected:
+
+```shell
+$ sudo docker compose -f docker-compose-cdsp.yml --profile cqels up -d --build cqels-reasoner-service
+# ...
+# [+] Running 1/1
+# ✔ Container cqels-reasoner-service   Started
+```
+
+> [!NOTE]
+> The `cqels` profile only starts the CQELS server for now. The Knowledge Layer service for CQELS follows with the CQELS adapter, so the profile is not yet part of the Knowledge Layer setup below.
+
+The service listens on port `12110`. To check it, run the manual REST test [cdsp/reasoner-services/cqels/test/run_test.sh](../cdsp/reasoner-services/cqels/test/run_test.sh), or:
+
+```shell
+$ curl http://localhost:12110/health
+OK
+```
+
+The service reads these variables from `docker/.env`. Both are optional: without them the service uses its defaults.
+
+| Variable                    | Example | Description                                                                                              |
+| --------------------------- | ------- | -------------------------------------------------------------------------------------------------------- |
+| `CQELS_RESULTS_BUFFER_SIZE` | `1000`  | Results kept per continuous query until they are fetched. Default `1000`.                                |
+| `CQELS_REORDER_TOLERANCE`   | `500ms` | How late a stream element may arrive and still be used; `0ms` turns the reordering off. Default `500ms`. |
+
+Details are in the [CQELS service README](../cdsp/reasoner-services/cqels/README.md#configuration).
 
 #### 3. **Websocket client (CDSP - knowledge layer)**:
 
