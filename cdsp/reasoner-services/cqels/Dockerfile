@@ -8,8 +8,10 @@ RUN mvn clean package -DskipTests
 
 # Create the runtime container
 FROM eclipse-temurin:17-jre
+RUN useradd --system --no-create-home cqels
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
+USER cqels
 
 EXPOSE 12110
 

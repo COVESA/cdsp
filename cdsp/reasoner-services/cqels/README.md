@@ -78,7 +78,7 @@ Environment variables:
 
 ### Reorder buffer
 
-Signals reach the service one by one, so an element can arrive after a newer one. Once the engine has processed the newer element, it drops the late one without notice, for example from an aggregate window.
+Signals reach the service one by one, so an element can arrive after a newer one. Once the engine has processed the newer element, it drops the late one without notice, for example from an aggregate window. In joins, a late element is kept but can miss join partners that have already left the window, so the buffer is needed there too.
 
 The service therefore holds the elements of each stream and pushes them to the engine in event-time order:
 
