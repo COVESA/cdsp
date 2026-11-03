@@ -91,7 +91,9 @@ bool RequestBuilder::sendRequest(std::map<std::string, std::string>* headers,
 
         return true;
     } catch (const beast::system_error& e) {
-        std::cerr << "Network error: " << e.what() << std::endl;
+        std::cerr << "Network error with reasoner server " << host_ << ":" << port_
+                  << " (check HOST_REASONER_SERVER and PORT_REASONER_SERVER): " << e.what()
+                  << std::endl;
         return false;
     } catch (const std::exception& e) {
         std::cerr << "Error in request: " << e.what() << std::endl;

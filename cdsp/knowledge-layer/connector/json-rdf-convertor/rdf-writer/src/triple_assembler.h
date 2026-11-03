@@ -41,7 +41,8 @@ class TripleAssembler {
                                         const SchemaType& msg_schema_type,
                                         const DataMessage& message);
 
-    void storeTripleOutput(const std::string& triple_output);
+    void storeTripleOutput(const std::string& triple_output,
+                           std::chrono::system_clock::time_point observation_time);
 
    private:
     std::shared_ptr<ModelConfig> model_config_;

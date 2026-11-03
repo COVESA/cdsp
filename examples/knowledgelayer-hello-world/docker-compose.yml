@@ -4,6 +4,9 @@ x-knowledge-layer-common: &knowledge-layer-common
     dockerfile: Dockerfile
   container_name: knowledge-layer
   entrypoint: ["/src/build/bin/reasoner_client"]
+  # The client exits with an error when the connection to the Information Layer is lost;
+  # Docker starts it again, and it reconnects and subscribes again.
+  restart: on-failure
   env_file:
     - .env
   command: -X reset_ds
@@ -34,6 +37,16 @@ x-rl-bridge-common: &rl-bridge-common
     - .env
 
 services:
+  # S2DM Config Generator (run once, generates IL/KL config from the GraphQL schema)
+  s2dm-config-gen:
+    build:
+      context: ../../cdsp/s2dm
+    container_name: s2dm-config-gen
+    restart: "no" # one-shot, same as rdfox-init
+    volumes:
+      - ./IL-config/schema-files:/out/il
+      - ./KL-config/shared/shacl:/out/kl
+
   # Timeseries Data Server
   iotdb-service:
     extends:
@@ -70,7 +83,7 @@ services:
   rdf4j-stream-reasoner-service:
     profiles: ["rdf4j"]
     build:
-      context: ../../docker/rdf4j
+      context: ../../cdsp/reasoner-services/rdf4j
     image: rdf4j-stream-reasoner:latest
     container_name: rdf4j-stream-reasoner-service
     ports:
@@ -89,11 +102,16 @@ services:
       service: information-layer
       file: ../../docker/docker-compose-cdsp.yml
     container_name: information-layer
+    # Only this example's .env. Without !override, extends would also add docker/.env of the main setup.
+    env_file: !override
+      - .env
     volumes:
       - ./IL-config/schema-files:/app/dist/handlers/config/schema-files
     depends_on:
       iotdb-service:
         condition: service_healthy
+      s2dm-config-gen:
+        condition: service_completed_successfully
     environment:
       - IOTDB_POLL_INTERVAL_LEN_IN_SEC=0.2 # Time between messages to subscribers on changed data point values
       - HANDLER_TYPE=iotdb
@@ -127,11 +145,14 @@ services:
     profiles: ["rdfox"]
     volumes:
       - ./KL-config/rdfox_model:/src/symbolic-reasoner/examples/use-case/model
+      - ./KL-config/shared:/src/symbolic-reasoner/examples/use-case/shared
     depends_on:
       rdfox-service:
-        condition: service_started
+        condition: service_healthy
       information-layer:
         condition: service_started
+      s2dm-config-gen:
+        condition: service_completed_successfully
     environment:
       - HOST_REASONER_SERVER=rdfox-service
 
@@ -141,11 +162,14 @@ services:
     profiles: ["rdf4j"]
     volumes:
       - ./KL-config/rdf4j_model:/src/symbolic-reasoner/examples/use-case/model
+      - ./KL-config/shared:/src/symbolic-reasoner/examples/use-case/shared
     depends_on:
       rdf4j-stream-reasoner-service:
         condition: service_healthy
       information-layer:
         condition: service_started
+      s2dm-config-gen:
+        condition: service_completed_successfully
     environment:
       - HOST_REASONER_SERVER=rdf4j-stream-reasoner-service
 

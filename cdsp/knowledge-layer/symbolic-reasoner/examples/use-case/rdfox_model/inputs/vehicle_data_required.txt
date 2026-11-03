@@ -1,7 +1,0 @@
-Vehicle.Chassis.SteeringWheel.Angle
-Vehicle.CurrentLocation.Latitude
-Vehicle.CurrentLocation.Longitude
-Vehicle.Powertrain.TractionBattery.NominalVoltage
-Vehicle.Powertrain.TractionBattery.StateOfCharge.CurrentEnergy
-Vehicle.Powertrain.Transmission.CurrentGear
-Vehicle.Speed
