@@ -1,0 +1,9 @@
+type:
+  object: PascalCase
+field:
+  object: PascalCase
+exceptions:
+  AI: AI
+  ai: AI
+  vin: VIN
+  pwfStatus: PWFStatus

@@ -7,13 +7,17 @@ RealWebSocketConnection::RealWebSocketConnection(net::io_context& io_context,
     : resolver_(io_context), ws_(io_context), client_(std::move(client)) {}
 
 void RealWebSocketConnection::asyncResolve(const std::string& host, const std::string& port) {
+    host_ = host;
+    port_ = port;
     resolver_.async_resolve(host, port,
                             beast::bind_front_handler(&RealWebSocketConnection::onResolve, this));
 }
 
 void RealWebSocketConnection::onResolve(beast::error_code ec, tcp::resolver::results_type results) {
     if (ec) {
-        return Fail(ec, "Resolve failed");
+        const std::string what = "Resolve failed for Information Layer " + host_ + ":" + port_ +
+                                 " (check HOST_WEBSOCKET_SERVER and PORT_WEBSOCKET_SERVER)";
+        return Fail(ec, what.c_str());
     }
     resolve_results_ = results;
     asyncConnect();
