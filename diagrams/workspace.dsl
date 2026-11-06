@@ -51,8 +51,48 @@ workspace "CDSP Knowledge, Information and Graph Retrieval Architecture" "Conver
             remotiveLabsBridge = container "RemotiveLabs Bridge" "Streams subscribed timeseries data from RemotiveLabs virtual signal platform to Playground data store" "Python"
         }
 
-        // Explicit relationships from the draw.io source
+        // Information Layer relationships
         cdsp.informationLayerServer.dbRouter -> onboardOffboardApplications "Consuming Information" "Websocket API"
+        onboardOffboardApplications -> cdsp.informationLayerServer.dbRouter "Contributing Information" "Websocket API"
+        cdsp.informationLayerServer.dbRouter -> cdsp.informationLayerServer.iotdbHandler "(De-)Auth / Read / Write / Subscribe" "Service Call"
+        cdsp.informationLayerServer.iotdbHandler -> cdsp.timeseriesDataServer "Read / Write / (Subscribe)" "Node.js client"
+        knowledgeEngineer -> cdsp.informationLayerServer.dbRouter "Provides semantic context for later conversion" "e.g. SHACL"
+        cdsp.remotiveLabsBridge -> cdsp.informationLayerServer.dbRouter "Writes current value of data stream" "Websocket API"
+
+        // Knowledge Layer relationships
+        cdsp.knowledgeLayerServer.reasonerAdaptor -> cdsp.knowledgeLayerServer.rdfReasoner "Send triples, rules, queries" "HTTP"
+        cdsp.knowledgeLayerServer.reasonerAdaptor -> cdsp.knowledgeLayerServer.rdfReasoner "Subscribes to new inferred triples" "HTTP"
+
+        cdsp.knowledgeLayerServer.reasonerAdaptor -> cdsp.knowledgeLayerServer.connector "Inference result (rules)" "HTTP"
+        cdsp.knowledgeLayerServer.reasonerAdaptor -> cdsp.knowledgeLayerServer.connector "Inference result (query)" "HTTP"
+        cdsp.knowledgeLayerServer.connector -> cdsp.knowledgeLayerServer.reasonerAdaptor "Trigger Graph database interactions (ontologies, triples, rules)" "HTTP"
+        knowledgeEngineer -> cdsp.knowledgeLayerServer.reasonerAdaptor "Initialize with ontologies and rules (representing business logic) and update" "HTTP"
+
+        cdsp.knowledgeLayerServer.connector -> cdsp.knowledgeLayerServer.convertor "Sends tree-like data (json)" "HTTP"
+        cdsp.knowledgeLayerServer.convertor -> cdsp.knowledgeLayerServer.connector "Sends Graph data (RDF)" "HTTP"
+        cdsp.knowledgeLayerServer.convertor -> cdsp.knowledgeLayerServer.connector "Sends tree-like data (json)" "HTTP"
+        cdsp.knowledgeLayerServer.connector -> cdsp.knowledgeLayerServer.convertor "Sends Graph data (RDF)" "HTTP"
+
+        onboardOffboardApplications -> cdsp.knowledgeLayerServer.connector "Consuming Knowledge" "HTTP SPARQL"
+
+        // Graph RAG Server
+        aiAgents -> cdsp.graphRetrievalMcpServer.mcpTransport "Invokes Graph Retrieval Tool" "MCP Streamable HTTP"
+        cdsp.graphRetrievalMcpServer.mcpTransport -> cdsp.graphRetrievalMcpServer.strategyLayer "Dispatches to selected strategy" "in-process"
+        cdsp.graphRetrievalMcpServer.strategyLayer -> cdsp.graphRetrievalMcpServer.sharedServices "Delegates Retrieval Operations" "in-process"
+        cdsp.graphRetrievalMcpServer.sharedServices -> cdsp.graphRetrievalMcpServer.vectorStoreAdapter "Semantic Node Search" "in-process"
+        cdsp.graphRetrievalMcpServer.sharedServices -> cdsp.graphRetrievalMcpServer.knowledgeGraphAdapter "Graph Queries and Traversal" "in-process"
+        cdsp.vectorStorageServer -> cdsp.graphRetrievalMcpServer.vectorStoreAdapter "Embedding Search" "HTTP REST"
+        cdsp.graphRetrievalMcpServer.sharedServices -> cdsp.graphRetrievalMcpServer.informationLayerAdapter "Live Data and Timeseries" "in-process"
+        cdsp.graphRetrievalMcpServer.informationLayerAdapter -> cdsp.informationLayerServer.dbRouter "Live and historical data" "Websocket API"
+
+        // RemotiveLabs
+        cdsp.remotiveLabsBridge -> remotiveLabsPlatform "Subscribes to signals" "Remotive API"
+        remotiveLabsPlatform -> cdsp.remotiveLabsBridge "Sends signal data timeseries" "Remotive API"
+        cdsp.remotiveLabsBridge -> cdsp.timeseriesDataServer "Writes timeseries data stream" "IoTDB API/SQL"
+
+
+
+/* Connections created by AI for reference
         cdsp.informationLayerServer.dbRouter -> cdsp.informationLayerServer.iotdbHandler "(De-)Auth / Read / Write / Subscribe" "Service Call"
         cdsp.informationLayerServer.iotdbHandler -> cdsp.timeseriesDataServer "Read / Write / (Subscribe)" "Thrift"
 
@@ -61,8 +101,6 @@ workspace "CDSP Knowledge, Information and Graph Retrieval Architecture" "Conver
 
         knowledgeEngineer -> cdsp.knowledgeLayerServer.reasonerAdaptor "Initialize with ontologies and rules (representing business logic) and update" "HTTP"
         knowledgeEngineer -> cdsp.informationLayerServer.dbRouter "Provides semantic context for later conversion" "e.g. SHACL"
-        cdsp.knowledgeLayerServer.reasonerAdaptor -> cdsp.knowledgeLayerServer.rdfReasoner "Send triples, rules, queries" "HTTP"
-        cdsp.knowledgeLayerServer.reasonerAdaptor -> cdsp.knowledgeLayerServer.rdfReasoner "Subscribes to new inferred triples" "HTTP"
 
         cdsp.remotiveLabsBridge -> remotiveLabsPlatform "Subscribes to signals" "Remotive API"
         remotiveLabsPlatform -> cdsp.remotiveLabsBridge "Sends signal data timeseries" "Remotive API"
@@ -107,6 +145,7 @@ workspace "CDSP Knowledge, Information and Graph Retrieval Architecture" "Conver
         cdsp.remotiveLabsBridge -> cdsp.informationLayerServer.dbRouter "Writes current value of data stream" "Websocket API" {
             tags "Reconstructed"
         }
+*/
     }
 
     views {
@@ -124,36 +163,48 @@ workspace "CDSP Knowledge, Information and Graph Retrieval Architecture" "Conver
             description "The principal CDSP servers, stores, bridge and external dependencies."
         }
 
-        component cdsp.informationLayerServer "Information-Layer-Components" {
+        component cdsp.informationLayerServer "IL-Components" {
+            description "The component diagram for the Information Layer Container"
             include *
+/*
             include cdsp.timeseriesDataServer
             include cdsp.knowledgeLayerServer.connector
             include cdsp.graphRetrievalMcpServer.informationLayerAdapter
             include onboardOffboardApplications
             include knowledgeEngineer
             include cdsp.remotiveLabsBridge
+*/            
             autolayout lr
-            title "CDSP Information Layer Server Components"
+#            title "CDSP Information Layer Server Components"
         }
 
-        component cdsp.knowledgeLayerServer "Knowledge-Layer-Components" {
+        component cdsp.knowledgeLayerServer "KL-Components" {
+            description "The component diagram for the Knowledge Layer Container"
+
             include *
+/*
             include cdsp.informationLayerServer.dbRouter
             include cdsp.graphRetrievalMcpServer.knowledgeGraphAdapter
             include onboardOffboardApplications
             include knowledgeEngineer
+*/
             autolayout lr
-            title "CDSP Knowledge Layer Server Components"
+#            title "CDSP Knowledge Layer Server Components"
         }
 
-        component cdsp.graphRetrievalMcpServer "Graph-Retrieval-MCP-Components" {
+        component cdsp.graphRetrievalMcpServer "Graph-RAG-Components" {
+            description "The component diagram for the Graph Retrieval MCP Server"
+
             include *
+/*            
             include aiAgents
             include cdsp.vectorStorageServer
             include cdsp.knowledgeLayerServer.connector
             include cdsp.informationLayerServer.dbRouter
             autolayout tb
-            title "Graph Retrieval MCP Server Components"
+*/
+            autolayout lr
+#            title "Graph Retrieval MCP Server Components"
         }
 
         styles {
