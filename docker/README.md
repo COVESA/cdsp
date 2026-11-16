@@ -271,7 +271,7 @@ $ sudo docker compose -f docker-compose-cdsp.yml --profile cqels up -d --build c
 ```
 
 > [!NOTE]
-> The `cqels` profile only starts the CQELS server for now. The Knowledge Layer service for CQELS follows with the CQELS adapter, so the profile is not yet part of the Knowledge Layer setup below.
+> The `cqels` profile only starts the CQELS server for now. The Knowledge Layer service for CQELS follows with the CQELS use case, so the profile is not yet part of the Knowledge Layer setup below.
 
 The service listens on port `12110`. To check it, run the manual REST test [cdsp/reasoner-services/cqels/test/run_test.sh](../cdsp/reasoner-services/cqels/test/run_test.sh), or:
 

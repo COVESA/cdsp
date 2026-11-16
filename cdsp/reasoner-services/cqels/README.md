@@ -12,8 +12,7 @@ This folder contains the Java-based CQELS reasoner service. It runs as a Docker 
 
 The service is stateless across restarts: the Knowledge Layer pushes queries, data and stream elements at runtime.
 
-> [!NOTE]
-> The Knowledge Layer adapter for CQELS is not available yet. Until then, the service is used directly over REST, see [Testing](#testing).
+The Knowledge Layer talks to the service through the [CQELS adapter](../../knowledge-layer/symbolic-reasoner/adapters/cqels/README.md).
 
 ## Building
 

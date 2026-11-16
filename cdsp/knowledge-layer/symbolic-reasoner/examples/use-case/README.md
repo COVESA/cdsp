@@ -93,7 +93,7 @@ All paths in `model_config.json` are relative to the folder of that file, so sha
 - **queries**: This section includes SPARQL queries that will be used during the reasoning process to assemble triples or extract results from the reasoned data.
   - **triple_assembler_helper**:
     Queries specifically designed to assemble data points related to an specific schema collection (in this case Vehicle Signal Specification (vehicle)) or other specifications used by default, if the collection is not defined, including queries for data and object properties.
-  - **output**: Folder with the queries that retrieve the final inference results after the reasoning process. The queries in this section will typically extract insights from the generated triples. This folder stays in the reasoner folder, because the queries can differ per engine.
+  - **output**: Folder with the queries that retrieve the final inference results after the reasoning process. The queries in this section will typically extract insights from the generated triples. This folder stays in the reasoner folder, because the queries can differ per engine. With CQELS, a `.cqels` file here returns the new results of the continuous query with the same text, which is also listed under `rules`.
 
 #### Rules
 
@@ -104,7 +104,7 @@ All paths in `model_config.json` are relative to the folder of that file, so sha
 ]
 ```
 
-- **rules**: A list of rule files in Data Log or SHACL format. Rules are specific to an engine, so they stay in the reasoner folder. These rules define additional logic for the reasoner to apply during inference. The rules may include custom inferences or insights that the reasoner should derive based on the input data.
+- **rules**: A list of rule files in Datalog (`.dlog`, RDFox), SHACL (`.shacl`, RDF4J) or CQELS-QL (`.cqels`, CQELS) format. With CQELS, each file is registered as a continuous query. Rules are specific to an engine, so they stay in the reasoner folder. These rules define additional logic for the reasoner to apply during inference. The rules may include custom inferences or insights that the reasoner should derive based on the input data.
 
 #### SHACL Validation
 
@@ -135,6 +135,7 @@ All paths in `model_config.json` are relative to the folder of that file, so sha
     >
     > - `RDFox`
     > - `RDF4J`
+    > - `CQELS`
 
   - **is_ai_reasoner_inference_results**: A boolean flag indicating whether the reasoner should return inference results. If set to `true`, the reasoner will provide the inferred reasoning query results into a data point called `<SCHEMA_COLLECTION>.AI.Reasoner.InferenceResults`.
 

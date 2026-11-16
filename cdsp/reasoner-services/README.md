@@ -51,7 +51,7 @@ graph LR;
 | Folder                   | Engine                                                                                            | Docker Compose profile | Knowledge Layer adapter                                                        |
 | ------------------------ | ------------------------------------------------------------------------------------------------- | ---------------------- | ------------------------------------------------------------------------------ |
 | [rdf4j](rdf4j/README.md) | RDF4J stream reasoner (Java, Spring Boot), rules in SHACL                                         | `rdf4j`                | [RDF4J adapter](../knowledge-layer/symbolic-reasoner/adapters/rdf4j/README.md) |
-| [cqels](cqels/README.md) | CQELS stream reasoner (Java, Spring Boot), continuous queries in CQELS-QL over event-time windows | `cqels`                | not available yet                                                              |
+| [cqels](cqels/README.md) | CQELS stream reasoner (Java, Spring Boot), continuous queries in CQELS-QL over event-time windows | `cqels`                | [CQELS adapter](../knowledge-layer/symbolic-reasoner/adapters/cqels/README.md) |
 
 RDFox is not in this folder: it runs from its published image (`oxfordsemantic/rdfox`) and needs a licence. See the [Docker README](../../docker/README.md#rdfox-restful-api).
 

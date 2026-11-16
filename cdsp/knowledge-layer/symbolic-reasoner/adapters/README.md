@@ -30,11 +30,19 @@ covesa.cdsp/
 │       │   │   │
 │       │   │   └── tests/                  # Adapter-specific tests
 │       │   │
-│       │   └── rdf4j/                      # RDF4J adapter
+│       │   ├── rdf4j/                      # RDF4J adapter
+│       │   │   ├── README.md
+│       │   │   ├── src/
+│       │   │   │   ├── rdf4j_adapter.h
+│       │   │   │   └── rdf4j_adapter.cpp
+│       │   │   │
+│       │   │   └── tests/                  # Adapter-specific tests
+│       │   │
+│       │   └── cqels/                      # CQELS adapter
 │       │       ├── README.md
 │       │       ├── src/
-│       │       │   ├── rdf4j_adapter.h
-│       │       │   └── rdf4j_adapter.cpp
+│       │       │   ├── cqels_adapter.h
+│       │       │   └── cqels_adapter.cpp
 │       │       │
 │       │       └── tests/                  # Adapter-specific tests
 │       │
@@ -53,7 +61,13 @@ covesa.cdsp/
 │               └── model_config.json
 │
 └── cdsp/reasoner-services/
-    └── rdf4j/                              # RDF4J external engine
+    ├── rdf4j/                              # RDF4J external engine
+    │   ├── Dockerfile
+    │   ├── README.md
+    │   ├── pom.xml
+    │   └── src/main/...
+    │
+    └── cqels/                              # CQELS external engine
         ├── Dockerfile
         ├── README.md
         ├── pom.xml
@@ -62,10 +76,11 @@ covesa.cdsp/
 
 ## Currently Supported Reasoners
 
-| Reasoner | Enum Value | Adapter Location | Engine Location |
-| -------- | ---------- | ---------------- | --------------- |
+| Reasoner | Enum Value | Adapter Location | Engine Location                                                            |
+| -------- | ---------- | ---------------- | -------------------------------------------------------------------------- |
 | RDFox    | `RDFOX`    | `rdfox/src/`     | published image `oxfordsemantic/rdfox` (licence file via `RDFOX_LIC_PATH`) |
-| RDF4J    | `RDF4J`    | `rdf4j/src/`     | `cdsp/reasoner-services/rdf4j/` |
+| RDF4J    | `RDF4J`    | `rdf4j/src/`     | `cdsp/reasoner-services/rdf4j/`                                            |
+| CQELS    | `CQELS`    | `cqels/src/`     | `cdsp/reasoner-services/cqels/`                                            |
 
 ---
 
@@ -307,7 +322,10 @@ The required signals, SHACL shapes, ontologies and Triple Assembler helper queri
     "output": "queries/output/"
   },
   "rules": ["rules/my_reasoner_rules.ext"],
-  "shacl": ["../shared/shacl/vehicle_shacl.ttl", "../shared/shacl/observation_shacl.ttl"],
+  "shacl": [
+    "../shared/shacl/vehicle_shacl.ttl",
+    "../shared/shacl/observation_shacl.ttl"
+  ],
   "reasoner_settings": {
     "inference_engine": "MyReasoner",
     "is_ai_reasoner_inference_results": true,

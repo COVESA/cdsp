@@ -123,6 +123,7 @@ add_subdirectory(symbolic-reasoner)
 add_subdirectory(symbolic-reasoner/adapters/rdfox/tests)
 add_subdirectory(symbolic-reasoner/adapters/rdfox/tests/rdfox-service-test)
 add_subdirectory(symbolic-reasoner/adapters/rdf4j/tests)
+add_subdirectory(symbolic-reasoner/adapters/cqels/tests)
 add_subdirectory(symbolic-reasoner/services/tests)
 
 # Define the main executable target
