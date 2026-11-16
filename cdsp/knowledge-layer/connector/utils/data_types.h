@@ -9,7 +9,7 @@
 /**
  * @brief Enum class for the supported inference engine types
  */
-enum class InferenceEngineType { RDFOX, RDF4J };
+enum class InferenceEngineType { RDFOX, RDF4J, CQELS };
 
 /**
  * @brief Enum class for the message types
@@ -53,12 +53,13 @@ enum class ReasonerSyntaxType {
  */
 enum class QueryLanguageType {
     SPARQL,
+    CQELS,
 };
 
 /**
  * @brief Enum class for the reasoning rule language types
  */
-enum class RuleLanguageType { DATALOG, SHACL };
+enum class RuleLanguageType { DATALOG, SHACL, CQELS };
 
 /**
  * @brief Enum class for the data query accept types
@@ -413,6 +414,8 @@ inline QueryLanguageType fileExtensionToQueryLanguageType(const std::string& ext
     std::string lowerCaseExtension = Helper::toLowerCase(extension);
     if (lowerCaseExtension == ".rq") {
         return QueryLanguageType::SPARQL;
+    } else if (lowerCaseExtension == ".cqels") {
+        return QueryLanguageType::CQELS;
     } else {
         throw std::invalid_argument("Unsupported query file extension: " + extension);
     }
@@ -422,6 +425,8 @@ inline std::string queryLanguageTypeToContentType(const QueryLanguageType& type)
     switch (type) {
         case QueryLanguageType::SPARQL:
             return "application/sparql-query";
+        case QueryLanguageType::CQELS:
+            return "text/plain";
         default:
             throw std::invalid_argument("Unsupported query language type");
     }
@@ -433,6 +438,8 @@ inline RuleLanguageType fileExtensionToRuleLanguageType(const std::string& exten
         return RuleLanguageType::DATALOG;
     } else if (lowerCaseExtension == ".shacl") {
         return RuleLanguageType::SHACL;
+    } else if (lowerCaseExtension == ".cqels") {
+        return RuleLanguageType::CQELS;
     } else {
         throw std::invalid_argument("Unsupported rule file extension: " + extension);
     }
@@ -444,6 +451,8 @@ inline std::string ruleLanguageTypeToContentType(const RuleLanguageType& type) {
             return "application/x.datalog";
         case RuleLanguageType::SHACL:
             return "text/turtle";
+        case RuleLanguageType::CQELS:
+            return "text/plain";
         default:
             throw std::invalid_argument("Unsupported rule language type");
     }
@@ -529,6 +538,8 @@ inline InferenceEngineType stringToInferenceEngineType(const std::string& type) 
         return InferenceEngineType::RDFOX;
     } else if (lowerCaseType == "rdf4j") {
         return InferenceEngineType::RDF4J;
+    } else if (lowerCaseType == "cqels") {
+        return InferenceEngineType::CQELS;
     } else {
         throw std::invalid_argument("Unsupported inference engine string type: " + type);
     }
@@ -540,6 +551,8 @@ inline std::string inferenceEngineTypeToString(const InferenceEngineType& type) 
             return "RDFox";
         case InferenceEngineType::RDF4J:
             return "RDF4J";
+        case InferenceEngineType::CQELS:
+            return "CQELS";
         default:
             throw std::invalid_argument("Unsupported inference engine type");
     }

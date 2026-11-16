@@ -16,15 +16,18 @@ class DtoToModelConfigIntegrationTest : public ::testing::Test {
     std::shared_ptr<MockIFileHandler> mock_i_file_handler_;
     std::unique_ptr<DtoToBo> dto_to_bo_;
     const std::vector<SchemaType> SCHEMAS_IN_TEST = {SchemaType::VEHICLE};
-    const std::vector<std::string> ENGINES_IN_TEST = {"rdfox"};
+    const std::vector<std::string> ENGINES_IN_TEST = {"rdfox", "rdf4j", "cqels"};
     const std::vector<std::pair<std::string, std::string>> SYNTAX_TYPES_AND_EXTENSION_IN_TEST = {
         {"turtle", "ttl"}, {"trig", "trig"}, {"ntriples", "nt"}, {"nquads", "nq"}};
 
     const std::vector<std::pair<std::string, std::string>>
         QUERY_LANGUAGE_TYPES_AND_EXTENSION_IN_TEST = {{"sparql", "rq"}};
 
+    const std::vector<std::pair<std::string, std::string>>
+        OUTPUT_QUERY_LANGUAGE_TYPES_AND_EXTENSION_IN_TEST = {{"sparql", "rq"}, {"cqels", "cqels"}};
+
     const std::vector<std::pair<std::string, std::string>> REASONER_RULES_AND_EXTENSIONS_IN_TEST = {
-        {"datalog", "dlog"}};
+        {"datalog", "dlog"}, {"shacl", "shacl"}, {"cqels", "cqels"}};
 
     const std::string MODEL_CONFIG_PATH =
         getProjectRoot() + "/common-test-resources/common_fixtures/use_case_fixture/model/";
@@ -242,7 +245,7 @@ TEST_F(DtoToModelConfigIntegrationTest, ConvertModelConfigDtoToBo) {
 
     for (int i = 0; i < RandomUtils::generateRandomInt(1, MAX_RANDOM_POINTS); i++) {
         auto random_query_extension =
-            getRandomTypeAndFileExtension(QUERY_LANGUAGE_TYPES_AND_EXTENSION_IN_TEST);
+            getRandomTypeAndFileExtension(OUTPUT_QUERY_LANGUAGE_TYPES_AND_EXTENSION_IN_TEST);
 
         expected_bo_reasoning_output_queries.push_back(
             {fileExtensionToQueryLanguageType("." + random_query_extension.second),

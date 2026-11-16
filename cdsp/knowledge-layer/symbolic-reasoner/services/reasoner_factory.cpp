@@ -32,6 +32,10 @@ std::shared_ptr<ReasonerService> ReasonerFactory::initReasoner(
     {
         reasoner_adapter = std::make_shared<RDF4JAdapter>(server_data);
         
+    } else if (inference_engine == InferenceEngineType::CQELS)
+    {
+        reasoner_adapter = std::make_shared<CQELSAdapter>(server_data);
+
     } else
      {
         throw std::invalid_argument("Unsupported inference engine in `model_config.json`.");

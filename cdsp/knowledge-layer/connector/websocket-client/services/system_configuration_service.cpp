@@ -34,7 +34,7 @@ SystemConfig SystemConfigurationService::loadSystemConfig(
     system_config.reasoner_server.auth_base64 =
         Helper::getEnvVariable("AUTH_REASONER_SERVER_BASE64", reasoner_server_auth_base64);
     system_config.reasoner_server.data_store_name =
-        Helper::getEnvVariable("REASONER_DATASTORE", reasoner_server_data_store_name);
+        Helper::getEnvVariable("REASONER_DATASTORE_NAME", reasoner_server_data_store_name);
     system_config.reasoner_server.origin_system_name =
         Helper::getEnvVariable("REASONER_ORIGIN_SYSTEM_NAME", reasoner_server_origin_system);
 
@@ -43,6 +43,41 @@ SystemConfig SystemConfigurationService::loadSystemConfig(
     return system_config;
 }
 
+/**
+ * @brief Describes the configuration the Knowledge Layer runs with, for the start-up log.
+ *
+ * The reasoner credentials are not printed, only whether they are set.
+ *
+ * @param system_config The loaded system configuration.
+ * @return A multi-line summary, one setting per line.
+ */
+std::string SystemConfigurationService::describeSystemConfig(const SystemConfig& system_config) {
+    const auto& ws = system_config.websocket_server;
+    const auto& reasoner = system_config.reasoner_server;
+    return "** System configuration **\n"
+           " - Information Layer: " +
+           ws.host + ":" + ws.port + ws.target +
+           "\n"
+           " - Reasoner server: " +
+           reasoner.host + ":" + reasoner.port +
+           "\n"
+           " - Reasoner credentials: " +
+           (reasoner.auth_base64.empty() ? "not set" : "set") +
+           "\n"
+           " - Datastore: " +
+           reasoner.data_store_name.value_or("") +
+           "\n"
+           " - Model configuration: " +
+           getPathToUseCases() + "\n";
+}
+
+/**
+ * @brief Loads the model configuration from a JSON file.
+ *
+ * @param config_file The path to the model configuration JSON file.
+ * @return The loaded ModelConfig object.
+ * @throws std::runtime_error If there is an error reading or parsing the file.
+ */
 ModelConfig SystemConfigurationService::loadModelConfig(const std::string& config_file) {
     try {
         std::shared_ptr<FileHandlerImpl> file_handler = std::make_shared<FileHandlerImpl>();
