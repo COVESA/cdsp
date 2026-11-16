@@ -1,0 +1,1266 @@
+{
+  "configuration" : {
+    "scope" : "SoftwareSystem"
+  },
+  "description" : "C4 model diagrams for the COVESA Central Data Service Playground (CDSP) architecture",
+  "documentation" : { },
+  "id" : 1,
+  "lastModifiedDate" : "2026-11-13T18:53:39Z",
+  "model" : {
+    "people" : [ {
+      "description" : "Provider of domain expertise",
+      "id" : "1",
+      "name" : "Knowledge Engineer & Domain expert",
+      "properties" : {
+        "structurizr.dsl.identifier" : "knowledgeEngineer"
+      },
+      "relationships" : [ {
+        "description" : "Provides semantic context for later conversion",
+        "destinationId" : "7",
+        "id" : "58",
+        "sourceId" : "1",
+        "tags" : "Relationship",
+        "technology" : "e.g. SHACL"
+      }, {
+        "description" : "Provides semantic context for later conversion",
+        "destinationId" : "6",
+        "id" : "59",
+        "linkedRelationshipId" : "58",
+        "sourceId" : "1",
+        "technology" : "e.g. SHACL"
+      }, {
+        "description" : "Provides semantic context for later conversion",
+        "destinationId" : "5",
+        "id" : "60",
+        "linkedRelationshipId" : "58",
+        "sourceId" : "1",
+        "technology" : "e.g. SHACL"
+      }, {
+        "description" : "Initialize with ontologies and rules (representing business logic) and update",
+        "destinationId" : "14",
+        "id" : "69",
+        "sourceId" : "1",
+        "tags" : "Relationship",
+        "technology" : "HTTP"
+      }, {
+        "description" : "Initialize with ontologies and rules (representing business logic) and update",
+        "destinationId" : "11",
+        "id" : "70",
+        "linkedRelationshipId" : "69",
+        "sourceId" : "1",
+        "technology" : "HTTP"
+      } ],
+      "tags" : "Element,Person"
+    }, {
+      "description" : "Developer or user of use-cases",
+      "id" : "84",
+      "name" : "CDSP user",
+      "properties" : {
+        "structurizr.dsl.identifier" : "cdspUser"
+      },
+      "relationships" : [ {
+        "description" : "Creates or operates use-cases using",
+        "destinationId" : "5",
+        "id" : "85",
+        "sourceId" : "84",
+        "tags" : "Relationship"
+      } ],
+      "tags" : "Element,Person"
+    } ],
+    "softwareSystems" : [ {
+      "description" : "Contributing and consuming information and knowledge",
+      "documentation" : { },
+      "id" : "2",
+      "name" : "Onboard and Offboard applications",
+      "properties" : {
+        "structurizr.dsl.identifier" : "onboardOffboardApplications"
+      },
+      "relationships" : [ {
+        "description" : "Contributing Information",
+        "destinationId" : "7",
+        "id" : "49",
+        "sourceId" : "2",
+        "tags" : "Relationship",
+        "technology" : "Websocket API"
+      }, {
+        "description" : "Contributing Information",
+        "destinationId" : "6",
+        "id" : "50",
+        "linkedRelationshipId" : "49",
+        "sourceId" : "2",
+        "technology" : "Websocket API"
+      }, {
+        "description" : "Contributing Information",
+        "destinationId" : "5",
+        "id" : "51",
+        "linkedRelationshipId" : "49",
+        "sourceId" : "2",
+        "technology" : "Websocket API"
+      } ],
+      "tags" : "Element,Software System,External Software System"
+    }, {
+      "description" : "Virtual signal platform in the cloud",
+      "documentation" : { },
+      "id" : "3",
+      "name" : "RemotiveLabs Virtual Signal Platform",
+      "properties" : {
+        "structurizr.dsl.identifier" : "remotiveLabsPlatform"
+      },
+      "relationships" : [ {
+        "description" : "Sends signal data timeseries",
+        "destinationId" : "38",
+        "id" : "41",
+        "sourceId" : "3",
+        "tags" : "Relationship",
+        "technology" : "Remotive API"
+      }, {
+        "description" : "Sends signal data timeseries",
+        "destinationId" : "5",
+        "id" : "42",
+        "linkedRelationshipId" : "41",
+        "sourceId" : "3",
+        "technology" : "Remotive API"
+      } ],
+      "tags" : "Element,Software System,External Software System"
+    }, {
+      "description" : "E.g. LLM based agent, graph retrieval via MCP",
+      "documentation" : { },
+      "id" : "4",
+      "name" : "AI Agents",
+      "properties" : {
+        "structurizr.dsl.identifier" : "aiAgents"
+      },
+      "relationships" : [ {
+        "description" : "Invokes Graph Retrieval Tool",
+        "destinationId" : "27",
+        "id" : "71",
+        "sourceId" : "4",
+        "tags" : "Relationship",
+        "technology" : "MCP Streamable HTTP"
+      }, {
+        "description" : "Invokes Graph Retrieval Tool",
+        "destinationId" : "26",
+        "id" : "72",
+        "linkedRelationshipId" : "71",
+        "sourceId" : "4",
+        "technology" : "MCP Streamable HTTP"
+      }, {
+        "description" : "Invokes Graph Retrieval Tool",
+        "destinationId" : "5",
+        "id" : "73",
+        "linkedRelationshipId" : "71",
+        "sourceId" : "4",
+        "technology" : "MCP Streamable HTTP"
+      } ],
+      "tags" : "Element,Software System,External Software System"
+    }, {
+      "containers" : [ {
+        "components" : [ {
+          "description" : "Provides information layer data in tree-like format. Abstracts data store details",
+          "documentation" : { },
+          "id" : "7",
+          "name" : "DB Router",
+          "properties" : {
+            "structurizr.dsl.identifier" : "cdsp.informationLayerServer.dbRouter"
+          },
+          "relationships" : [ {
+            "description" : "(De-)Auth / Read / Write / Subscribe",
+            "destinationId" : "8",
+            "id" : "9",
+            "sourceId" : "7",
+            "tags" : "Relationship",
+            "technology" : "Service Call"
+          }, {
+            "description" : "Consuming Information",
+            "destinationId" : "2",
+            "id" : "46",
+            "sourceId" : "7",
+            "tags" : "Relationship",
+            "technology" : "Websocket API"
+          }, {
+            "description" : "Provides Information",
+            "destinationId" : "13",
+            "id" : "54",
+            "sourceId" : "7",
+            "tags" : "Relationship",
+            "technology" : "Websocket API"
+          }, {
+            "description" : "Provides Information",
+            "destinationId" : "11",
+            "id" : "55",
+            "linkedRelationshipId" : "54",
+            "sourceId" : "7",
+            "technology" : "Websocket API"
+          } ],
+          "tags" : "Element,Component",
+          "technology" : "Node.JS Websocket Server"
+        }, {
+          "description" : "Provides information layer data in tree-like format. Abstracts data store details",
+          "documentation" : { },
+          "id" : "8",
+          "name" : "IotDB Handler",
+          "properties" : {
+            "structurizr.dsl.identifier" : "cdsp.informationLayerServer.iotdbHandler"
+          },
+          "relationships" : [ {
+            "description" : "Read / Write / (Subscribe)",
+            "destinationId" : "10",
+            "id" : "52",
+            "sourceId" : "8",
+            "tags" : "Relationship",
+            "technology" : "Node.js client"
+          } ],
+          "tags" : "Element,Component",
+          "technology" : "Node.JS Websocket Server"
+        } ],
+        "description" : "Provides access to information-layer data and abstracts the underlying time-series data store.",
+        "documentation" : { },
+        "id" : "6",
+        "name" : "CDSP Information Layer Server",
+        "properties" : {
+          "structurizr.dsl.identifier" : "cdsp.informationLayerServer"
+        },
+        "relationships" : [ {
+          "description" : "Consuming Information",
+          "destinationId" : "2",
+          "id" : "47",
+          "linkedRelationshipId" : "46",
+          "sourceId" : "6",
+          "technology" : "Websocket API"
+        }, {
+          "description" : "Read / Write / (Subscribe)",
+          "destinationId" : "10",
+          "id" : "53",
+          "linkedRelationshipId" : "52",
+          "sourceId" : "6",
+          "technology" : "Node.js client"
+        }, {
+          "description" : "Provides Information",
+          "destinationId" : "13",
+          "id" : "56",
+          "linkedRelationshipId" : "54",
+          "sourceId" : "6",
+          "technology" : "Websocket API"
+        }, {
+          "description" : "Provides Information",
+          "destinationId" : "11",
+          "id" : "57",
+          "linkedRelationshipId" : "54",
+          "sourceId" : "6",
+          "technology" : "Websocket API"
+        } ],
+        "tags" : "Element,Container",
+        "technology" : "Node.js"
+      }, {
+        "description" : "Serves timeseries data in VSS and other data-models",
+        "documentation" : { },
+        "id" : "10",
+        "name" : "Timeseries Data Server",
+        "properties" : {
+          "structurizr.dsl.identifier" : "cdsp.timeseriesDataServer"
+        },
+        "tags" : "Element,Container,Database",
+        "technology" : "Apache IoTDB"
+      }, {
+        "components" : [ {
+          "description" : "Converts tree-like data (json) into graph data (RDF) and vice versa",
+          "documentation" : { },
+          "id" : "12",
+          "name" : "Convertor",
+          "properties" : {
+            "structurizr.dsl.identifier" : "cdsp.knowledgeLayerServer.convertor"
+          },
+          "relationships" : [ {
+            "description" : "Sends Graph data (RDF)",
+            "destinationId" : "13",
+            "id" : "22",
+            "sourceId" : "12",
+            "tags" : "Relationship",
+            "technology" : "HTTP"
+          }, {
+            "description" : "Sends tree-like data (json)",
+            "destinationId" : "13",
+            "id" : "23",
+            "sourceId" : "12",
+            "tags" : "Relationship",
+            "technology" : "HTTP"
+          } ],
+          "tags" : "Element,Component",
+          "technology" : "C++"
+        }, {
+          "description" : "Connects Knowledge Layer to Information Layer and manage data tasks within KL",
+          "documentation" : { },
+          "id" : "13",
+          "name" : "Connector",
+          "properties" : {
+            "structurizr.dsl.identifier" : "cdsp.knowledgeLayerServer.connector"
+          },
+          "relationships" : [ {
+            "description" : "Trigger Graph database interactions (ontologies, triples, rules)",
+            "destinationId" : "14",
+            "id" : "20",
+            "sourceId" : "13",
+            "tags" : "Relationship",
+            "technology" : "HTTP"
+          }, {
+            "description" : "Sends tree-like data (json)",
+            "destinationId" : "12",
+            "id" : "21",
+            "sourceId" : "13",
+            "tags" : "Relationship",
+            "technology" : "HTTP"
+          }, {
+            "description" : "Sends Graph data (RDF)",
+            "destinationId" : "12",
+            "id" : "24",
+            "sourceId" : "13",
+            "tags" : "Relationship",
+            "technology" : "HTTP"
+          }, {
+            "description" : "Consuming Knowledge",
+            "destinationId" : "2",
+            "id" : "63",
+            "sourceId" : "13",
+            "tags" : "Relationship",
+            "technology" : "HTTP SPARQL"
+          }, {
+            "description" : "Returns new Information",
+            "destinationId" : "7",
+            "id" : "65",
+            "sourceId" : "13",
+            "tags" : "Relationship",
+            "technology" : "Websocket API"
+          }, {
+            "description" : "Returns new Information",
+            "destinationId" : "6",
+            "id" : "66",
+            "linkedRelationshipId" : "65",
+            "sourceId" : "13",
+            "technology" : "Websocket API"
+          } ],
+          "tags" : "Element,Component",
+          "technology" : "Websocket Client"
+        }, {
+          "description" : "Interacts with Graph database and reasoner by API (e.g. allows import of RDF data and rules and execute queries)",
+          "documentation" : { },
+          "id" : "14",
+          "name" : "Reasoner-Adaptor",
+          "properties" : {
+            "structurizr.dsl.identifier" : "cdsp.knowledgeLayerServer.reasonerAdaptor"
+          },
+          "relationships" : [ {
+            "description" : "Send triples, rules, queries",
+            "destinationId" : "15",
+            "id" : "16",
+            "sourceId" : "14",
+            "tags" : "Relationship",
+            "technology" : "HTTP"
+          }, {
+            "description" : "Subscribes to new inferred triples",
+            "destinationId" : "15",
+            "id" : "17",
+            "sourceId" : "14",
+            "tags" : "Relationship",
+            "technology" : "HTTP"
+          }, {
+            "description" : "Inference result (rules)",
+            "destinationId" : "13",
+            "id" : "18",
+            "sourceId" : "14",
+            "tags" : "Relationship",
+            "technology" : "HTTP"
+          }, {
+            "description" : "Inference result (query)",
+            "destinationId" : "13",
+            "id" : "19",
+            "sourceId" : "14",
+            "tags" : "Relationship",
+            "technology" : "HTTP"
+          } ],
+          "tags" : "Element,Component",
+          "technology" : "C++"
+        }, {
+          "description" : "Stores RDF data, executes rules, and evaluates queries.",
+          "documentation" : { },
+          "id" : "15",
+          "name" : "RDF Reasoner Service and Knowledge Graph",
+          "properties" : {
+            "structurizr.dsl.identifier" : "cdsp.knowledgeLayerServer.rdfReasoner"
+          },
+          "tags" : "Element,Component",
+          "technology" : "RDFox or RDF4J"
+        } ],
+        "description" : "Converts information-layer data to graph data and provides knowledge-graph reasoning and query capabilities.",
+        "documentation" : { },
+        "id" : "11",
+        "name" : "CDSP Knowledge Layer Server",
+        "properties" : {
+          "structurizr.dsl.identifier" : "cdsp.knowledgeLayerServer"
+        },
+        "relationships" : [ {
+          "description" : "Consuming Knowledge",
+          "destinationId" : "2",
+          "id" : "64",
+          "linkedRelationshipId" : "63",
+          "sourceId" : "11",
+          "technology" : "HTTP SPARQL"
+        }, {
+          "description" : "Returns new Information",
+          "destinationId" : "7",
+          "id" : "67",
+          "linkedRelationshipId" : "65",
+          "sourceId" : "11",
+          "technology" : "Websocket API"
+        }, {
+          "description" : "Returns new Information",
+          "destinationId" : "6",
+          "id" : "68",
+          "linkedRelationshipId" : "65",
+          "sourceId" : "11",
+          "technology" : "Websocket API"
+        } ],
+        "tags" : "Element,Container",
+        "technology" : "C++"
+      }, {
+        "description" : "Ontology Node Embeddings",
+        "documentation" : { },
+        "id" : "25",
+        "name" : "Vector Storage Server",
+        "properties" : {
+          "structurizr.dsl.identifier" : "cdsp.vectorStorageServer"
+        },
+        "relationships" : [ {
+          "description" : "Embedding Search",
+          "destinationId" : "31",
+          "id" : "82",
+          "sourceId" : "25",
+          "tags" : "Relationship",
+          "technology" : "HTTP REST"
+        }, {
+          "description" : "Embedding Search",
+          "destinationId" : "26",
+          "id" : "83",
+          "linkedRelationshipId" : "82",
+          "sourceId" : "25",
+          "technology" : "HTTP REST"
+        } ],
+        "tags" : "Element,Container,Database",
+        "technology" : "e.g. Chroma"
+      }, {
+        "components" : [ {
+          "description" : "Exposes all strategies as MCP tools. Handles Session and Auth",
+          "documentation" : { },
+          "id" : "27",
+          "name" : "MCP Transport",
+          "properties" : {
+            "structurizr.dsl.identifier" : "cdsp.graphRetrievalMcpServer.mcpTransport"
+          },
+          "relationships" : [ {
+            "description" : "Dispatches to selected strategy",
+            "destinationId" : "28",
+            "id" : "33",
+            "sourceId" : "27",
+            "tags" : "Relationship",
+            "technology" : "in-process"
+          } ],
+          "tags" : "Element,Component",
+          "technology" : "Streamable HTTP"
+        }, {
+          "description" : "seed_expand, local_fanout, path_find, timeseries_aware + extensible",
+          "documentation" : { },
+          "id" : "28",
+          "name" : "Strategy Layer",
+          "properties" : {
+            "structurizr.dsl.identifier" : "cdsp.graphRetrievalMcpServer.strategyLayer"
+          },
+          "relationships" : [ {
+            "description" : "Delegates Retrieval Operations",
+            "destinationId" : "29",
+            "id" : "34",
+            "sourceId" : "28",
+            "tags" : "Relationship",
+            "technology" : "in-process"
+          } ],
+          "tags" : "Element,Component",
+          "technology" : "TypeScript"
+        }, {
+          "description" : "Semantic Search, Graph Traversal, Live Data, Temporal Analysis",
+          "documentation" : { },
+          "id" : "29",
+          "name" : "Shared Services",
+          "properties" : {
+            "structurizr.dsl.identifier" : "cdsp.graphRetrievalMcpServer.sharedServices"
+          },
+          "relationships" : [ {
+            "description" : "Semantic Node Search",
+            "destinationId" : "31",
+            "id" : "35",
+            "sourceId" : "29",
+            "tags" : "Relationship",
+            "technology" : "in-process"
+          }, {
+            "description" : "Graph Queries and Traversal",
+            "destinationId" : "30",
+            "id" : "36",
+            "sourceId" : "29",
+            "tags" : "Relationship",
+            "technology" : "in-process"
+          }, {
+            "description" : "Live Data and Timeseries",
+            "destinationId" : "32",
+            "id" : "37",
+            "sourceId" : "29",
+            "tags" : "Relationship",
+            "technology" : "in-process"
+          } ],
+          "tags" : "Element,Component",
+          "technology" : "TypeScript"
+        }, {
+          "description" : "query (sparql), traverse (seeds), pathFind(from, to), describe(iri)",
+          "documentation" : { },
+          "id" : "30",
+          "name" : "Knowledge Graph Adapter",
+          "properties" : {
+            "structurizr.dsl.identifier" : "cdsp.graphRetrievalMcpServer.knowledgeGraphAdapter"
+          },
+          "relationships" : [ {
+            "description" : "SPARQL QUERIES",
+            "destinationId" : "13",
+            "id" : "78",
+            "sourceId" : "30",
+            "tags" : "Relationship",
+            "technology" : "HTTP SPARQL"
+          }, {
+            "description" : "SPARQL QUERIES",
+            "destinationId" : "11",
+            "id" : "79",
+            "linkedRelationshipId" : "78",
+            "sourceId" : "30",
+            "technology" : "HTTP SPARQL"
+          } ],
+          "tags" : "Element,Component",
+          "technology" : "Interface"
+        }, {
+          "description" : "search(query, n), filter(query, metadata)",
+          "documentation" : { },
+          "id" : "31",
+          "name" : "Vector Store Adapter",
+          "properties" : {
+            "structurizr.dsl.identifier" : "cdsp.graphRetrievalMcpServer.vectorStoreAdapter"
+          },
+          "tags" : "Element,Component",
+          "technology" : "Interface"
+        }, {
+          "description" : "get(path, instance), subscribe(path), timeseries(path, range)",
+          "documentation" : { },
+          "id" : "32",
+          "name" : "Information Layer Adapter",
+          "properties" : {
+            "structurizr.dsl.identifier" : "cdsp.graphRetrievalMcpServer.informationLayerAdapter"
+          },
+          "relationships" : [ {
+            "description" : "Live and historical data",
+            "destinationId" : "7",
+            "id" : "74",
+            "sourceId" : "32",
+            "tags" : "Relationship",
+            "technology" : "Websocket API"
+          }, {
+            "description" : "Live and historical data",
+            "destinationId" : "6",
+            "id" : "75",
+            "linkedRelationshipId" : "74",
+            "sourceId" : "32",
+            "technology" : "Websocket API"
+          } ],
+          "tags" : "Element,Component",
+          "technology" : "Interface"
+        } ],
+        "description" : "Provides graph retrieval strategies to AI agents through MCP.",
+        "documentation" : { },
+        "id" : "26",
+        "name" : "(WIP) CDSP Graph Retrieval MCP Server",
+        "properties" : {
+          "structurizr.dsl.identifier" : "cdsp.graphRetrievalMcpServer"
+        },
+        "relationships" : [ {
+          "description" : "Live and historical data",
+          "destinationId" : "7",
+          "id" : "76",
+          "linkedRelationshipId" : "74",
+          "sourceId" : "26",
+          "technology" : "Websocket API"
+        }, {
+          "description" : "Live and historical data",
+          "destinationId" : "6",
+          "id" : "77",
+          "linkedRelationshipId" : "74",
+          "sourceId" : "26",
+          "technology" : "Websocket API"
+        }, {
+          "description" : "SPARQL QUERIES",
+          "destinationId" : "13",
+          "id" : "80",
+          "linkedRelationshipId" : "78",
+          "sourceId" : "26",
+          "technology" : "HTTP SPARQL"
+        }, {
+          "description" : "SPARQL QUERIES",
+          "destinationId" : "11",
+          "id" : "81",
+          "linkedRelationshipId" : "78",
+          "sourceId" : "26",
+          "technology" : "HTTP SPARQL"
+        } ],
+        "tags" : "Element,Container",
+        "technology" : "TypeScript"
+      }, {
+        "description" : "Streams subscribed timeseries data from RemotiveLabs virtual signal platform to Playground data store",
+        "documentation" : { },
+        "id" : "38",
+        "name" : "RemotiveLabs Bridge",
+        "properties" : {
+          "structurizr.dsl.identifier" : "cdsp.remotiveLabsBridge"
+        },
+        "relationships" : [ {
+          "description" : "Subscribes to signals",
+          "destinationId" : "3",
+          "id" : "39",
+          "sourceId" : "38",
+          "tags" : "Relationship",
+          "technology" : "Remotive API"
+        }, {
+          "description" : "Writes timeseries data stream",
+          "destinationId" : "10",
+          "id" : "43",
+          "sourceId" : "38",
+          "tags" : "Relationship",
+          "technology" : "IoTDB API/SQL"
+        }, {
+          "description" : "Writes current value of data stream",
+          "destinationId" : "7",
+          "id" : "61",
+          "sourceId" : "38",
+          "tags" : "Relationship",
+          "technology" : "Websocket API"
+        }, {
+          "description" : "Writes current value of data stream",
+          "destinationId" : "6",
+          "id" : "62",
+          "linkedRelationshipId" : "61",
+          "sourceId" : "38",
+          "technology" : "Websocket API"
+        } ],
+        "tags" : "Element,Container",
+        "technology" : "Python"
+      }, {
+        "description" : "Serves VSS data via the VISS AP",
+        "documentation" : { },
+        "id" : "44",
+        "name" : "VISS Server",
+        "properties" : {
+          "structurizr.dsl.identifier" : "cdsp.vissServer"
+        },
+        "relationships" : [ {
+          "description" : "Sends VSS get/set requests to",
+          "destinationId" : "10",
+          "id" : "45",
+          "sourceId" : "44",
+          "tags" : "Relationship",
+          "technology" : "IoTDB API/SQL"
+        } ],
+        "tags" : "Element,Container",
+        "technology" : "VISSR"
+      } ],
+      "description" : "Central data service playground providing information, knowledge, graph retrieval and supporting data services.",
+      "documentation" : { },
+      "id" : "5",
+      "name" : "Central Data Service Playground (CDSP)",
+      "properties" : {
+        "structurizr.dsl.identifier" : "cdsp"
+      },
+      "relationships" : [ {
+        "description" : "Subscribes to signals",
+        "destinationId" : "3",
+        "id" : "40",
+        "linkedRelationshipId" : "39",
+        "sourceId" : "5",
+        "technology" : "Remotive API"
+      }, {
+        "description" : "Consuming Information",
+        "destinationId" : "2",
+        "id" : "48",
+        "linkedRelationshipId" : "46",
+        "sourceId" : "5",
+        "technology" : "Websocket API"
+      }, {
+        "description" : "Subscribes to data from",
+        "destinationId" : "86",
+        "id" : "88",
+        "sourceId" : "5",
+        "tags" : "Relationship"
+      } ],
+      "tags" : "Element,Software System"
+    }, {
+      "description" : "e.g: real and virtual data feeder, simulator, gateway, ECUs",
+      "documentation" : { },
+      "id" : "86",
+      "name" : "Southbound Data Sources",
+      "properties" : {
+        "structurizr.dsl.identifier" : "southboundDataSources"
+      },
+      "relationships" : [ {
+        "description" : "Sends timeseries data (VSS + other data models) to",
+        "destinationId" : "5",
+        "id" : "87",
+        "sourceId" : "86",
+        "tags" : "Relationship",
+        "technology" : "IoTDB API/SQL"
+      } ],
+      "tags" : "Element,Software System,External Software System"
+    }, {
+      "description" : "Big data systems in the cloud",
+      "documentation" : { },
+      "id" : "89",
+      "name" : "Big data",
+      "properties" : {
+        "structurizr.dsl.identifier" : "bigDataCloud"
+      },
+      "relationships" : [ {
+        "description" : "Co-operates with",
+        "destinationId" : "5",
+        "id" : "90",
+        "sourceId" : "89",
+        "tags" : "Relationship",
+        "technology" : "data-centric"
+      } ],
+      "tags" : "Element,Software System,External Software System"
+    }, {
+      "description" : "e.g. HPC, zone and domain controllers",
+      "documentation" : { },
+      "id" : "91",
+      "name" : "Large ECUs",
+      "properties" : {
+        "structurizr.dsl.identifier" : "largeECUs"
+      },
+      "relationships" : [ {
+        "description" : "Co-operates with",
+        "destinationId" : "5",
+        "id" : "92",
+        "sourceId" : "91",
+        "tags" : "Relationship",
+        "technology" : "data-centric"
+      } ],
+      "tags" : "Element,Software System,External Software System"
+    }, {
+      "description" : "Clients defining and manipulating data, e.g. functions and tooling, for use-cases",
+      "documentation" : { },
+      "id" : "93",
+      "name" : "Use-case Clients",
+      "properties" : {
+        "structurizr.dsl.identifier" : "useCaseClients"
+      },
+      "relationships" : [ {
+        "description" : "Makes data requests to",
+        "destinationId" : "5",
+        "id" : "94",
+        "sourceId" : "93",
+        "tags" : "Relationship",
+        "technology" : "e.g. VISS API, Native API, DB query language"
+      } ],
+      "tags" : "Element,Software System,External Software System"
+    }, {
+      "description" : "Clients defining and manipulating data, in the VSS data model and other data models, using the database",
+      "documentation" : { },
+      "id" : "95",
+      "name" : "DB Clients",
+      "properties" : {
+        "structurizr.dsl.identifier" : "dbClients"
+      },
+      "relationships" : [ {
+        "description" : "Sends Data Definition and Data Manipulation requests to",
+        "destinationId" : "10",
+        "id" : "96",
+        "sourceId" : "95",
+        "tags" : "Relationship",
+        "technology" : "IoTDB API/SQL"
+      }, {
+        "description" : "Sends Data Definition and Data Manipulation requests to",
+        "destinationId" : "5",
+        "id" : "97",
+        "linkedRelationshipId" : "96",
+        "sourceId" : "95",
+        "technology" : "IoTDB API/SQL"
+      } ],
+      "tags" : "Element,Software System,External Software System"
+    }, {
+      "description" : "Clients manipulating VSS data using the VISS API ",
+      "documentation" : { },
+      "id" : "98",
+      "name" : "VISS Clients",
+      "properties" : {
+        "structurizr.dsl.identifier" : "vissClients"
+      },
+      "relationships" : [ {
+        "description" : "Makes VISS get/set/sub requests for VSS data from",
+        "destinationId" : "44",
+        "id" : "99",
+        "sourceId" : "98",
+        "tags" : "Relationship",
+        "technology" : "VISS API"
+      }, {
+        "description" : "Makes VISS get/set/sub requests for VSS data from",
+        "destinationId" : "5",
+        "id" : "100",
+        "linkedRelationshipId" : "99",
+        "sourceId" : "98",
+        "technology" : "VISS API"
+      } ],
+      "tags" : "Element,Software System,External Software System"
+    } ]
+  },
+  "name" : "COVESA Central Data Service Playground (CDSP)",
+  "properties" : {
+    "structurizr.inspection.error" : "4",
+    "structurizr.dsl" : "d29ya3NwYWNlICJDT1ZFU0EgQ2VudHJhbCBEYXRhIFNlcnZpY2UgUGxheWdyb3VuZCAoQ0RTUCkiICJDNCBtb2RlbCBkaWFncmFtcyBmb3IgdGhlIENPVkVTQSBDZW50cmFsIERhdGEgU2VydmljZSBQbGF5Z3JvdW5kIChDRFNQKSBhcmNoaXRlY3R1cmUiIHsKCiAgICAhaWRlbnRpZmllcnMgaGllcmFyY2hpY2FsCgogICAgbW9kZWwgewogICAgICAgIGtub3dsZWRnZUVuZ2luZWVyID0gcGVyc29uICJLbm93bGVkZ2UgRW5naW5lZXIgJiBEb21haW4gZXhwZXJ0IiAiUHJvdmlkZXIgb2YgZG9tYWluIGV4cGVydGlzZSIKCiAgICAgICAgb25ib2FyZE9mZmJvYXJkQXBwbGljYXRpb25zID0gc29mdHdhcmVTeXN0ZW0gIk9uYm9hcmQgYW5kIE9mZmJvYXJkIGFwcGxpY2F0aW9ucyIgIkNvbnRyaWJ1dGluZyBhbmQgY29uc3VtaW5nIGluZm9ybWF0aW9uIGFuZCBrbm93bGVkZ2UiIHsKICAgICAgICAgICAgdGFncyAiRXh0ZXJuYWwgU29mdHdhcmUgU3lzdGVtIgogICAgICAgIH0KCiAgICAgICAgcmVtb3RpdmVMYWJzUGxhdGZvcm0gPSBzb2Z0d2FyZVN5c3RlbSAiUmVtb3RpdmVMYWJzIFZpcnR1YWwgU2lnbmFsIFBsYXRmb3JtIiAiVmlydHVhbCBzaWduYWwgcGxhdGZvcm0gaW4gdGhlIGNsb3VkIiB7CiAgICAgICAgICAgIHRhZ3MgIkV4dGVybmFsIFNvZnR3YXJlIFN5c3RlbSIKICAgICAgICB9CgogICAgICAgIGFpQWdlbnRzID0gc29mdHdhcmVTeXN0ZW0gIkFJIEFnZW50cyIgIkUuZy4gTExNIGJhc2VkIGFnZW50LCBncmFwaCByZXRyaWV2YWwgdmlhIE1DUCIgewogICAgICAgICAgICB0YWdzICJFeHRlcm5hbCBTb2Z0d2FyZSBTeXN0ZW0iCiAgICAgICAgfQoKICAgICAgICBjZHNwID0gc29mdHdhcmVTeXN0ZW0gIkNlbnRyYWwgRGF0YSBTZXJ2aWNlIFBsYXlncm91bmQgKENEU1ApIiAiQ2VudHJhbCBkYXRhIHNlcnZpY2UgcGxheWdyb3VuZCBwcm92aWRpbmcgaW5mb3JtYXRpb24sIGtub3dsZWRnZSwgZ3JhcGggcmV0cmlldmFsIGFuZCBzdXBwb3J0aW5nIGRhdGEgc2VydmljZXMuIiB7CgogICAgICAgICAgICBpbmZvcm1hdGlvbkxheWVyU2VydmVyID0gY29udGFpbmVyICJDRFNQIEluZm9ybWF0aW9uIExheWVyIFNlcnZlciIgIlByb3ZpZGVzIGFjY2VzcyB0byBpbmZvcm1hdGlvbi1sYXllciBkYXRhIGFuZCBhYnN0cmFjdHMgdGhlIHVuZGVybHlpbmcgdGltZS1zZXJpZXMgZGF0YSBzdG9yZS4iICJOb2RlLmpzIiB7CiAgICAgICAgICAgICAgICBkYlJvdXRlciA9IGNvbXBvbmVudCAiREIgUm91dGVyIiAiUHJvdmlkZXMgaW5mb3JtYXRpb24gbGF5ZXIgZGF0YSBpbiB0cmVlLWxpa2UgZm9ybWF0LiBBYnN0cmFjdHMgZGF0YSBzdG9yZSBkZXRhaWxzIiAiTm9kZS5KUyBXZWJzb2NrZXQgU2VydmVyIgogICAgICAgICAgICAgICAgaW90ZGJIYW5kbGVyID0gY29tcG9uZW50ICJJb3REQiBIYW5kbGVyIiAiUHJvdmlkZXMgaW5mb3JtYXRpb24gbGF5ZXIgZGF0YSBpbiB0cmVlLWxpa2UgZm9ybWF0LiBBYnN0cmFjdHMgZGF0YSBzdG9yZSBkZXRhaWxzIiAiTm9kZS5KUyBXZWJzb2NrZXQgU2VydmVyIgoKICAgICAgICAgICAgICAgIGRiUm91dGVyIC0+IGlvdGRiSGFuZGxlciAiKERlLSlBdXRoIC8gUmVhZCAvIFdyaXRlIC8gU3Vic2NyaWJlIiAiU2VydmljZSBDYWxsIgogICAgICAgICAgICB9CgogICAgICAgICAgICB0aW1lc2VyaWVzRGF0YVNlcnZlciA9IGNvbnRhaW5lciAiVGltZXNlcmllcyBEYXRhIFNlcnZlciIgIlNlcnZlcyB0aW1lc2VyaWVzIGRhdGEgaW4gVlNTIGFuZCBvdGhlciBkYXRhLW1vZGVscyIgIkFwYWNoZSBJb1REQiIgewogICAgICAgICAgICAgICAgdGFncyAiRGF0YWJhc2UiCiAgICAgICAgICAgIH0KCiAgICAgICAgICAgIGtub3dsZWRnZUxheWVyU2VydmVyID0gY29udGFpbmVyICJDRFNQIEtub3dsZWRnZSBMYXllciBTZXJ2ZXIiICJDb252ZXJ0cyBpbmZvcm1hdGlvbi1sYXllciBkYXRhIHRvIGdyYXBoIGRhdGEgYW5kIHByb3ZpZGVzIGtub3dsZWRnZS1ncmFwaCByZWFzb25pbmcgYW5kIHF1ZXJ5IGNhcGFiaWxpdGllcy4iICJDKysiIHsKICAgICAgICAgICAgICAgIGNvbnZlcnRvciA9IGNvbXBvbmVudCAiQ29udmVydG9yIiAiQ29udmVydHMgdHJlZS1saWtlIGRhdGEgKGpzb24pIGludG8gZ3JhcGggZGF0YSAoUkRGKSBhbmQgdmljZSB2ZXJzYSIgIkMrKyIKICAgICAgICAgICAgICAgIGNvbm5lY3RvciA9IGNvbXBvbmVudCAiQ29ubmVjdG9yIiAiQ29ubmVjdHMgS25vd2xlZGdlIExheWVyIHRvIEluZm9ybWF0aW9uIExheWVyIGFuZCBtYW5hZ2UgZGF0YSB0YXNrcyB3aXRoaW4gS0wiICJXZWJzb2NrZXQgQ2xpZW50IgogICAgICAgICAgICAgICAgcmVhc29uZXJBZGFwdG9yID0gY29tcG9uZW50ICJSZWFzb25lci1BZGFwdG9yIiAiSW50ZXJhY3RzIHdpdGggR3JhcGggZGF0YWJhc2UgYW5kIHJlYXNvbmVyIGJ5IEFQSSAoZS5nLiBhbGxvd3MgaW1wb3J0IG9mIFJERiBkYXRhIGFuZCBydWxlcyBhbmQgZXhlY3V0ZSBxdWVyaWVzKSIgIkMrKyIKICAgICAgICAgICAgICAgIHJkZlJlYXNvbmVyID0gY29tcG9uZW50ICJSREYgUmVhc29uZXIgU2VydmljZSBhbmQgS25vd2xlZGdlIEdyYXBoIiAiU3RvcmVzIFJERiBkYXRhLCBleGVjdXRlcyBydWxlcywgYW5kIGV2YWx1YXRlcyBxdWVyaWVzLiIgIlJERm94IG9yIFJERjRKIgoKICAgICAgICAgICAgICAgIHJlYXNvbmVyQWRhcHRvciAtPiByZGZSZWFzb25lciAiU2VuZCB0cmlwbGVzLCBydWxlcywgcXVlcmllcyIgIkhUVFAiCiAgICAgICAgICAgICAgICByZWFzb25lckFkYXB0b3IgLT4gcmRmUmVhc29uZXIgIlN1YnNjcmliZXMgdG8gbmV3IGluZmVycmVkIHRyaXBsZXMiICJIVFRQIgogICAgICAgICAgICAgICAgcmVhc29uZXJBZGFwdG9yIC0+IGNvbm5lY3RvciAiSW5mZXJlbmNlIHJlc3VsdCAocnVsZXMpIiAiSFRUUCIKICAgICAgICAgICAgICAgIHJlYXNvbmVyQWRhcHRvciAtPiBjb25uZWN0b3IgIkluZmVyZW5jZSByZXN1bHQgKHF1ZXJ5KSIgIkhUVFAiCiAgICAgICAgICAgICAgICBjb25uZWN0b3IgLT4gcmVhc29uZXJBZGFwdG9yICJUcmlnZ2VyIEdyYXBoIGRhdGFiYXNlIGludGVyYWN0aW9ucyAob250b2xvZ2llcywgdHJpcGxlcywgcnVsZXMpIiAiSFRUUCIKICAgICAgICAgICAgICAgIGNvbm5lY3RvciAtPiBjb252ZXJ0b3IgIlNlbmRzIHRyZWUtbGlrZSBkYXRhIChqc29uKSIgIkhUVFAiCiAgICAgICAgICAgICAgICBjb252ZXJ0b3IgLT4gY29ubmVjdG9yICJTZW5kcyBHcmFwaCBkYXRhIChSREYpIiAiSFRUUCIKICAgICAgICAgICAgICAgIGNvbnZlcnRvciAtPiBjb25uZWN0b3IgIlNlbmRzIHRyZWUtbGlrZSBkYXRhIChqc29uKSIgIkhUVFAiCiAgICAgICAgICAgICAgICBjb25uZWN0b3IgLT4gY29udmVydG9yICJTZW5kcyBHcmFwaCBkYXRhIChSREYpIiAiSFRUUCIKICAgICAgICAgICAgfQoKICAgICAgICAgICAgdmVjdG9yU3RvcmFnZVNlcnZlciA9IGNvbnRhaW5lciAiVmVjdG9yIFN0b3JhZ2UgU2VydmVyIiAiT250b2xvZ3kgTm9kZSBFbWJlZGRpbmdzIiAiZS5nLiBDaHJvbWEiIHsKICAgICAgICAgICAgICAgIHRhZ3MgIkRhdGFiYXNlIgogICAgICAgICAgICB9CgogICAgICAgICAgICBncmFwaFJldHJpZXZhbE1jcFNlcnZlciA9IGNvbnRhaW5lciAiKFdJUCkgQ0RTUCBHcmFwaCBSZXRyaWV2YWwgTUNQIFNlcnZlciIgIlByb3ZpZGVzIGdyYXBoIHJldHJpZXZhbCBzdHJhdGVnaWVzIHRvIEFJIGFnZW50cyB0aHJvdWdoIE1DUC4iICJUeXBlU2NyaXB0IiB7CiAgICAgICAgICAgICAgICBtY3BUcmFuc3BvcnQgPSBjb21wb25lbnQgIk1DUCBUcmFuc3BvcnQiICJFeHBvc2VzIGFsbCBzdHJhdGVnaWVzIGFzIE1DUCB0b29scy4gSGFuZGxlcyBTZXNzaW9uIGFuZCBBdXRoIiAiU3RyZWFtYWJsZSBIVFRQIgogICAgICAgICAgICAgICAgc3RyYXRlZ3lMYXllciA9IGNvbXBvbmVudCAiU3RyYXRlZ3kgTGF5ZXIiICJzZWVkX2V4cGFuZCwgbG9jYWxfZmFub3V0LCBwYXRoX2ZpbmQsIHRpbWVzZXJpZXNfYXdhcmUgKyBleHRlbnNpYmxlIiAiVHlwZVNjcmlwdCIKICAgICAgICAgICAgICAgIHNoYXJlZFNlcnZpY2VzID0gY29tcG9uZW50ICJTaGFyZWQgU2VydmljZXMiICJTZW1hbnRpYyBTZWFyY2gsIEdyYXBoIFRyYXZlcnNhbCwgTGl2ZSBEYXRhLCBUZW1wb3JhbCBBbmFseXNpcyIgIlR5cGVTY3JpcHQiCiAgICAgICAgICAgICAgICBrbm93bGVkZ2VHcmFwaEFkYXB0ZXIgPSBjb21wb25lbnQgIktub3dsZWRnZSBHcmFwaCBBZGFwdGVyIiAicXVlcnkgKHNwYXJxbCksIHRyYXZlcnNlIChzZWVkcyksIHBhdGhGaW5kKGZyb20sIHRvKSwgZGVzY3JpYmUoaXJpKSIgIkludGVyZmFjZSIKICAgICAgICAgICAgICAgIHZlY3RvclN0b3JlQWRhcHRlciA9IGNvbXBvbmVudCAiVmVjdG9yIFN0b3JlIEFkYXB0ZXIiICJzZWFyY2gocXVlcnksIG4pLCBmaWx0ZXIocXVlcnksIG1ldGFkYXRhKSIgIkludGVyZmFjZSIKICAgICAgICAgICAgICAgIGluZm9ybWF0aW9uTGF5ZXJBZGFwdGVyID0gY29tcG9uZW50ICJJbmZvcm1hdGlvbiBMYXllciBBZGFwdGVyIiAiZ2V0KHBhdGgsIGluc3RhbmNlKSwgc3Vic2NyaWJlKHBhdGgpLCB0aW1lc2VyaWVzKHBhdGgsIHJhbmdlKSIgIkludGVyZmFjZSIKCiAgICAgICAgICAgICAgICBtY3BUcmFuc3BvcnQgLT4gc3RyYXRlZ3lMYXllciAiRGlzcGF0Y2hlcyB0byBzZWxlY3RlZCBzdHJhdGVneSIgImluLXByb2Nlc3MiCiAgICAgICAgICAgICAgICBzdHJhdGVneUxheWVyIC0+IHNoYXJlZFNlcnZpY2VzICJEZWxlZ2F0ZXMgUmV0cmlldmFsIE9wZXJhdGlvbnMiICJpbi1wcm9jZXNzIgogICAgICAgICAgICAgICAgc2hhcmVkU2VydmljZXMgLT4gdmVjdG9yU3RvcmVBZGFwdGVyICJTZW1hbnRpYyBOb2RlIFNlYXJjaCIgImluLXByb2Nlc3MiCiAgICAgICAgICAgICAgICBzaGFyZWRTZXJ2aWNlcyAtPiBrbm93bGVkZ2VHcmFwaEFkYXB0ZXIgIkdyYXBoIFF1ZXJpZXMgYW5kIFRyYXZlcnNhbCIgImluLXByb2Nlc3MiCiAgICAgICAgICAgICAgICBzaGFyZWRTZXJ2aWNlcyAtPiBpbmZvcm1hdGlvbkxheWVyQWRhcHRlciAiTGl2ZSBEYXRhIGFuZCBUaW1lc2VyaWVzIiAiaW4tcHJvY2VzcyIKICAgICAgICAgICAgfQoKICAgICAgICAgICAgcmVtb3RpdmVMYWJzQnJpZGdlID0gY29udGFpbmVyICJSZW1vdGl2ZUxhYnMgQnJpZGdlIiAiU3RyZWFtcyBzdWJzY3JpYmVkIHRpbWVzZXJpZXMgZGF0YSBmcm9tIFJlbW90aXZlTGFicyB2aXJ0dWFsIHNpZ25hbCBwbGF0Zm9ybSB0byBQbGF5Z3JvdW5kIGRhdGEgc3RvcmUiICJQeXRob24iIHsKICAgICAgICAgICAgICAgIC0+IHJlbW90aXZlTGFic1BsYXRmb3JtICJTdWJzY3JpYmVzIHRvIHNpZ25hbHMiICJSZW1vdGl2ZSBBUEkiCiAgICAgICAgICAgICAgICByZW1vdGl2ZUxhYnNQbGF0Zm9ybSAtPiBjZHNwLnJlbW90aXZlTGFic0JyaWRnZSAiU2VuZHMgc2lnbmFsIGRhdGEgdGltZXNlcmllcyIgIlJlbW90aXZlIEFQSSIKICAgICAgICAgICAgICAgIC0+IGNkc3AudGltZXNlcmllc0RhdGFTZXJ2ZXIgIldyaXRlcyB0aW1lc2VyaWVzIGRhdGEgc3RyZWFtIiAiSW9UREIgQVBJL1NRTCIgICAgICAgICAgICAgICAgCiAgICAgICAgICAgIH0KCiAgICAgICAgICAgIHZpc3NTZXJ2ZXIgPSBjb250YWluZXIgIlZJU1MgU2VydmVyIiAiU2VydmVzIFZTUyBkYXRhIHZpYSB0aGUgVklTUyBBUCIgIlZJU1NSIiB7CiAgICAgICAgICAgICAgICAtPiBjZHNwLnRpbWVzZXJpZXNEYXRhU2VydmVyICJTZW5kcyBWU1MgZ2V0L3NldCByZXF1ZXN0cyB0byIgIklvVERCIEFQSS9TUUwiCiAgICAgICAgICAgIH0KCiAgICAgICAgICAgIC8vIEluZm9ybWF0aW9uIExheWVyIGV4dGVybmFsIHJlbGF0aW9uc2hpcHMKICAgICAgICAgICAgaW5mb3JtYXRpb25MYXllclNlcnZlci5kYlJvdXRlciAtPiBvbmJvYXJkT2ZmYm9hcmRBcHBsaWNhdGlvbnMgIkNvbnN1bWluZyBJbmZvcm1hdGlvbiIgIldlYnNvY2tldCBBUEkiCiAgICAgICAgICAgIG9uYm9hcmRPZmZib2FyZEFwcGxpY2F0aW9ucyAtPiBjZHNwLmluZm9ybWF0aW9uTGF5ZXJTZXJ2ZXIuZGJSb3V0ZXIgIkNvbnRyaWJ1dGluZyBJbmZvcm1hdGlvbiIgIldlYnNvY2tldCBBUEkiCiAgICAgICAgICAgIGluZm9ybWF0aW9uTGF5ZXJTZXJ2ZXIuaW90ZGJIYW5kbGVyIC0+IHRpbWVzZXJpZXNEYXRhU2VydmVyICJSZWFkIC8gV3JpdGUgLyAoU3Vic2NyaWJlKSIgIk5vZGUuanMgY2xpZW50IgogICAgICAgICAgICBpbmZvcm1hdGlvbkxheWVyU2VydmVyLmRiUm91dGVyIC0+IGtub3dsZWRnZUxheWVyU2VydmVyLmNvbm5lY3RvciAiUHJvdmlkZXMgSW5mb3JtYXRpb24iICJXZWJzb2NrZXQgQVBJIgogICAgICAgICAgICBrbm93bGVkZ2VFbmdpbmVlciAtPiBjZHNwLmluZm9ybWF0aW9uTGF5ZXJTZXJ2ZXIuZGJSb3V0ZXIgIlByb3ZpZGVzIHNlbWFudGljIGNvbnRleHQgZm9yIGxhdGVyIGNvbnZlcnNpb24iICJlLmcuIFNIQUNMIgogICAgICAgICAgICBjZHNwLnJlbW90aXZlTGFic0JyaWRnZSAtPiBjZHNwLmluZm9ybWF0aW9uTGF5ZXJTZXJ2ZXIuZGJSb3V0ZXIgIldyaXRlcyBjdXJyZW50IHZhbHVlIG9mIGRhdGEgc3RyZWFtIiAiV2Vic29ja2V0IEFQSSIKCiAgICAgICAgICAgIC8vIEtub3dsZWRnZSBMYXllciBleHRlcm5hbCByZWxhdGlvbnNoaXBzCiAgICAgICAgICAgIGtub3dsZWRnZUxheWVyU2VydmVyLmNvbm5lY3RvciAtPiBvbmJvYXJkT2ZmYm9hcmRBcHBsaWNhdGlvbnMgIkNvbnN1bWluZyBLbm93bGVkZ2UiICJIVFRQIFNQQVJRTCIKICAgICAgICAgICAga25vd2xlZGdlTGF5ZXJTZXJ2ZXIuY29ubmVjdG9yIC0+IGNkc3AuaW5mb3JtYXRpb25MYXllclNlcnZlci5kYlJvdXRlciAiUmV0dXJucyBuZXcgSW5mb3JtYXRpb24iICJXZWJzb2NrZXQgQVBJIgogICAgICAgICAgICBrbm93bGVkZ2VFbmdpbmVlciAtPiBjZHNwLmtub3dsZWRnZUxheWVyU2VydmVyLnJlYXNvbmVyQWRhcHRvciAiSW5pdGlhbGl6ZSB3aXRoIG9udG9sb2dpZXMgYW5kIHJ1bGVzIChyZXByZXNlbnRpbmcgYnVzaW5lc3MgbG9naWMpIGFuZCB1cGRhdGUiICJIVFRQIgoKICAgICAgICAgICAgLy8gR3JhcGggUkFHIFNlcnZlciBleHRlcm5hbCByZWxhdGlvbnNoaXBzCiAgICAgICAgICAgIGFpQWdlbnRzIC0+IGdyYXBoUmV0cmlldmFsTWNwU2VydmVyLm1jcFRyYW5zcG9ydCAiSW52b2tlcyBHcmFwaCBSZXRyaWV2YWwgVG9vbCIgIk1DUCBTdHJlYW1hYmxlIEhUVFAiCiAgICAgICAgICAgIGdyYXBoUmV0cmlldmFsTWNwU2VydmVyLmluZm9ybWF0aW9uTGF5ZXJBZGFwdGVyIC0+IGNkc3AuaW5mb3JtYXRpb25MYXllclNlcnZlci5kYlJvdXRlciAiTGl2ZSBhbmQgaGlzdG9yaWNhbCBkYXRhIiAiV2Vic29ja2V0IEFQSSIKICAgICAgICAgICAgZ3JhcGhSZXRyaWV2YWxNY3BTZXJ2ZXIua25vd2xlZGdlR3JhcGhBZGFwdGVyIC0+IGNkc3Aua25vd2xlZGdlTGF5ZXJTZXJ2ZXIuY29ubmVjdG9yICJTUEFSUUwgUVVFUklFUyIgIkhUVFAgU1BBUlFMIgogICAgICAgICAgICB2ZWN0b3JTdG9yYWdlU2VydmVyIC0+IGdyYXBoUmV0cmlldmFsTWNwU2VydmVyLnZlY3RvclN0b3JlQWRhcHRlciAiRW1iZWRkaW5nIFNlYXJjaCIgIkhUVFAgUkVTVCIKICAgICAgICB9CgogICAgICAgIGNkc3BVc2VyID0gcGVyc29uICJDRFNQIHVzZXIiICJEZXZlbG9wZXIgb3IgdXNlciBvZiB1c2UtY2FzZXMiIHsKICAgICAgICAgICAgLT4gY2RzcCAiQ3JlYXRlcyBvciBvcGVyYXRlcyB1c2UtY2FzZXMgdXNpbmciCiAgICAgICAgfQoKICAgICAgICBzb3V0aGJvdW5kRGF0YVNvdXJjZXMgPSBzb2Z0d2FyZVN5c3RlbSAiU291dGhib3VuZCBEYXRhIFNvdXJjZXMiICJlLmc6IHJlYWwgYW5kIHZpcnR1YWwgZGF0YSBmZWVkZXIsIHNpbXVsYXRvciwgZ2F0ZXdheSwgRUNVcyIgewogICAgICAgICAgICB0YWdzICJFeHRlcm5hbCBTb2Z0d2FyZSBTeXN0ZW0iCgogICAgICAgICAgICAtPiBjZHNwICJTZW5kcyB0aW1lc2VyaWVzIGRhdGEgKFZTUyArIG90aGVyIGRhdGEgbW9kZWxzKSB0byIgIklvVERCIEFQSS9TUUwiCiAgICAgICAgICAgIGNkc3AgLT4gc291dGhib3VuZERhdGFTb3VyY2VzICJTdWJzY3JpYmVzIHRvIGRhdGEgZnJvbSIKICAgICAgICB9CgogICAgICAgIGJpZ0RhdGFDbG91ZCA9IHNvZnR3YXJlU3lzdGVtICJCaWcgZGF0YSIgIkJpZyBkYXRhIHN5c3RlbXMgaW4gdGhlIGNsb3VkIiB7CiAgICAgICAgICAgIHRhZ3MgIkV4dGVybmFsIFNvZnR3YXJlIFN5c3RlbSIKCiAgICAgICAgICAgIC0+IGNkc3AgIkNvLW9wZXJhdGVzIHdpdGgiICJkYXRhLWNlbnRyaWMiCiAgICAgICAgfQoKICAgICAgICBsYXJnZUVDVXMgPSBzb2Z0d2FyZVN5c3RlbSAiTGFyZ2UgRUNVcyIgImUuZy4gSFBDLCB6b25lIGFuZCBkb21haW4gY29udHJvbGxlcnMiIHsKICAgICAgICAgICAgdGFncyAiRXh0ZXJuYWwgU29mdHdhcmUgU3lzdGVtIgoKICAgICAgICAgICAgLT4gY2RzcCAiQ28tb3BlcmF0ZXMgd2l0aCIgImRhdGEtY2VudHJpYyIKICAgICAgICB9CgogICAgICAgIHVzZUNhc2VDbGllbnRzID0gc29mdHdhcmVTeXN0ZW0gIlVzZS1jYXNlIENsaWVudHMiICJDbGllbnRzIGRlZmluaW5nIGFuZCBtYW5pcHVsYXRpbmcgZGF0YSwgZS5nLiBmdW5jdGlvbnMgYW5kIHRvb2xpbmcsIGZvciB1c2UtY2FzZXMiIHsKICAgICAgICAgICAgdGFncyAiRXh0ZXJuYWwgU29mdHdhcmUgU3lzdGVtIgoKICAgICAgICAgICAgLT4gY2RzcCAiTWFrZXMgZGF0YSByZXF1ZXN0cyB0byIgImUuZy4gVklTUyBBUEksIE5hdGl2ZSBBUEksIERCIHF1ZXJ5IGxhbmd1YWdlIgogICAgICAgIH0KCiAgICAgICAgZGJDbGllbnRzID0gc29mdHdhcmVTeXN0ZW0gIkRCIENsaWVudHMiICJDbGllbnRzIGRlZmluaW5nIGFuZCBtYW5pcHVsYXRpbmcgZGF0YSwgaW4gdGhlIFZTUyBkYXRhIG1vZGVsIGFuZCBvdGhlciBkYXRhIG1vZGVscywgdXNpbmcgdGhlIGRhdGFiYXNlIiB7CiAgICAgICAgICAgIHRhZ3MgIkV4dGVybmFsIFNvZnR3YXJlIFN5c3RlbSIKCiAgICAgICAgICAgIC0+IGNkc3AudGltZXNlcmllc0RhdGFTZXJ2ZXIgIlNlbmRzIERhdGEgRGVmaW5pdGlvbiBhbmQgRGF0YSBNYW5pcHVsYXRpb24gcmVxdWVzdHMgdG8iICJJb1REQiBBUEkvU1FMIgogICAgICAgIH0KCiAgICAgICAgdmlzc0NsaWVudHMgPSBzb2Z0d2FyZVN5c3RlbSAiVklTUyBDbGllbnRzIiAiQ2xpZW50cyBtYW5pcHVsYXRpbmcgVlNTIGRhdGEgdXNpbmcgdGhlIFZJU1MgQVBJICIgewogICAgICAgICAgICB0YWdzICJFeHRlcm5hbCBTb2Z0d2FyZSBTeXN0ZW0iCgogICAgICAgICAgICAtPiBjZHNwLnZpc3NTZXJ2ZXIgIk1ha2VzIFZJU1MgZ2V0L3NldC9zdWIgcmVxdWVzdHMgZm9yIFZTUyBkYXRhIGZyb20iICJWSVNTIEFQSSIKICAgICAgICB9CgovKiBPcmlnaW5hbCAnbG9uZyBmb3JtJyByZWxhdGlvbnNoaXAgZGVmaW5pdGlvbnMgZnJvbSBiZWZvcmUgdGhleSB3ZXJlIGRpc3BlcnNlZCB0byB0aGUgY29tcG9uZW50cyB1c2luZyAnc2hvcnQgZm9ybScuIAogICBMZWZ0IGhlcmUgdGVtcG9yYXJpbHkgZm9yIHJlZmVyZW5jZS4gU2hvdWxkIGJlIHJlbW92ZWQgb25jZSBuZXcgcmVsYXRpb25zaGlwcyBhZ3JlZWQKCiAgICAgICAgLy8gSW5mb3JtYXRpb24gTGF5ZXIgcmVsYXRpb25zaGlwcwogICAgICAgIGNkc3AuaW5mb3JtYXRpb25MYXllclNlcnZlci5kYlJvdXRlciAtPiBvbmJvYXJkT2ZmYm9hcmRBcHBsaWNhdGlvbnMgIkNvbnN1bWluZyBJbmZvcm1hdGlvbiIgIldlYnNvY2tldCBBUEkiCiAgICAgICAgb25ib2FyZE9mZmJvYXJkQXBwbGljYXRpb25zIC0+IGNkc3AuaW5mb3JtYXRpb25MYXllclNlcnZlci5kYlJvdXRlciAiQ29udHJpYnV0aW5nIEluZm9ybWF0aW9uIiAiV2Vic29ja2V0IEFQSSIKICAgICAgICBjZHNwLmluZm9ybWF0aW9uTGF5ZXJTZXJ2ZXIuZGJSb3V0ZXIgLT4gY2RzcC5pbmZvcm1hdGlvbkxheWVyU2VydmVyLmlvdGRiSGFuZGxlciAiKERlLSlBdXRoIC8gUmVhZCAvIFdyaXRlIC8gU3Vic2NyaWJlIiAiU2VydmljZSBDYWxsIgogICAgICAgIGNkc3AuaW5mb3JtYXRpb25MYXllclNlcnZlci5pb3RkYkhhbmRsZXIgLT4gY2RzcC50aW1lc2VyaWVzRGF0YVNlcnZlciAiUmVhZCAvIFdyaXRlIC8gKFN1YnNjcmliZSkiICJOb2RlLmpzIGNsaWVudCIKICAgICAgICBrbm93bGVkZ2VFbmdpbmVlciAtPiBjZHNwLmluZm9ybWF0aW9uTGF5ZXJTZXJ2ZXIuZGJSb3V0ZXIgIlByb3ZpZGVzIHNlbWFudGljIGNvbnRleHQgZm9yIGxhdGVyIGNvbnZlcnNpb24iICJlLmcuIFNIQUNMIgogICAgICAgIGNkc3AucmVtb3RpdmVMYWJzQnJpZGdlIC0+IGNkc3AuaW5mb3JtYXRpb25MYXllclNlcnZlci5kYlJvdXRlciAiV3JpdGVzIGN1cnJlbnQgdmFsdWUgb2YgZGF0YSBzdHJlYW0iICJXZWJzb2NrZXQgQVBJIgogICAgICAgIGNkc3AuaW5mb3JtYXRpb25MYXllclNlcnZlci5kYlJvdXRlciAtPiBjZHNwLmtub3dsZWRnZUxheWVyU2VydmVyLmNvbm5lY3RvciAiUHJvdmlkZXMgSW5mb3JtYXRpb24iICJXZWJzb2NrZXQgQVBJIgoKICAgICAgICAvLyBLbm93bGVkZ2UgTGF5ZXIgcmVsYXRpb25zaGlwcwogICAgICAgIGNkc3Aua25vd2xlZGdlTGF5ZXJTZXJ2ZXIucmVhc29uZXJBZGFwdG9yIC0+IGNkc3Aua25vd2xlZGdlTGF5ZXJTZXJ2ZXIucmRmUmVhc29uZXIgIlNlbmQgdHJpcGxlcywgcnVsZXMsIHF1ZXJpZXMiICJIVFRQIgogICAgICAgIGNkc3Aua25vd2xlZGdlTGF5ZXJTZXJ2ZXIucmVhc29uZXJBZGFwdG9yIC0+IGNkc3Aua25vd2xlZGdlTGF5ZXJTZXJ2ZXIucmRmUmVhc29uZXIgIlN1YnNjcmliZXMgdG8gbmV3IGluZmVycmVkIHRyaXBsZXMiICJIVFRQIgoKICAgICAgICBjZHNwLmtub3dsZWRnZUxheWVyU2VydmVyLnJlYXNvbmVyQWRhcHRvciAtPiBjZHNwLmtub3dsZWRnZUxheWVyU2VydmVyLmNvbm5lY3RvciAiSW5mZXJlbmNlIHJlc3VsdCAocnVsZXMpIiAiSFRUUCIKICAgICAgICBjZHNwLmtub3dsZWRnZUxheWVyU2VydmVyLnJlYXNvbmVyQWRhcHRvciAtPiBjZHNwLmtub3dsZWRnZUxheWVyU2VydmVyLmNvbm5lY3RvciAiSW5mZXJlbmNlIHJlc3VsdCAocXVlcnkpIiAiSFRUUCIKICAgICAgICBjZHNwLmtub3dsZWRnZUxheWVyU2VydmVyLmNvbm5lY3RvciAtPiBjZHNwLmtub3dsZWRnZUxheWVyU2VydmVyLnJlYXNvbmVyQWRhcHRvciAiVHJpZ2dlciBHcmFwaCBkYXRhYmFzZSBpbnRlcmFjdGlvbnMgKG9udG9sb2dpZXMsIHRyaXBsZXMsIHJ1bGVzKSIgIkhUVFAiCiAgICAgICAga25vd2xlZGdlRW5naW5lZXIgLT4gY2RzcC5rbm93bGVkZ2VMYXllclNlcnZlci5yZWFzb25lckFkYXB0b3IgIkluaXRpYWxpemUgd2l0aCBvbnRvbG9naWVzIGFuZCBydWxlcyAocmVwcmVzZW50aW5nIGJ1c2luZXNzIGxvZ2ljKSBhbmQgdXBkYXRlIiAiSFRUUCIKCiAgICAgICAgY2RzcC5rbm93bGVkZ2VMYXllclNlcnZlci5jb25uZWN0b3IgLT4gY2RzcC5rbm93bGVkZ2VMYXllclNlcnZlci5jb252ZXJ0b3IgIlNlbmRzIHRyZWUtbGlrZSBkYXRhIChqc29uKSIgIkhUVFAiCiAgICAgICAgY2RzcC5rbm93bGVkZ2VMYXllclNlcnZlci5jb252ZXJ0b3IgLT4gY2RzcC5rbm93bGVkZ2VMYXllclNlcnZlci5jb25uZWN0b3IgIlNlbmRzIEdyYXBoIGRhdGEgKFJERikiICJIVFRQIgogICAgICAgIGNkc3Aua25vd2xlZGdlTGF5ZXJTZXJ2ZXIuY29udmVydG9yIC0+IGNkc3Aua25vd2xlZGdlTGF5ZXJTZXJ2ZXIuY29ubmVjdG9yICJTZW5kcyB0cmVlLWxpa2UgZGF0YSAoanNvbikiICJIVFRQIgogICAgICAgIGNkc3Aua25vd2xlZGdlTGF5ZXJTZXJ2ZXIuY29ubmVjdG9yIC0+IGNkc3Aua25vd2xlZGdlTGF5ZXJTZXJ2ZXIuY29udmVydG9yICJTZW5kcyBHcmFwaCBkYXRhIChSREYpIiAiSFRUUCIKCiAgICAgICAgY2RzcC5rbm93bGVkZ2VMYXllclNlcnZlci5jb25uZWN0b3IgLT4gY2RzcC5pbmZvcm1hdGlvbkxheWVyU2VydmVyLmRiUm91dGVyICJSZXR1cm5zIG5ldyBJbmZvcm1hdGlvbiIgIldlYnNvY2tldCBBUEkiCiAgICAgICAgY2RzcC5rbm93bGVkZ2VMYXllclNlcnZlci5jb25uZWN0b3IgLT4gb25ib2FyZE9mZmJvYXJkQXBwbGljYXRpb25zICJDb25zdW1pbmcgS25vd2xlZGdlIiAiSFRUUCBTUEFSUUwiCgogICAgICAgIC8vIEdyYXBoIFJBRyBTZXJ2ZXIgcmVsYXRpb25zaGlwcwogICAgICAgIGFpQWdlbnRzIC0+IGNkc3AuZ3JhcGhSZXRyaWV2YWxNY3BTZXJ2ZXIubWNwVHJhbnNwb3J0ICJJbnZva2VzIEdyYXBoIFJldHJpZXZhbCBUb29sIiAiTUNQIFN0cmVhbWFibGUgSFRUUCIKICAgICAgICBjZHNwLmdyYXBoUmV0cmlldmFsTWNwU2VydmVyLm1jcFRyYW5zcG9ydCAtPiBjZHNwLmdyYXBoUmV0cmlldmFsTWNwU2VydmVyLnN0cmF0ZWd5TGF5ZXIgIkRpc3BhdGNoZXMgdG8gc2VsZWN0ZWQgc3RyYXRlZ3kiICJpbi1wcm9jZXNzIgogICAgICAgIGNkc3AuZ3JhcGhSZXRyaWV2YWxNY3BTZXJ2ZXIuc3RyYXRlZ3lMYXllciAtPiBjZHNwLmdyYXBoUmV0cmlldmFsTWNwU2VydmVyLnNoYXJlZFNlcnZpY2VzICJEZWxlZ2F0ZXMgUmV0cmlldmFsIE9wZXJhdGlvbnMiICJpbi1wcm9jZXNzIgogICAgICAgIGNkc3AuZ3JhcGhSZXRyaWV2YWxNY3BTZXJ2ZXIuc2hhcmVkU2VydmljZXMgLT4gY2RzcC5ncmFwaFJldHJpZXZhbE1jcFNlcnZlci52ZWN0b3JTdG9yZUFkYXB0ZXIgIlNlbWFudGljIE5vZGUgU2VhcmNoIiAiaW4tcHJvY2VzcyIKICAgICAgICBjZHNwLmdyYXBoUmV0cmlldmFsTWNwU2VydmVyLnNoYXJlZFNlcnZpY2VzIC0+IGNkc3AuZ3JhcGhSZXRyaWV2YWxNY3BTZXJ2ZXIua25vd2xlZGdlR3JhcGhBZGFwdGVyICJHcmFwaCBRdWVyaWVzIGFuZCBUcmF2ZXJzYWwiICJpbi1wcm9jZXNzIgogICAgICAgIGNkc3AudmVjdG9yU3RvcmFnZVNlcnZlciAtPiBjZHNwLmdyYXBoUmV0cmlldmFsTWNwU2VydmVyLnZlY3RvclN0b3JlQWRhcHRlciAiRW1iZWRkaW5nIFNlYXJjaCIgIkhUVFAgUkVTVCIKICAgICAgICBjZHNwLmdyYXBoUmV0cmlldmFsTWNwU2VydmVyLnNoYXJlZFNlcnZpY2VzIC0+IGNkc3AuZ3JhcGhSZXRyaWV2YWxNY3BTZXJ2ZXIuaW5mb3JtYXRpb25MYXllckFkYXB0ZXIgIkxpdmUgRGF0YSBhbmQgVGltZXNlcmllcyIgImluLXByb2Nlc3MiCiAgICAgICAgY2RzcC5ncmFwaFJldHJpZXZhbE1jcFNlcnZlci5pbmZvcm1hdGlvbkxheWVyQWRhcHRlciAtPiBjZHNwLmluZm9ybWF0aW9uTGF5ZXJTZXJ2ZXIuZGJSb3V0ZXIgIkxpdmUgYW5kIGhpc3RvcmljYWwgZGF0YSIgIldlYnNvY2tldCBBUEkiCiAgICAgICAgY2RzcC5ncmFwaFJldHJpZXZhbE1jcFNlcnZlci5rbm93bGVkZ2VHcmFwaEFkYXB0ZXIgLT4gY2RzcC5rbm93bGVkZ2VMYXllclNlcnZlci5jb25uZWN0b3IgIlNQQVJRTCBRVUVSSUVTIiAiSFRUUCBTUEFSUUwiCgogICAgICAgIC8vIFJlbW90aXZlTGFicyByZWxhdGlvbnNoaXBzCiAgICAgICAgY2RzcC5yZW1vdGl2ZUxhYnNCcmlkZ2UgLT4gcmVtb3RpdmVMYWJzUGxhdGZvcm0gIlN1YnNjcmliZXMgdG8gc2lnbmFscyIgIlJlbW90aXZlIEFQSSIKICAgICAgICByZW1vdGl2ZUxhYnNQbGF0Zm9ybSAtPiBjZHNwLnJlbW90aXZlTGFic0JyaWRnZSAiU2VuZHMgc2lnbmFsIGRhdGEgdGltZXNlcmllcyIgIlJlbW90aXZlIEFQSSIKICAgICAgICBjZHNwLnJlbW90aXZlTGFic0JyaWRnZSAtPiBjZHNwLnRpbWVzZXJpZXNEYXRhU2VydmVyICJXcml0ZXMgdGltZXNlcmllcyBkYXRhIHN0cmVhbSIgIklvVERCIEFQSS9TUUwiCiovCiAgICB9CgogICAgdmlld3MgewogICAgICAgIHN5c3RlbUNvbnRleHQgY2RzcCAiQ0RTUC1TeXN0ZW1Db250ZXh0IiB7CiAgICAgICAgICAgIGluY2x1ZGUgKgogICAgICAgICAgICBleGNsdWRlIGtub3dsZWRnZUVuZ2luZWVyIHJlbW90aXZlTGFic1BsYXRmb3JtIGRiQ2xpZW50cyB2aXNzQ2xpZW50cyBvbmJvYXJkT2ZmYm9hcmRBcHBsaWNhdGlvbnMgYWlBZ2VudHMKICAgICAgICAgICAgYXV0b2xheW91dCB0YgojICAgICAgICAgICAgdGl0bGUgIkNEU1AgU3lzdGVtIENvbnRleHQiCiAgICAgICAgICAgIGRlc2NyaXB0aW9uICJDRFNQIGFuZCBpdHMgdXNlcnMgYW5kIGV4dGVybmFsIHNvZnR3YXJlIHN5c3RlbXMuIgogICAgICAgIH0KCiAgICAgICAgY29udGFpbmVyIGNkc3AgIkNEU1AtQ29udGFpbmVycyIgewogICAgICAgICAgICBpbmNsdWRlICoKICAgICAgICAgICAgYXV0b2xheW91dCBscgogICAgICAgICAgICAjdGl0bGUgIkNEU1AgQ29udGFpbmVyIFZpZXciCiAgICAgICAgICAgIGRlc2NyaXB0aW9uICJUaGUgcHJpbmNpcGFsIENEU1Agc2VydmVycywgc3RvcmVzLCBicmlkZ2UgYW5kIGV4dGVybmFsIGRlcGVuZGVuY2llcy4iCiAgICAgICAgfQoKICAgICAgICBjb21wb25lbnQgY2RzcC5pbmZvcm1hdGlvbkxheWVyU2VydmVyICJJTC1Db21wb25lbnRzIiB7CiAgICAgICAgICAgIGRlc2NyaXB0aW9uICJUaGUgY29tcG9uZW50IGRpYWdyYW0gZm9yIHRoZSBJbmZvcm1hdGlvbiBMYXllciBDb250YWluZXIiCiAgICAgICAgICAgIGluY2x1ZGUgKgojICAgICAgICAgICAgZXhjbHVkZSAiY2RzcC5yZW1vdGl2ZUxhYnNCcmlkZ2UgLT4gY2RzcC50aW1lc2VyaWVzRGF0YVNlcnZlciIKICAgICAgICAgICAgYXV0b2xheW91dCBscgojICAgICAgICAgICAgdGl0bGUgIkNEU1AgSW5mb3JtYXRpb24gTGF5ZXIgU2VydmVyIENvbXBvbmVudHMiCiAgICAgICAgfQoKICAgICAgICBjb21wb25lbnQgY2RzcC5rbm93bGVkZ2VMYXllclNlcnZlciAiS0wtQ29tcG9uZW50cyIgewogICAgICAgICAgICBkZXNjcmlwdGlvbiAiVGhlIGNvbXBvbmVudCBkaWFncmFtIGZvciB0aGUgS25vd2xlZGdlIExheWVyIENvbnRhaW5lciIKCiAgICAgICAgICAgIGluY2x1ZGUgKgogICAgICAgICAgICBhdXRvbGF5b3V0IGxyCiMgICAgICAgICAgICB0aXRsZSAiQ0RTUCBLbm93bGVkZ2UgTGF5ZXIgU2VydmVyIENvbXBvbmVudHMiCiAgICAgICAgfQoKICAgICAgICBjb21wb25lbnQgY2RzcC5ncmFwaFJldHJpZXZhbE1jcFNlcnZlciAiR3JhcGgtUkFHLUNvbXBvbmVudHMiIHsKICAgICAgICAgICAgZGVzY3JpcHRpb24gIlRoZSBjb21wb25lbnQgZGlhZ3JhbSBmb3IgdGhlIEdyYXBoIFJldHJpZXZhbCBNQ1AgU2VydmVyIgoKICAgICAgICAgICAgaW5jbHVkZSAqCiAgICAgICAgICAgIGF1dG9sYXlvdXQgbHIKIyAgICAgICAgICAgIHRpdGxlICJHcmFwaCBSZXRyaWV2YWwgTUNQIFNlcnZlciBDb21wb25lbnRzIgogICAgICAgIH0KCiAgICAgICAgc3R5bGVzIHsKICAgICAgICAgICAgZWxlbWVudCAiUGVyc29uIiB7CiAgICAgICAgICAgICAgICBzaGFwZSBwZXJzb24KICAgICAgICAgICAgICAgIGJhY2tncm91bmQgIzA4NDI3YgogICAgICAgICAgICAgICAgY29sb3IgI2ZmZmZmZgogICAgICAgICAgICB9CiAgICAgICAgICAgIGVsZW1lbnQgIlNvZnR3YXJlIFN5c3RlbSIgewogICAgICAgICAgICAgICAgYmFja2dyb3VuZCAjMTE2OGJkCiAgICAgICAgICAgICAgICBjb2xvciAjZmZmZmZmCiAgICAgICAgICAgIH0KICAgICAgICAgICAgZWxlbWVudCAiRXh0ZXJuYWwgU29mdHdhcmUgU3lzdGVtIiB7CiAgICAgICAgICAgICAgICBiYWNrZ3JvdW5kICM4Yzg0OTYKICAgICAgICAgICAgICAgIGNvbG9yICNmZmZmZmYKICAgICAgICAgICAgfQogICAgICAgICAgICBlbGVtZW50ICJDb250YWluZXIiIHsKICAgICAgICAgICAgICAgIGJhY2tncm91bmQgIzIzYTJkOQogICAgICAgICAgICAgICAgY29sb3IgI2ZmZmZmZgogICAgICAgICAgICB9CiAgICAgICAgICAgIGVsZW1lbnQgIkNvbXBvbmVudCIgewogICAgICAgICAgICAgICAgYmFja2dyb3VuZCAjYzJjOWViCiAgICAgICAgICAgICAgICBjb2xvciAjMjIyMjIyCiAgICAgICAgICAgICAgICBzdHJva2UgIzAwMDAwMAogICAgICAgICAgICB9CiAgICAgICAgICAgIGVsZW1lbnQgIkRhdGFiYXNlIiB7CiAgICAgICAgICAgICAgICBzaGFwZSBjeWxpbmRlcgogICAgICAgICAgICB9CiAgICAgICAgICAgIHJlbGF0aW9uc2hpcCAiUmVjb25zdHJ1Y3RlZCIgewogICAgICAgICAgICAgICAgZGFzaGVkIHRydWUKICAgICAgICAgICAgICAgIGNvbG9yICNiMzZiMDAKICAgICAgICAgICAgfQogICAgICAgIH0KCiAgICB9CgogICAgY29uZmlndXJhdGlvbiB7CiAgICAgICAgc2NvcGUgc29mdHdhcmVzeXN0ZW0KICAgIH0KfQ==",
+    "structurizr.inspection.info" : "0",
+    "structurizr.inspection.ignore" : "0",
+    "structurizr.inspection.warning" : "0"
+  },
+  "views" : {
+    "componentViews" : [ {
+      "automaticLayout" : {
+        "edgeSeparation" : 50,
+        "nodeSeparation" : 50,
+        "rankDirection" : "LeftRight",
+        "rankSeparation" : 100,
+        "vertices" : true
+      },
+      "containerId" : "6",
+      "description" : "The component diagram for the Information Layer Container",
+      "elements" : [ {
+        "id" : "1",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "2",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "7",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "8",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "10",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "11",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "26",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "38",
+        "x" : 0,
+        "y" : 0
+      } ],
+      "externalContainerBoundariesVisible" : false,
+      "key" : "IL-Components",
+      "name" : "Component View: Central Data Service Playground (CDSP) - CDSP Information Layer Server",
+      "order" : 3,
+      "relationships" : [ {
+        "id" : "43"
+      }, {
+        "id" : "46"
+      }, {
+        "id" : "49"
+      }, {
+        "id" : "52"
+      }, {
+        "id" : "55"
+      }, {
+        "id" : "58"
+      }, {
+        "id" : "61"
+      }, {
+        "id" : "64"
+      }, {
+        "id" : "67"
+      }, {
+        "id" : "70"
+      }, {
+        "id" : "76"
+      }, {
+        "id" : "81"
+      }, {
+        "id" : "9"
+      } ]
+    }, {
+      "automaticLayout" : {
+        "edgeSeparation" : 50,
+        "nodeSeparation" : 50,
+        "rankDirection" : "LeftRight",
+        "rankSeparation" : 100,
+        "vertices" : true
+      },
+      "containerId" : "11",
+      "description" : "The component diagram for the Knowledge Layer Container",
+      "elements" : [ {
+        "id" : "1",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "2",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "6",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "12",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "13",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "14",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "15",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "26",
+        "x" : 0,
+        "y" : 0
+      } ],
+      "externalContainerBoundariesVisible" : false,
+      "key" : "KL-Components",
+      "name" : "Component View: Central Data Service Playground (CDSP) - CDSP Knowledge Layer Server",
+      "order" : 4,
+      "relationships" : [ {
+        "id" : "16"
+      }, {
+        "id" : "17"
+      }, {
+        "id" : "18"
+      }, {
+        "id" : "19"
+      }, {
+        "id" : "20"
+      }, {
+        "id" : "21"
+      }, {
+        "id" : "22"
+      }, {
+        "id" : "23"
+      }, {
+        "id" : "24"
+      }, {
+        "id" : "47"
+      }, {
+        "id" : "50"
+      }, {
+        "id" : "56"
+      }, {
+        "id" : "59"
+      }, {
+        "id" : "63"
+      }, {
+        "id" : "66"
+      }, {
+        "id" : "69"
+      }, {
+        "id" : "77"
+      }, {
+        "id" : "80"
+      } ]
+    }, {
+      "automaticLayout" : {
+        "edgeSeparation" : 50,
+        "nodeSeparation" : 50,
+        "rankDirection" : "LeftRight",
+        "rankSeparation" : 100,
+        "vertices" : true
+      },
+      "containerId" : "26",
+      "description" : "The component diagram for the Graph Retrieval MCP Server",
+      "elements" : [ {
+        "id" : "4",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "6",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "11",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "25",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "27",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "28",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "29",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "30",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "31",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "32",
+        "x" : 0,
+        "y" : 0
+      } ],
+      "externalContainerBoundariesVisible" : false,
+      "key" : "Graph-RAG-Components",
+      "name" : "Component View: Central Data Service Playground (CDSP) - (WIP) CDSP Graph Retrieval MCP Server",
+      "order" : 5,
+      "relationships" : [ {
+        "id" : "33"
+      }, {
+        "id" : "34"
+      }, {
+        "id" : "35"
+      }, {
+        "id" : "36"
+      }, {
+        "id" : "37"
+      }, {
+        "id" : "57"
+      }, {
+        "id" : "68"
+      }, {
+        "id" : "71"
+      }, {
+        "id" : "75"
+      }, {
+        "id" : "79"
+      }, {
+        "id" : "82"
+      } ]
+    } ],
+    "configuration" : {
+      "lastSavedView" : "KL-Components",
+      "styles" : {
+        "elements" : [ {
+          "background" : "#c2c9eb",
+          "color" : "#222222",
+          "stroke" : "#000000",
+          "tag" : "Component"
+        }, {
+          "background" : "#23a2d9",
+          "color" : "#ffffff",
+          "tag" : "Container"
+        }, {
+          "shape" : "Cylinder",
+          "tag" : "Database"
+        }, {
+          "background" : "#8c8496",
+          "color" : "#ffffff",
+          "tag" : "External Software System"
+        }, {
+          "background" : "#08427b",
+          "color" : "#ffffff",
+          "shape" : "Person",
+          "tag" : "Person"
+        }, {
+          "background" : "#1168bd",
+          "color" : "#ffffff",
+          "tag" : "Software System"
+        } ],
+        "relationships" : [ {
+          "color" : "#b36b00",
+          "dashed" : true,
+          "tag" : "Reconstructed"
+        } ]
+      },
+      "terminology" : { }
+    },
+    "containerViews" : [ {
+      "automaticLayout" : {
+        "edgeSeparation" : 50,
+        "nodeSeparation" : 50,
+        "rankDirection" : "LeftRight",
+        "rankSeparation" : 100,
+        "vertices" : true
+      },
+      "description" : "The principal CDSP servers, stores, bridge and external dependencies.",
+      "elements" : [ {
+        "id" : "1",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "2",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "3",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "4",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "6",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "10",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "11",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "25",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "26",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "38",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "44",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "95",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "98",
+        "x" : 0,
+        "y" : 0
+      } ],
+      "externalSoftwareSystemBoundariesVisible" : false,
+      "key" : "CDSP-Containers",
+      "name" : "Container View: Central Data Service Playground (CDSP)",
+      "order" : 2,
+      "relationships" : [ {
+        "id" : "39"
+      }, {
+        "id" : "41"
+      }, {
+        "id" : "43"
+      }, {
+        "id" : "45"
+      }, {
+        "id" : "47"
+      }, {
+        "id" : "50"
+      }, {
+        "id" : "53"
+      }, {
+        "id" : "57"
+      }, {
+        "id" : "59"
+      }, {
+        "id" : "62"
+      }, {
+        "id" : "64"
+      }, {
+        "id" : "68"
+      }, {
+        "id" : "70"
+      }, {
+        "id" : "72"
+      }, {
+        "id" : "77"
+      }, {
+        "id" : "81"
+      }, {
+        "id" : "83"
+      }, {
+        "id" : "96"
+      }, {
+        "id" : "99"
+      } ],
+      "softwareSystemId" : "5"
+    } ],
+    "systemContextViews" : [ {
+      "automaticLayout" : {
+        "edgeSeparation" : 50,
+        "nodeSeparation" : 50,
+        "rankDirection" : "TopBottom",
+        "rankSeparation" : 100,
+        "vertices" : true
+      },
+      "description" : "CDSP and its users and external software systems.",
+      "elements" : [ {
+        "id" : "5",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "84",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "86",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "89",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "91",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "93",
+        "x" : 0,
+        "y" : 0
+      } ],
+      "enterpriseBoundaryVisible" : true,
+      "key" : "CDSP-SystemContext",
+      "name" : "System Context View: Central Data Service Playground (CDSP)",
+      "order" : 1,
+      "relationships" : [ {
+        "id" : "85"
+      }, {
+        "id" : "87"
+      }, {
+        "id" : "88"
+      }, {
+        "id" : "90"
+      }, {
+        "id" : "92"
+      }, {
+        "id" : "94"
+      } ],
+      "softwareSystemId" : "5"
+    } ]
+  }
+}
