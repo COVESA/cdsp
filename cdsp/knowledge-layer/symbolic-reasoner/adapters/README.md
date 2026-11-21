@@ -46,9 +46,10 @@ covesa.cdsp/
 │       │   └── reasoner_factory.cpp        # Factory implementation (instantiates adapters)
 │       │
 │       └── examples/use-case/
+│           ├── shared/                     # Files used by every reasoner (signals, SHACL, ontologies, helper queries)
 │           ├── rdfox_model/                # Config for RDFox
 │           │   └── model_config.json
-│           └── rdf4j_model/       # Config for RDF4J
+│           └── rdf4j_model/                # Config for RDF4J
 │               └── model_config.json
 │
 └── docker/
@@ -163,6 +164,8 @@ class MyReasonerAdapter : public IReasonerAdapter {
 
 #endif  // MY_REASONER_ADAPTER_H
 ```
+
+`loadObservations(data, content_type, observation_time)` receives the vehicle observations, while `loadData` receives static data such as ontologies and SHACL shapes. Its default calls `loadData` and ignores `observation_time`, which is correct for engines that keep all data in one datastore (RDFox, RDF4J); a stream reasoner such as CQELS must override it to push the observations onto its stream with their time.
 
 **File:** `/cdsp/knowledge-layer/symbolic-reasoner/adapters/my-reasoner/src/my_reasoner_adapter.cpp`
 
@@ -286,23 +289,30 @@ Create folder: `/cdsp/knowledge-layer/symbolic-reasoner/examples/use-case/my_rea
 
 **File:** `/cdsp/knowledge-layer/symbolic-reasoner/examples/use-case/my_reasoner_model/model_config.json`
 
+The required signals, SHACL shapes, ontologies and Triple Assembler helper queries are the same for every reasoner and live in `use-case/shared/`. Refer to them with `../shared/`; only the rules and output queries of your engine go into `my_reasoner_model/`. See the [use-case README](../examples/use-case/README.md) for every field.
+
 ```json
 {
   "inputs": {
-    "Vehicle_data": "inputs/vehicle_data_small.ttl"
+    "vehicle_data": "../shared/inputs/vehicle_data_required.txt"
   },
-  "ontologies": ["ontologies/vehicle.ttl"],
+  "ontologies": ["../shared/ontologies/sliding_window_config.ttl"],
+  "output": "output/",
   "queries": {
     "triple_assembler_helper": {
-      "Vehicle": ["queries/data_property.rq", "queries/object_property.rq"]
+      "vehicle": [
+        "../shared/queries/triple_assembler_helper/vehicle/data_property.rq",
+        "../shared/queries/triple_assembler_helper/vehicle/object_property.rq"
+      ],
+      "default": []
     },
-    "reasoning_output_queries_path": "queries/",
     "output": "queries/output/"
   },
-  "rules": ["rules/driving_style_inference_rules.shacl"],
-  "shacl": ["shacl/vehicle_shacl.ttl"],
+  "rules": ["rules/my_reasoner_rules.ext"],
+  "shacl": ["../shared/shacl/vehicle_shacl.ttl", "../shared/shacl/observation_shacl.ttl"],
   "reasoner_settings": {
     "inference_engine": "MyReasoner",
+    "is_ai_reasoner_inference_results": true,
     "output_format": "turtle",
     "supported_schema_collections": ["vehicle"]
   }
