@@ -1,5 +1,6 @@
 #include "triple_assembler.h"
 
+#include <algorithm>
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include <sstream>
@@ -75,6 +76,8 @@ void TripleAssembler::transformMessageToTriple(const DataMessage& message) {
     }
 
     std::optional<CoordinateNodes> valid_coordinates = std::nullopt;
+    // Time of the latest observation in this message, passed to the reasoner
+    std::chrono::system_clock::time_point observation_time{};
 
     for (const auto node : nodes) {
         if (node.getName() == "Vehicle.CurrentLocation.Latitude" ||
@@ -97,21 +100,26 @@ void TripleAssembler::transformMessageToTriple(const DataMessage& message) {
         } else {
             try {
                 generateTriplesFromNode(node, header.getSchemaType());
+                observation_time = std::max(observation_time, getTimestampFromNode(node));
             } catch (const std::exception& e) {
                 std::cerr << "An error occurred creating the triples: " << e.what() << std::endl;
             }
         }
     }
 
-    if (valid_coordinates.has_value())
+    if (valid_coordinates.has_value()) {
         generateTriplesFromCoordinates(valid_coordinates, header.getSchemaType(), message);
+        observation_time =
+            std::max({observation_time, getTimestampFromNode(valid_coordinates->latitude),
+                      getTimestampFromNode(valid_coordinates->longitude)});
+    }
 
     // Get the document of the generated triples
     std::string generated_triples =
         triple_writer_.generateTripleOutput(model_config_->getReasonerSettings().getOutputFormat());
 
     if (!generated_triples.empty()) {
-        storeTripleOutput(generated_triples);
+        storeTripleOutput(generated_triples, observation_time);
     } else {
         std::cout << "No triples have been generated for the update message\n\n";
     }
@@ -422,17 +430,19 @@ std::string TripleAssembler::extractPrefixesFromQuery(const std::string& query) 
 }
 
 /**
- * @brief Stores the triple output to a file.
+ * @brief Loads the triple output into the reasoner as observations and stores it to a file.
  *
  * This function constructs a file name using the configured output file path,
  * the current timestamp, and the appropriate file extension. It then writes
  * the provided triple output to this file.
  *
  * @param triple_output The string containing the triple output to be stored.
+ * @param observation_time The time of the latest observation in the triple output.
  */
-void TripleAssembler::storeTripleOutput(const std::string& triple_output) {
+void TripleAssembler::storeTripleOutput(const std::string& triple_output,
+                                        std::chrono::system_clock::time_point observation_time) {
     const ReasonerSyntaxType output_format = model_config_->getReasonerSettings().getOutputFormat();
-    if (!reasoner_service_.loadData(triple_output, output_format)) {
+    if (!reasoner_service_.loadObservations(triple_output, output_format, observation_time)) {
         std::cerr << "It was a problem loading triple data to Reasoner-Server" << std::endl;
     }
 

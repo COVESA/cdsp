@@ -31,6 +31,8 @@ class RealWebSocketConnection : public WebSocketClientInterface {
 
    private:
     tcp::resolver resolver_;
+    std::string host_;
+    std::string port_;
     tcp::resolver::results_type resolve_results_;
     beast::websocket::stream<tcp::socket> ws_;
     std::weak_ptr<WebSocketClient> client_;
