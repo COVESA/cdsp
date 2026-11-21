@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 import argparse
-import shutil
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 PACKAGE_DIR = Path(__file__).parent.resolve()
 PROJECT_DIR = PACKAGE_DIR.parent.parent
-EXAMPLES_DIR = PROJECT_DIR.parent
+REPO_ROOT = PROJECT_DIR.parent.parent
+# Default outputs for standalone runs; Docker Compose passes explicit paths.
+EXAMPLES_DIR = REPO_ROOT / "examples" / "knowledgelayer-hello-world"
 
 # Fixed values, not user-configurable: must match the car:/val: namespace prefixes the
 # KL rules and SPARQL queries expect.
@@ -41,16 +41,10 @@ def parse_args():
         help="Path to save the generated IL config file.",
     )
     parser.add_argument(
-        "--kl-rdfox-out",
+        "--kl-out",
         type=Path,
-        default=EXAMPLES_DIR / "KL-config/rdfox_model/shacl/vehicle_shacl.ttl",
-        help="Path to save the generated KL SHACL file for RDFox.",
-    )
-    parser.add_argument(
-        "--kl-rdf4j-out",
-        type=Path,
-        default=EXAMPLES_DIR / "KL-config/rdf4j_model/shacl/vehicle_shacl.ttl",
-        help="Path to save the generated KL SHACL file for RDF4J.",
+        default=EXAMPLES_DIR / "KL-config/shared/shacl/vehicle_shacl.ttl",
+        help="Path to save the generated KL SHACL file, shared by all reasoners.",
     )
     return parser.parse_args()
 
@@ -75,25 +69,17 @@ def main():
         "-o", str(args.il_out)
     ])
 
-    with tempfile.TemporaryDirectory() as temp_dir:
-        raw_shacl = Path(temp_dir) / "raw_shacl.ttl"
-
-        run_export([
-            "export", "shacl",
-            "-s", str(args.schema),
-            "--naming-config", str(args.naming_config),
-            "--shapes-namespace", SHAPES_NAMESPACE,
-            "--shapes-namespace-prefix", SHAPES_NAMESPACE_PREFIX,
-            "--model-namespace", MODEL_NAMESPACE,
-            "--model-namespace-prefix", MODEL_NAMESPACE_PREFIX,
-            "-o", str(raw_shacl),
-        ])
-
-        # Both SHACL copies come from the same export run, so RDFox and RDF4J always
-        # get byte-identical files.
-        for out_path in (args.kl_rdfox_out, args.kl_rdf4j_out):
-            out_path.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(raw_shacl, out_path)
+    args.kl_out.parent.mkdir(parents=True, exist_ok=True)
+    run_export([
+        "export", "shacl",
+        "-s", str(args.schema),
+        "--naming-config", str(args.naming_config),
+        "--shapes-namespace", SHAPES_NAMESPACE,
+        "--shapes-namespace-prefix", SHAPES_NAMESPACE_PREFIX,
+        "--model-namespace", MODEL_NAMESPACE,
+        "--model-namespace-prefix", MODEL_NAMESPACE_PREFIX,
+        "-o", str(args.kl_out),
+    ])
 
 if __name__ == "__main__":
     main()
