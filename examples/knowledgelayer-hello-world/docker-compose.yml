@@ -42,8 +42,7 @@ services:
     restart: "no" # one-shot, same as rdfox-init
     volumes:
       - ./IL-config/schema-files:/out/il
-      - ./KL-config/rdfox_model/shacl:/out/kl-rdfox
-      - ./KL-config/rdf4j_model/shacl:/out/kl-rdf4j
+      - ./KL-config/shared/shacl:/out/kl
 
   # Timeseries Data Server
   iotdb-service:
@@ -100,6 +99,9 @@ services:
       service: information-layer
       file: ../../docker/docker-compose-cdsp.yml
     container_name: information-layer
+    # Only this example's .env. Without !override, extends would also add docker/.env of the main setup.
+    env_file: !override
+      - .env
     volumes:
       - ./IL-config/schema-files:/app/dist/handlers/config/schema-files
     depends_on:
@@ -140,9 +142,10 @@ services:
     profiles: ["rdfox"]
     volumes:
       - ./KL-config/rdfox_model:/src/symbolic-reasoner/examples/use-case/model
+      - ./KL-config/shared:/src/symbolic-reasoner/examples/use-case/shared
     depends_on:
       rdfox-service:
-        condition: service_started
+        condition: service_healthy
       information-layer:
         condition: service_started
       s2dm-config-gen:
@@ -156,6 +159,7 @@ services:
     profiles: ["rdf4j"]
     volumes:
       - ./KL-config/rdf4j_model:/src/symbolic-reasoner/examples/use-case/model
+      - ./KL-config/shared:/src/symbolic-reasoner/examples/use-case/shared
     depends_on:
       rdf4j-stream-reasoner-service:
         condition: service_healthy

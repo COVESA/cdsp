@@ -4,13 +4,12 @@ Generates the two config files the Information Layer (IL) and Knowledge Layer (K
 startup, from a single GraphQL schema (`cdsp-custom.graphql`), using
 [S2DM](https://github.com/COVESA/s2dm):
 
-| Generated file                                  | Consumed by             |
-| ----------------------------------------------- | ----------------------- |
-| `KL-config/rdfox_model/shacl/vehicle_shacl.ttl` | Knowledge Layer (RDFox) |
-| `KL-config/rdf4j_model/shacl/vehicle_shacl.ttl` | Knowledge Layer (RDF4J) |
-| `IL-config/schema-files/vss_data_points.yaml`   | Information Layer       |
+| Generated file                                | Consumed by                            |
+| --------------------------------------------- | -------------------------------------- |
+| `KL-config/shared/shacl/vehicle_shacl.ttl`    | Knowledge Layer (every reasoner)       |
+| `IL-config/schema-files/vss_data_points.yaml` | Information Layer                      |
 
-Both SHACL copies are always written identically, regardless of which reasoner profile you use.
+The SHACL file is written once into `KL-config/shared/`, which every reasoner configuration (`rdfox_model`, `rdf4j_model`) reads.
 
 This replaces hand-maintaining those files independently. Change the schema once, regenerate, and both layers stay in sync.
 
@@ -22,7 +21,7 @@ uv sync
 uv run s2dmc
 ```
 
-This writes directly onto the three paths above (relative to this folder's parent), so no
+This writes directly onto the two paths above (relative to this folder's parent), so no
 further copy step is needed. Start the stack with `docker compose up` right after and IL/KL
 will read the freshly generated files.
 
@@ -43,8 +42,7 @@ uv run pytest
 | `--schema`        | bundled `cdsp-custom.graphql`                            | any compatible SDL accepted                                                                                              |
 | `--naming-config` | bundled `naming.yaml`                                    | passed as-is to S2DM                                                                                                     |
 | `--il-out`        | `../IL-config/schema-files/vss_data_points.yaml`         |                                                                                                                          |
-| `--kl-rdfox-out`  | `../KL-config/rdfox_model/shacl/vehicle_shacl.ttl`       |                                                                                                                          |
-| `--kl-rdf4j-out`  | `../KL-config/rdf4j_model/shacl/vehicle_shacl.ttl`       |                                                                                                                          |
+| `--kl-out`        | `../KL-config/shared/shacl/vehicle_shacl.ttl`            | shared by all reasoners                                                                                                  |
 
 S2DM itself always runs at the version pinned in `pyproject.toml`.
 

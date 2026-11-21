@@ -43,11 +43,21 @@ Live VSS data from the current drive made accessible in the [Information Layer S
 
 #### Config generation
 
-`IL-config/schema-files/vss_data_points.yaml` and both `KL-config/*/shacl/vehicle_shacl.ttl`
-copies are generated from a single GraphQL schema rather than hand-maintained (see
+`IL-config/schema-files/vss_data_points.yaml` and `KL-config/shared/shacl/vehicle_shacl.ttl`
+are generated from a single GraphQL schema rather than hand-maintained (see
 [s2dm/README.md](s2dm/README.md)). This runs automatically as part of `docker compose
 up` (see step 5 below); you don't need to do anything extra unless you're editing the schema
 yourself.
+
+#### Knowledge Layer configuration
+
+`KL-config/shared/` holds the files every reasoner uses: required signals, SHACL shapes,
+ontology and Triple Assembler helper queries. `KL-config/rdfox_model/` and
+`KL-config/rdf4j_model/` only hold what is specific to the engine: `model_config.json`, rules
+and output queries. Docker Compose mounts the folder of the selected profile and the shared
+folder into the Knowledge Layer; `model_config.json` refers to the shared files with
+`../shared/`. The layout is the same as in the main use case, see the
+[use-case README](../../cdsp/knowledge-layer/symbolic-reasoner/examples/use-case/README.md#folder-layout).
 
 #### Input, Use Case Logic and Output:
 
@@ -68,12 +78,24 @@ Derived output data:
 
 ## Installation and Running
 
+### Local Configuration
+
+The example reads its settings from a `.env` file in this folder. Create it from the template:
+
+```bash
+cp .env.example .env
+```
+
+`.env` is not tracked in git, so your Remotive Labs credentials stay on your machine. Never put them into `.env.example`. The example only uses its own `.env`; it does not need the `docker/.env` of the main setup.
+
+The example needs Docker Compose 2.24 or newer.
+
 ### Remotive Labs and Reasoner Setup
 
 1. Create a [Remotive Labs](https://remotivelabs.com/) account.
 2. Navigate to `Recordings`, select `Night drive to Luftkastellet`, and start the recording with the `Play` button. Wait until it starts playing, then stop the recording for now. This creates a broker for you, and we need its credentials next.
 3. Navigate to the `Brokers` section and open `My personal broker`.
-4. Copy the URL and API key to the environment variables in the [.env](.env) file: `REMOTIVE_LABS_BROKER_URL` and `REMOTIVE_LABS_BROKER_API_KEY`.
+4. Copy the URL and API key into your local `.env` (see [Local Configuration](#local-configuration)): `REMOTIVE_LABS_BROKER_URL` and `REMOTIVE_LABS_BROKER_API_KEY`.
 5. *(Optional, only for the `rdfox` profile)* Acquire the `RDFox.lic` license file from [Oxford Semantic Technologies](https://www.oxfordsemantic.tech/) and place it in [examples/shared-config/rdfox](../shared-config/rdfox). This step is **not** required for the default RDF4J profile.
 
 ### Run Use Case
@@ -82,7 +104,7 @@ Derived output data:
 2. Select `Night drive to Luftkastellet` in the `Recordings` section, open the `Files` tab, and drag and drop the zip file `examples/shared-config/remotive-labs/config_vss_aggressive_driving.zip` into the `Signal Transformations` section.
 3. Navigate to the `Playback` tab, select `config_vss_aggressive_driving` as the `signal transformation`, and press the `Play` button.
 4. If the recording starts playing, stop it for now to proceed with setup.
-5. Start all services from the current folder ([knowledgelayer-hello-world]()). Make sure you have installed `Docker` and `Docker Compose`.
+5. Start all services from the current folder ([knowledgelayer-hello-world]()). Make sure you have installed `Docker` and `Docker Compose` (2.24 or newer) and created your `.env` (see [Local Configuration](#local-configuration)).
 
    ```bash
    docker compose --profile rdf4j up
@@ -120,7 +142,7 @@ uses), triggers the driving-style reasoning rules with a steering-angle swing la
 qualify as aggressive driving, and reads the result back out to prove the whole loop (including
 the S2DM-generated IL/KL config from step 5) actually works, not just that the containers started.
 
-With the stack already running (step 5 above, either profile):
+You still need the `.env` from [Local Configuration](#local-configuration), but the Remotive Labs values can stay empty. With the stack already running (step 5 above, either profile):
 
 ```bash
 cd examples/knowledgelayer-hello-world/test
