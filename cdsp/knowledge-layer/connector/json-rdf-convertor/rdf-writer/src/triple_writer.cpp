@@ -233,15 +233,15 @@ std::string TripleWriter::generateTripleOutput(const ReasonerSyntaxType& format)
         SerdNode object_node = serd_node_from_string(
             triple_nodes.object.first, (const uint8_t*) triple_nodes.object.second.c_str());
 
-        const SerdNode* datatype_node_ptr = nullptr;
+        std::optional<SerdNode> datatype_node;
         if (triple_nodes.datatype.has_value()) {
-            std::pair<SerdType, std::string> datatype = triple_nodes.datatype.value();
-            SerdNode datatype_node =
-                serd_node_from_string(datatype.first, (const uint8_t*) datatype.second.c_str());
-            datatype_node_ptr = &datatype_node;
+            datatype_node =
+                serd_node_from_string(triple_nodes.datatype->first,
+                                      (const uint8_t*) triple_nodes.datatype->second.c_str());
         }
         serd_writer_write_statement(serd_writer, 0, nullptr, &subject_node, &predicate_node,
-                                    &object_node, datatype_node_ptr, nullptr);
+                                    &object_node, datatype_node ? &*datatype_node : nullptr,
+                                    nullptr);
     }
 
     // End the document

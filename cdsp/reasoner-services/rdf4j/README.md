@@ -1,6 +1,6 @@
 # RDF4J Reasoner Service
 
-This folder contains the Java-based RDF4J reasoner service that runs as an external Docker container.
+This folder contains the Java-based RDF4J reasoner service. It runs as a Docker container (profile `rdf4j`) or natively, and is one of the [reasoner services](../README.md) of CDSP.
 
 ## Overview
 

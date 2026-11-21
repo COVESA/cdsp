@@ -10,7 +10,7 @@ For further information please see the
 ## Getting started
 A good place to start is the overview in the documentation which introduces why the project exists, the logical concept and its implementation.
 
-Once you are ready to jump into some code the docker deployment readme explains building and starting the playground. Whilst the [examples](https://github.com/COVESA/cdsp/tree/main/examples) folder contains a variety of examples to explore.
+Once you are ready to jump into some code the [docker deployment readme](docker/README.md) explains building and starting the playground. Whilst the [examples](https://github.com/COVESA/cdsp/tree/main/examples) folder contains a variety of examples to explore. The source of the playground building blocks is in [cdsp/](cdsp/README.md).
 
 ### Cloning the source repository
 The playground git source repository contains git submodules which need to be initialized either during the clone or afterwords as shown below.
