@@ -1,0 +1,285 @@
+@prefix car: <http://example.ontology.com/car#> .
+@prefix sosa: <http://www.w3.org/ns/sosa/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+# ----------------------------------------------------------------------------
+# Rule 1: Identify Current Observations
+# ----------------------------------------------------------------------------
+car:RuleCurrentObservation a sh:NodeShape ;
+    sh:targetClass sosa:Observation ;
+    sh:rule [
+        a sh:SPARQLRule ;
+        sh:order 1 ;
+        sh:construct """
+            PREFIX car: <http://example.ontology.com/car#>
+            PREFIX sosa: <http://www.w3.org/ns/sosa/>
+            CONSTRUCT {
+                ?obs1 a car:CurrentObservation .
+            } WHERE {
+                {
+                    SELECT ?op (MAX(?pt) AS ?max_pt) WHERE {
+                        ?obs a sosa:Observation ;
+                             sosa:observedProperty ?op ;
+                             sosa:phenomenonTime ?pt .
+                    } GROUP BY ?op
+                }
+                ?obs1 a sosa:Observation ;
+                      sosa:observedProperty ?op ;
+                      sosa:phenomenonTime ?max_pt .
+            }
+        """
+    ] .
+
+# ----------------------------------------------------------------------------
+# Rule 3: Identify Observations Within 3 Seconds (Slide Window)
+# ----------------------------------------------------------------------------
+car:RuleWithin3s a sh:NodeShape ;
+    sh:targetClass sosa:Observation ;
+    sh:rule [
+        a sh:SPARQLRule ;
+        sh:order 3 ;
+        sh:construct """
+            PREFIX car: <http://example.ontology.com/car#>
+            PREFIX sosa: <http://www.w3.org/ns/sosa/>
+            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+            CONSTRUCT {
+                ?obs1 car:within3s ?sw .
+                ?obs2 car:within3s ?sw .
+            } WHERE {
+                ?sw a car:3SecSlideWindow ;
+                    rdfs:label ?window_size_str .
+                BIND(xsd:float(?window_size_str) AS ?size)
+                
+                ?obs1 a sosa:Observation ;
+                      sosa:observedProperty ?op ;
+                      sosa:phenomenonTime ?pt1_str .
+                BIND(xsd:dateTime(STR(?pt1_str)) AS ?pt1)
+                
+                ?obs2 a car:CurrentObservation ;
+                      sosa:observedProperty ?op ;
+                      sosa:phenomenonTime ?pt2_str .
+                BIND(xsd:dateTime(STR(?pt2_str)) AS ?pt2)
+                
+                FILTER(?obs1 != ?obs2)
+                
+                # Approximate duration using seconds conversion if possible, or simple string diff if formatted
+                # Alternatively, RDF4J allows duration matching, but for simplicity assuming string subtraction
+                BIND(IF(?pt2 > ?pt1,
+                    (year(?pt2)-year(?pt1))*31536000 + (month(?pt2)-month(?pt1))*2592000 + (day(?pt2)-day(?pt1))*86400 + (hours(?pt2)-hours(?pt1))*3600 + (minutes(?pt2)-minutes(?pt1))*60 + (seconds(?pt2)-seconds(?pt1)),
+                    (year(?pt1)-year(?pt2))*31536000 + (month(?pt1)-month(?pt2))*2592000 + (day(?pt1)-day(?pt2))*86400 + (hours(?pt1)-hours(?pt2))*3600 + (minutes(?pt1)-minutes(?pt2))*60 + (seconds(?pt1)-seconds(?pt2))
+                ) AS ?diff)
+                
+                FILTER(?diff <= ?size)
+            }
+        """
+    ] .
+
+# ----------------------------------------------------------------------------
+# Rule 4: Detect Large Steering Angle Changes
+# ----------------------------------------------------------------------------
+car:RuleLargeAngleChange a sh:NodeShape ;
+    sh:targetClass sosa:Observation ;
+    sh:rule [
+        a sh:SPARQLRule ;
+        sh:order 4 ;
+        sh:construct """
+            PREFIX car: <http://example.ontology.com/car#>
+            PREFIX sosa: <http://www.w3.org/ns/sosa/>
+            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+            CONSTRUCT {
+                ?lac a car:LargeAngleChange ;
+                     car:hasFirstAngleChangeObservationDatetime ?pt1_trimmed ;
+                     car:hasFirstAngle ?angle1 ;
+                     car:hasSecondAngleChangeObservationDatetime ?pt2_trimmed ;
+                     car:hasSecondAngle ?angle2 ;
+                     car:hasAngleDiff ?angle_diff ;
+                     car:hasTimeWindowSize ?sw .
+            } WHERE {
+                ?obs1 car:within3s ?sw ;
+                      sosa:observedProperty car:angle ;
+                      sosa:hasSimpleResult ?angle1 ;
+                      sosa:phenomenonTime ?pt1 .
+                      
+                ?obs2 car:within3s ?sw ;
+                      sosa:observedProperty car:angle ;
+                      sosa:hasSimpleResult ?angle2 ;
+                      sosa:phenomenonTime ?pt2 .
+                      
+                FILTER(?obs1 != ?obs2)
+                
+                BIND(SUBSTR(STR(?pt1), 1, 19) AS ?pt1_trimmed)
+                BIND(SUBSTR(STR(?pt2), 1, 19) AS ?pt2_trimmed)
+                FILTER(?pt2_trimmed > ?pt1_trimmed)
+                
+                BIND(ABS(xsd:float(?angle1) - xsd:float(?angle2)) AS ?angle_diff)
+                FILTER(?angle_diff > 180)
+                
+                BIND(IRI(CONCAT("http://example.ontology.com/car#LargeAngleChange_", ?pt1_trimmed, "_", ?pt2_trimmed)) AS ?lac)
+            }
+        """
+    ] .
+
+# ----------------------------------------------------------------------------
+# Rule 5: Identify High-Speed Observations
+# ----------------------------------------------------------------------------
+car:RuleHighSpeedObservation a sh:NodeShape ;
+    sh:targetClass sosa:Observation ;
+    sh:rule [
+        a sh:SPARQLRule ;
+        sh:order 5 ;
+        sh:construct """
+            PREFIX car: <http://example.ontology.com/car#>
+            PREFIX sosa: <http://www.w3.org/ns/sosa/>
+            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+            CONSTRUCT {
+                ?hs a car:HighSpeedObservation ;
+                    car:hasObservation ?obs ;
+                    car:hasSpeed ?speed_value ;
+                    car:hasObservationDatetime ?pt_speed_trimmed .
+            } WHERE {
+                ?obs a car:CurrentObservation ;
+                     sosa:observedProperty car:speed ;
+                     sosa:hasSimpleResult ?speed_value ;
+                     sosa:phenomenonTime ?pt_speed .
+                     
+                BIND(SUBSTR(STR(?pt_speed), 1, 19) AS ?pt_speed_trimmed)
+                FILTER(xsd:float(?speed_value) > 10)
+                
+                BIND(IRI(CONCAT("http://example.ontology.com/car#HighSpeedObservation_", STR(?obs))) AS ?hs)
+            }
+        """
+    ] .
+
+# ----------------------------------------------------------------------------
+# Rule 6: Identify FixPoints (Location)
+# ----------------------------------------------------------------------------
+car:RuleFixPoint a sh:NodeShape ;
+    sh:targetClass sosa:Observation ;
+    sh:rule [
+        a sh:SPARQLRule ;
+        sh:order 6 ;
+        sh:construct """
+            PREFIX car: <http://example.ontology.com/car#>
+            PREFIX sosa: <http://www.w3.org/ns/sosa/>
+            CONSTRUCT {
+                ?loc a car:FixPoint ;
+                     car:hasLatObservation ?obs_lat ;
+                     car:hasLongObservation ?obs_long ;
+                     car:latitude ?lat ;
+                     car:longitude ?long ;
+                     car:fixPointDatetime ?pt_fix_trimmed .
+            } WHERE {
+                ?obs_lat sosa:observedProperty car:latitude ;
+                         sosa:hasSimpleResult ?lat ;
+                         sosa:phenomenonTime ?pt1 .
+                         
+                ?obs_long sosa:observedProperty car:longitude ;
+                          sosa:hasSimpleResult ?long ;
+                          sosa:phenomenonTime ?pt2 .
+                          
+                BIND(SUBSTR(STR(?pt1), 1, 19) AS ?pt_fix_trimmed)
+                BIND(SUBSTR(STR(?pt2), 1, 19) AS ?pt2_trimmed)
+                FILTER(?pt_fix_trimmed = ?pt2_trimmed)
+                
+                BIND(IRI(CONCAT("http://example.ontology.com/car#FixPoint_", ?pt_fix_trimmed)) AS ?loc)
+            }
+        """
+    ] .
+
+# ----------------------------------------------------------------------------
+# Rule 7: Identify Aggressive Driving
+# ----------------------------------------------------------------------------
+car:RuleAggressiveDriving a sh:NodeShape ;
+    sh:targetClass car:LargeAngleChange ;
+    sh:rule [
+        a sh:SPARQLRule ;
+        sh:order 7 ;
+        sh:construct """
+            PREFIX car: <http://example.ontology.com/car#>
+            CONSTRUCT {
+                ?ad a car:AggressiveDriving ;
+                    car:hasLargeAngleChange ?lac ;
+                    car:hasHighSpeed ?hs .
+            } WHERE {
+                ?lac a car:LargeAngleChange ;
+                     car:hasSecondAngleChangeObservationDatetime ?pt_angle_trimmed .
+                
+                ?hs a car:HighSpeedObservation ;
+                    car:hasObservationDatetime ?pt_speed_trimmed .
+                    
+                FILTER(?pt_angle_trimmed = ?pt_speed_trimmed)
+                
+                BIND(IRI(CONCAT("http://example.ontology.com/car#AggressiveDriving_", STR(?lac))) AS ?ad)
+            }
+        """
+    ] .
+
+# ----------------------------------------------------------------------------
+# Rule 8: Generate Driving Segments
+# ----------------------------------------------------------------------------
+car:RuleSegment a sh:NodeShape ;
+    sh:targetClass car:AggressiveDriving ;
+    sh:rule [
+        a sh:SPARQLRule ;
+        sh:order 8 ;
+        sh:construct """
+            PREFIX car: <http://example.ontology.com/car#>
+            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+            CONSTRUCT {
+                ?seg a car:Segment ;
+                     car:hasDrivingStyle ?ad ;
+                     car:hasStartFixPoint ?start_loc ;
+                     car:startTime ?start_time ;
+                     car:hasEndFixPoint ?end_loc ;
+                     car:endTime ?end_time ;
+                     car:angleChange ?angle_diff ;
+                     car:timeWindowSize ?time_window_size .
+            } WHERE {
+                ?ad a car:AggressiveDriving ;
+                    car:hasLargeAngleChange ?lac .
+                    
+                ?lac car:hasFirstAngleChangeObservationDatetime ?pt1_trimmed ;
+                     car:hasSecondAngleChangeObservationDatetime ?pt2_trimmed ;
+                     car:hasAngleDiff ?angle_diff ;
+                     car:hasTimeWindowSize ?sw .
+                     
+                ?sw rdfs:label ?time_window_size .
+                
+                ?start_loc a car:FixPoint ;
+                           car:fixPointDatetime ?pt1_trimmed .
+                BIND(xsd:dateTime(?pt1_trimmed) AS ?start_time)
+                
+                ?end_loc a car:FixPoint ;
+                         car:fixPointDatetime ?pt2_trimmed .
+                BIND(xsd:dateTime(?pt2_trimmed) AS ?end_time)
+                
+                BIND(IRI(CONCAT("http://example.ontology.com/car#segment", REPLACE(?pt1_trimmed,"[:-]",""), REPLACE(?pt2_trimmed,"[:-]",""), STR(?angle_diff), "E2")) AS ?seg)
+            }
+        """
+    ] .
+
+# ----------------------------------------------------------------------------
+# Rule 9: Compute Average Angle Change Per Segment (Simplified for test)
+# ----------------------------------------------------------------------------
+car:RuleAvgAngleChange a sh:NodeShape ;
+    sh:targetClass car:Segment ;
+    sh:rule [
+        a sh:SPARQLRule ;
+        sh:order 9 ;
+        sh:construct """
+            PREFIX car: <http://example.ontology.com/car#>
+            CONSTRUCT {
+                ?segment car:avgAngleChange ?avg_angle_diff .
+            } WHERE {
+                {
+                    SELECT ?segment (AVG(?angle_diff) AS ?avg_angle_diff) WHERE {
+                        ?segment a car:Segment ;
+                                 car:angleChange ?angle_diff .
+                    } GROUP BY ?segment
+                }
+            }
+        """
+    ] .

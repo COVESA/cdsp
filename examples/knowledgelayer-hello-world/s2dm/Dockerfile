@@ -13,5 +13,4 @@ USER appuser
 
 ENTRYPOINT ["uv", "run", "s2dmc"]
 CMD ["--il-out", "/out/il/vss_data_points.yaml", \
-     "--kl-rdfox-out", "/out/kl-rdfox/vehicle_shacl.ttl", \
-     "--kl-rdf4j-out", "/out/kl-rdf4j/vehicle_shacl.ttl"]
+     "--kl-out", "/out/kl/vehicle_shacl.ttl"]

@@ -18,13 +18,36 @@ The `model_config.json` is structured to provide:
 - Reasoner settings
 - Output configurations
 
+### Folder Layout
+
+Files that are the same for every reasoner live once in `shared/`. Each reasoner folder only holds what is specific to its engine:
+
+```text
+use-case/
+├── shared/                         # Used by every reasoner
+│   ├── inputs/                     # Required signals
+│   ├── ontologies/
+│   ├── queries/triple_assembler_helper/
+│   └── shacl/                      # SHACL shapes
+├── rdfox_model/
+│   ├── model_config.json
+│   ├── queries/output/
+│   └── rules/                      # Datalog rules (.dlog)
+└── rdf4j_model/
+    ├── model_config.json
+    ├── queries/output/
+    └── rules/                      # SHACL rules (.shacl)
+```
+
+All paths in `model_config.json` are relative to the folder of that file, so shared files are referenced with `../shared/`. `MODEL_CONFIGURATION_PATH` points to the reasoner folder (for example `/symbolic-reasoner/examples/use-case/rdf4j_model/`).
+
 ### Configuration Sections
 
 #### Inputs
 
 ```json
 "inputs": {
-  "vehicle_data": "inputs/vehicle_data_required.txt"
+  "vehicle_data": "../shared/inputs/vehicle_data_required.txt"
 }
 ```
 
@@ -33,7 +56,7 @@ The `model_config.json` is structured to provide:
 #### Ontologies
 
 ```json
-"ontologies": ["ontologies/example_ontology.ttl"]
+"ontologies": ["../shared/ontologies/sliding_window_config.ttl"]
 ```
 
 - **ontologies**: A list of ontology files in Turtle format (.ttl). These define the concepts, relationships, and structure of the data in a semantic format that the reasoner will use to understand and process the input data.
@@ -55,22 +78,22 @@ The `model_config.json` is structured to provide:
 "queries": {
   "triple_assembler_helper": {
     "vehicle": [
-      "queries/triple_assembler_helper/vehicle/data_property.rq",
-      "queries/triple_assembler_helper/vehicle/object_property.rq"
+      "../shared/queries/triple_assembler_helper/vehicle/data_property.rq",
+      "../shared/queries/triple_assembler_helper/vehicle/object_property.rq"
     ],
     "default": [
-        "queries/triple_assembler_helper/default/data_property.rq",
-        "queries/triple_assembler_helper/default/object_property.rq"
+        "../shared/queries/triple_assembler_helper/default/data_property.rq",
+        "../shared/queries/triple_assembler_helper/default/object_property.rq"
     ]
   },
-  "output": ["queries/output/"]
+  "output": "queries/output/"
 }
 ```
 
 - **queries**: This section includes SPARQL queries that will be used during the reasoning process to assemble triples or extract results from the reasoned data.
   - **triple_assembler_helper**:
     Queries specifically designed to assemble data points related to an specific schema collection (in this case Vehicle Signal Specification (vehicle)) or other specifications used by default, if the collection is not defined, including queries for data and object properties.
-  - **output**: Queries to retrieve the final inference results after the reasoning process. The queries in this section will typically extract insights from the generated triples.
+  - **output**: Folder with the queries that retrieve the final inference results after the reasoning process. The queries in this section will typically extract insights from the generated triples. This folder stays in the reasoner folder, because the queries can differ per engine.
 
 #### Rules
 
@@ -81,14 +104,14 @@ The `model_config.json` is structured to provide:
 ]
 ```
 
-- **rules**: A list of rule files in Data Log or SHACL format. These rules define additional logic for the reasoner to apply during inference. The rules may include custom inferences or insights that the reasoner should derive based on the input data.
+- **rules**: A list of rule files in Data Log or SHACL format. Rules are specific to an engine, so they stay in the reasoner folder. These rules define additional logic for the reasoner to apply during inference. The rules may include custom inferences or insights that the reasoner should derive based on the input data.
 
 #### SHACL Validation
 
 ```json
 "shacl": [
-  "shacl/vehicle_shacl.ttl",
-  "shacl/observation_shacl.ttl"
+  "../shared/shacl/vehicle_shacl.ttl",
+  "../shared/shacl/observation_shacl.ttl"
 ]
 ```
 

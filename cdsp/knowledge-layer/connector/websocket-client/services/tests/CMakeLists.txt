@@ -49,18 +49,44 @@ target_include_directories(bo_service_integration_test
         ${CMAKE_CURRENT_SOURCE_DIR}/utils
 )
 
+# Add the test for System Configuration service
+add_executable(system_configuration_service_unit_test
+    system_configuration_service_unit_test.cpp
+)
+target_link_libraries(system_configuration_service_unit_test
+    PRIVATE
+        GTest::gtest_main
+        websocket_client
+)
+
+# Add the test that loads the shipped use cases from disk
+add_executable(use_case_config_integration_test
+    use_case_config_integration_test.cpp
+)
+target_link_libraries(use_case_config_integration_test
+    PRIVATE
+        GTest::gtest_main
+        websocket_client
+)
+
 # Add unit and integration tests to CTest
 add_test(NAME ModelConfigDtoServiceUnitTest COMMAND model_config_dto_service_unit_test)  
 add_test(NAME DtoToModelConfigIntegrationTest COMMAND dto_to_model_config_integration_test)
 add_test(NAME BoServiceIntegrationTest COMMAND bo_service_integration_test)
+add_test(NAME UseCaseConfigIntegrationTest COMMAND use_case_config_integration_test)
+add_test(NAME SystemConfigurationServiceUnitTest COMMAND system_configuration_service_unit_test)
 
 # Define custom output directory for test binaries
 set_target_properties(model_config_dto_service_unit_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/tests") 
 set_target_properties(dto_to_model_config_integration_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/tests")
 set_target_properties(bo_service_integration_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/tests")
+set_target_properties(use_case_config_integration_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/tests")
+set_target_properties(system_configuration_service_unit_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/tests")
 
 # Ensure tests are built with the all target
 add_custom_target(websocket_client_services_tests ALL DEPENDS  
     dto_to_model_config_integration_test
     model_config_dto_service_unit_test
-    bo_service_integration_test )
+    bo_service_integration_test
+    use_case_config_integration_test
+    system_configuration_service_unit_test )

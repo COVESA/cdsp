@@ -200,6 +200,8 @@ int main(int argc, char* argv[]) {
             DEFAULT_AUTH_REASONER_SERVER_BASE64, DEFAULT_REASONER_DATASTORE_NAME,
             DEFAULT_REASONER_ORIGIN_SYSTEM_NAME, DEFAULT_MODEL_CONFIGURATION_PATH);
 
+        std::cout << SystemConfigurationService::describeSystemConfig(system_config) << std::endl;
+
         // Initialize Model Configuration
         const std::string model_config_file =
             getProjectRoot() + getPathToUseCases() + "model_config.json";
