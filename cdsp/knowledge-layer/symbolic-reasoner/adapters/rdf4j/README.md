@@ -4,7 +4,7 @@ This folder contains the necessary files to interact with the RDF4J reasoner ser
 
 ## How to Use RDF4J
 
-For instructions on how to start the RDF4J service required for this project, see [this guide](/docker/rdf4j/README.md).
+For instructions on how to start the RDF4J service required for this project, see [this guide](../../../../reasoner-services/rdf4j/README.md).
 
 ### RDF Triple Assembler
 
