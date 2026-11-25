@@ -1,0 +1,42 @@
+PREFIX car: <http://example.ontology.com/car#>
+PREFIX sosa: <http://www.w3.org/ns/sosa/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+# Large steering angle change (more than 210 degrees) at a speed above 10 within 3 seconds.
+# Each stream element is a frame: one sosa:ObservationCollection of a vehicle with one member
+# observation per signal. The query pairs two frames of the same vehicle in the window.
+REGISTER QUERY DrivingStyle AS
+SELECT Istream(?Vehicle_DrivingStyle_segment ?Vehicle_DrivingStyle_AvgAngleChange ?Vehicle_DrivingStyle_Speed ?Vehicle_DrivingStyle_Duration ?Vehicle_DrivingStyle_Start_Latitude ?Vehicle_DrivingStyle_Start_Longitude ?Vehicle_DrivingStyle_Start_Timestamp ?Vehicle_DrivingStyle_End_Latitude ?Vehicle_DrivingStyle_End_Longitude ?Vehicle_DrivingStyle_End_Timestamp)
+FROM STREAM vehicle [RANGE 3s]
+WHERE {
+  STREAM vehicle {
+    # Start frame
+    ?f1 a sosa:ObservationCollection ;
+        sosa:hasFeatureOfInterest ?vehicle ;
+        sosa:phenomenonTime ?t1 ;
+        sosa:hasMember ?a1 , ?la1 , ?lo1 .
+    ?a1 sosa:observedProperty car:Angle ; sosa:hasSimpleResult ?angle1 .
+    ?la1 sosa:observedProperty car:Latitude ; sosa:hasSimpleResult ?Vehicle_DrivingStyle_Start_Latitude .
+    ?lo1 sosa:observedProperty car:Longitude ; sosa:hasSimpleResult ?Vehicle_DrivingStyle_Start_Longitude .
+    # End frame of the same vehicle
+    ?f2 a sosa:ObservationCollection ;
+        sosa:hasFeatureOfInterest ?vehicle ;
+        sosa:phenomenonTime ?t2 ;
+        sosa:hasMember ?a2 , ?s2 , ?la2 , ?lo2 .
+    ?a2 sosa:observedProperty car:Angle ; sosa:hasSimpleResult ?angle2 .
+    ?s2 sosa:observedProperty car:Speed ; sosa:hasSimpleResult ?Vehicle_DrivingStyle_Speed .
+    ?la2 sosa:observedProperty car:Latitude ; sosa:hasSimpleResult ?Vehicle_DrivingStyle_End_Latitude .
+    ?lo2 sosa:observedProperty car:Longitude ; sosa:hasSimpleResult ?Vehicle_DrivingStyle_End_Longitude .
+  }
+  # Like the RDFox rules: the end is in a later second than the start
+  BIND(SUBSTR(STR(?t1), 1, 19) AS ?pt1)
+  BIND(SUBSTR(STR(?t2), 1, 19) AS ?pt2)
+  FILTER(?pt1 < ?pt2)
+  BIND(ABS(xsd:float(?angle1) - xsd:float(?angle2)) AS ?Vehicle_DrivingStyle_AvgAngleChange)
+  FILTER(?Vehicle_DrivingStyle_AvgAngleChange > 210)
+  FILTER(xsd:float(?Vehicle_DrivingStyle_Speed) > 10)
+  BIND(xsd:dateTime(?pt1) AS ?Vehicle_DrivingStyle_Start_Timestamp)
+  BIND(xsd:dateTime(?pt2) AS ?Vehicle_DrivingStyle_End_Timestamp)
+  # Window size in seconds
+  BIND(3 AS ?Vehicle_DrivingStyle_Duration)
+  BIND(REPLACE(CONCAT("segment", ?pt1, ?pt2, STR(?Vehicle_DrivingStyle_AvgAngleChange)), "[^a-zA-Z0-9]", "") AS ?Vehicle_DrivingStyle_segment)
+}

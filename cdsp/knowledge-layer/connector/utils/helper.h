@@ -43,6 +43,7 @@ class Helper {
     static std::string trimTrailingNewlines(const std::string& str);
     static nlohmann::json detectType(const std::string& value);
     static std::vector<std::string> splitString(const std::string& str, char delimiter);
+    static bool containsListItem(const std::string& list, const std::string& item);
     static std::string jsonToString(const nlohmann::json& json);
     static std::string variantToString(
         const std::variant<std::string, int, double, float, bool>& var);

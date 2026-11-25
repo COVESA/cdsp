@@ -1,21 +1,11 @@
 #ifndef RDF4J_ADAPTER_H
 #define RDF4J_ADAPTER_H
 
-#include <boost/asio.hpp>
-#include <boost/beast.hpp>
-#include <map>
-#include <optional>
 #include <string>
-#include <tuple>
 
 #include "data_types.h"
 #include "i_reasoner_adapter.h"
 #include "request_builder.h"
-
-namespace beast = boost::beast;
-namespace http = beast::http;
-namespace net = boost::asio;
-using tcp = net::ip::tcp;
 
 class RDF4JAdapter : public IReasonerAdapter {
    public:

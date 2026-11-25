@@ -3,6 +3,7 @@
 
 #include <memory>
 
+#include "cqels_adapter.h"
 #include "data_types.h"
 #include "i_reasoner_adapter.h"
 #include "rdfox_adapter.h"

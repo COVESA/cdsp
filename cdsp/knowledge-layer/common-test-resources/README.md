@@ -26,6 +26,7 @@ Utility functions that provide **data generation, randomization, and formatting*
 - `data_points_utils.*` builds canonical data-point collections for subscriptions.
 - `observation_id_utils.*` produces deterministic observation IDs for assertions.
 - `random_utils.*` centralizes random number/string generation.
+- `request_expectations.h` describes the HTTP requests a reasoner adapter must send (method, target, headers, body, answer) and checks them strictly, in order, on a mocked request builder. Used by the adapter unit tests.
 - `utc_date_utils.*` formats timestamps and offsets for time-based checks.
 - `vin_utils.*` validates and generates VIN strings for vehicle-centric tests.
 

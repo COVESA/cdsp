@@ -6,7 +6,7 @@ RDF Triple Assembler transforms structured data into RDF triples using the [RDFA
 
 ### TripleAssembler
 
-`TripleAssembler` processes data messages, extracting nodes, querying RDF properties, and calling [`TripleWriter`](#rdf-triple-writer) to generate triples. The main function is `transformMessageToRDFTriple`, which converts each node in the message into RDF triples and stores them in the configured output file.
+`TripleAssembler` processes data messages, extracting nodes, querying RDF properties, and calling [`TripleWriter`](#rdf-triple-writer) to generate triples. The main function is `transformMessageToRDFTriple`, which converts each node in the message into RDF triples and stores them in the configured output file. When the reasoner settings contain `frames`, it hands the resolved nodes to the [`FrameBuilder`](#frame-builder) and stores the frames it returns instead.
 
 ### RDF Triple Writer
 
@@ -26,6 +26,18 @@ writer.addRDFObjectToTriple("prefix car: <http://example.com/car#>", std::make_t
 std::string rdf_output = writer.generateTripleOutput(ReasonerSyntaxType::TURTLE);
 ```
 
+### Frame Builder
+
+`FrameBuilder` builds frames when the reasoner settings contain `frames`. Which inference engines support frames is checked when the model configuration is read, see the [model configuration](../../../symbolic-reasoner/examples/use-case/README.md). It keeps the latest value of each input signal and builds one frame per moment: a `sosa:ObservationCollection` with one member observation (`sosa:hasMember`) per signal, written through the `TripleWriter`.
+
+- Values are kept per vehicle identifier (VIN from the message header), so a frame only contains the values of its own vehicle.
+- An older value never replaces a newer one.
+- The signals of one moment can arrive in several messages (one per signal). Messages with the same latest timestamp belong to one moment. Its frame is built when the first message of a later moment arrives, so the frame of the latest moment waits for newer data.
+- A value older than the maximum age before the frame time is left out (setting `frames.max_value_age_ms`, default 1 s).
+- Latitude and longitude are only taken together, with their NTM values.
+
+Each member has its own feature of interest, property, value with datatype and `sosa:phenomenonTime`, like an observation without frames. Its IRI carries the VIN and the frame timestamp, for example `car:fm_Speed_VIN123_20261116100002200000000`.
+
 # Testing
 
-An Integration [test](../tests/) is provided to ensure functionality. Tests cover the main components (`TripleAssembler`, `TripleWriter`) to verify message transformation, RDF generation, and error handling.
+An Integration [test](../tests/) is provided to ensure functionality. Tests cover the main components (`TripleAssembler`, `TripleWriter`, `FrameBuilder`) to verify message transformation, RDF generation, and error handling.

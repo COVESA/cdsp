@@ -305,6 +305,33 @@ std::vector<std::string> Helper::splitString(const std::string& str, char delimi
 }
 
 /**
+ * @brief Checks whether a list contains an item with exactly that name.
+ *
+ * Items are separated by commas or line breaks, as in a "a, b" list or a CSV answer.
+ * Surrounding spaces and quotes are ignored, so "ds" does not match "ds2".
+ *
+ * @param list The list returned by a service.
+ * @param item The item to look for.
+ * @return true if one of the items equals the given item.
+ */
+bool Helper::containsListItem(const std::string& list, const std::string& item) {
+    std::string token;
+    for (std::size_t i = 0; i <= list.size(); ++i) {
+        if (i < list.size() && list[i] != ',' && list[i] != '\n' && list[i] != '\r') {
+            token += list[i];
+            continue;
+        }
+        const auto first = token.find_first_not_of(" \t\"");
+        const auto last = token.find_last_not_of(" \t\"");
+        if (first != std::string::npos && token.substr(first, last - first + 1) == item) {
+            return true;
+        }
+        token.clear();
+    }
+    return false;
+}
+
+/**
  * @brief Converts a JSON value to its string representation.
  *
  * This function takes a JSON value and converts it to a string representation

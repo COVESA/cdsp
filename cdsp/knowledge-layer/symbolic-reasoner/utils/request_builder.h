@@ -27,7 +27,7 @@ class RequestBuilder {
     virtual ~RequestBuilder() = default;
 
    private:
-    http::verb method_;
+    http::verb method_ = http::verb::get;
     std::string target_;
     std::string host_;
     std::string auth_header_base64_;

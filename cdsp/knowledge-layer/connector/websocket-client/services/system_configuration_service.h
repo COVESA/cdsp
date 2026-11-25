@@ -21,6 +21,8 @@ class SystemConfigurationService {
         const std::optional<std::string>& model_configuration_path);
 
     static ModelConfig loadModelConfig(const std::string& config_file);
+
+    static std::string describeSystemConfig(const SystemConfig& system_config);
 };
 
 #endif  // SYSTEM_CONFIGURATION_SERVICE_H

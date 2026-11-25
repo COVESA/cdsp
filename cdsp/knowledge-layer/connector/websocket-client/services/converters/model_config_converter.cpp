@@ -47,6 +47,8 @@ ModelConfig ModelConfigConverter::convert(const ModelConfigDTO& dto) {
  *
  * @param dto The ReasonerSettingsDTO object containing the data to be converted.
  * @return A ReasonerSettings object initialized with the converted data.
+ * @throws std::invalid_argument if frames are enabled and the inference engine is not CQELS, or
+ * if the maximum age of a frame value is not positive.
  */
 ReasonerSettings ModelConfigConverter::convertReasonerSettings(const ReasonerSettingsDTO& dto) {
     if (dto.inference_engine.empty() || dto.output_format.empty()) {
@@ -59,8 +61,24 @@ ReasonerSettings ModelConfigConverter::convertReasonerSettings(const ReasonerSet
         supported_schema_collections.push_back(stringToSchemaType(schema));
     }
     bool is_ai_reasoner_inference_results = dto.is_ai_reasoner_inference_results;
+
+    const bool frames = dto.frames.has_value();
+    if (frames && inference_engine != InferenceEngineType::CQELS) {
+        throw std::invalid_argument("Frames are only supported with the CQELS engine");
+    }
+    if (!frames && inference_engine == InferenceEngineType::CQELS) {
+        std::cout << " - Frames off: windowed joins over several signals can reach the CQELS "
+                     "join limit, see Limitations in the CQELS server README."
+                  << std::endl;
+    }
+
+    const std::chrono::milliseconds frame_max_value_age =
+        frames && dto.frames->max_value_age_ms.has_value()
+            ? std::chrono::milliseconds(dto.frames->max_value_age_ms.value())
+            : ReasonerSettings::DEFAULT_FRAME_MAX_VALUE_AGE;
+
     return ReasonerSettings(inference_engine, output_format, supported_schema_collections,
-                            is_ai_reasoner_inference_results);
+                            is_ai_reasoner_inference_results, frames, frame_max_value_age);
 }
 
 /**
