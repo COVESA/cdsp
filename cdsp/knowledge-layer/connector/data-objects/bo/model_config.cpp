@@ -289,6 +289,9 @@ std::ostream& operator<<(std::ostream& os, const ModelConfig& config) {
        << inferenceEngineTypeToString(config.getReasonerSettings().getInferenceEngine()) << "\n";
     os << "    Output Format: "
        << reasonerSyntaxTypeToContentType(config.getReasonerSettings().getOutputFormat()) << "\n";
+    os << "    Frames: " << config.getReasonerSettings().isFramesEnabled() << "\n";
+    os << "    Frame Max Value Age (ms): "
+       << config.getReasonerSettings().getFrameMaxValueAge().count() << "\n";
     os << "    Supported Schema Collections: [\n";
     for (const auto& schema : config.getReasonerSettings().getSupportedSchemaCollections()) {
         os << "      " << schemaTypeToString(schema) << ",\n";

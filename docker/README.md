@@ -12,7 +12,7 @@ The compose file `docker-compose-cdsp.yml` provides a containerized deployment o
 - [Websocket-Client (CDSP - knowledge layer) docker image build setup](#websocket-client-cdsp---knowledge-layer-docker-image-build-setup)
   - [RDFox reasoner (`rdfox` profile, licensed)](#rdfox-restful-api)
   - [RDF4J reasoner (`rdf4j` profile, open-source)](#rdf4j-reasoner)
-  - [CQELS reasoner (`cqels` profile, open-source, server only)](#cqels-reasoner)
+  - [CQELS reasoner (`cqels` profile, open-source)](#cqels-reasoner)
 - [Deploy with Docker Compose](#deploy-with-docker-compose)
 
 ## Docker installation
@@ -41,7 +41,7 @@ cp .env.example .env
 `.env` is not tracked in git, so your values and any secrets stay local. Do not put them into `.env.example`. The variables are explained in the sections of the services that use them: [Information Layer](#configuring-the-env-file) and [Knowledge Layer](#3-websocket-client-cdsp---knowledge-layer).
 
 > [!NOTE]
-> The reasoner used by the Knowledge Layer is selected via a Docker Compose [profile](https://docs.docker.com/compose/how-tos/profiles/): `rdfox` (commercial, requires the license above) or `rdf4j` (open-source, no license required). See [Websocket client (CDSP - knowledge layer) docker image build setup](#websocket-client-cdsp---knowledge-layer-docker-image-build-setup). `RDFOX_LIC_PATH` is only needed if you use the `rdfox` profile, but the variable must still exist in `.env` for Docker Compose to parse the file.
+> The reasoner used by the Knowledge Layer is selected via a Docker Compose [profile](https://docs.docker.com/compose/how-tos/profiles/): `rdfox` (commercial, requires the license above), `rdf4j` or `cqels` (both open-source, no license required). See [Websocket client (CDSP - knowledge layer) docker image build setup](#websocket-client-cdsp---knowledge-layer-docker-image-build-setup). `RDFOX_LIC_PATH` is only needed if you use the `rdfox` profile, but the variable must still exist in `.env` for Docker Compose to parse the file.
 
 ### Generated configuration (S2DM)
 
@@ -201,7 +201,7 @@ e16c8ed4ed42   cdsp-iotdb-service              "/usr/bin/dumb-init …"   23 min
 
 ## Websocket client (CDSP - knowledge layer) docker image build setup
 
-The Knowledge Layer needs a symbolic reasoner backend. Two are supported, selected via a Docker Compose profile: [`rdfox`](#rdfox-restful-api) (commercial, requires a license) or [`rdf4j`](#rdf4j-reasoner) (open-source, no license required, default choice for a quick start).
+The Knowledge Layer needs a symbolic reasoner backend. Three are supported, selected via a Docker Compose profile: [`rdfox`](#rdfox-restful-api) (commercial, requires a license), [`rdf4j`](#rdf4j-reasoner) (open-source, no license required, default choice for a quick start) or [`cqels`](#cqels-reasoner) (open-source stream reasoner, no license required).
 
 ### RDFox RESTful API
 
@@ -270,9 +270,6 @@ $ sudo docker compose -f docker-compose-cdsp.yml --profile cqels up -d --build c
 # ✔ Container cqels-reasoner-service   Started
 ```
 
-> [!NOTE]
-> The `cqels` profile only starts the CQELS server for now. The Knowledge Layer service for CQELS follows with the CQELS use case, so the profile is not yet part of the Knowledge Layer setup below.
-
 The service listens on port `12110`. To check it, run the manual REST test [cdsp/reasoner-services/cqels/test/run_test.sh](../cdsp/reasoner-services/cqels/test/run_test.sh), or:
 
 ```shell
@@ -291,7 +288,7 @@ Details are in the [CQELS service README](../cdsp/reasoner-services/cqels/README
 
 #### 3. **Websocket client (CDSP - knowledge layer)**:
 
-The Knowledge Layer reads its settings from `docker/.env`, created from [.env.example](.env.example). This file is not tracked in git, so keep your own values there. The variables are the same for both profiles; the ones that depend on the profile are set by [docker-compose-cdsp.yml](docker-compose-cdsp.yml).
+The Knowledge Layer reads its settings from `docker/.env`, created from [.env.example](.env.example). This file is not tracked in git, so keep your own values there. The variables are the same for all profiles; the ones that depend on the profile are set by [docker-compose-cdsp.yml](docker-compose-cdsp.yml).
 
 | Variable                      | Needed | Value for this setup              | Notes                                                                                                                                                                                         |
 | ----------------------------- | ------ | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -299,22 +296,22 @@ The Knowledge Layer reads its settings from `docker/.env`, created from [.env.ex
 | `HOST_WEBSOCKET_SERVER`       | yes    | `"information-layer"`             | The default `127.0.0.1` only works when the services run natively, not in containers.                                                                                                         |
 | `PORT_WEBSOCKET_SERVER`       | no     | `"8080"`                          | Default `8080`.                                                                                                                                                                               |
 | `PORT_REASONER_SERVER`        | no     | `"12110"`                         | Default `12110`.                                                                                                                                                                              |
-| `AUTH_REASONER_SERVER_BASE64` | no     | `"cm9vdDphZG1pbg=="`              | Base64 of `root:admin`, the RDFox credentials in the compose file. This is also the default. Not used by RDF4J.                                                                               |
+| `AUTH_REASONER_SERVER_BASE64` | no     | `"cm9vdDphZG1pbg=="`              | Base64 of `root:admin`, the RDFox credentials in the compose file. This is also the default. Not used by RDF4J and CQELS.                                                                     |
 | `REASONER_DATASTORE_NAME`     | no     | `"ds-test"`                       | Default `ds-test`.                                                                                                                                                                            |
 | `RDFOX_LIC_PATH`              | yes    | path to `RDFox.lic`               | Only used by the `rdfox` profile, but the variable must exist for Docker Compose to read the file. See [Prepare Environment Variables for Docker](#prepare-environment-variables-for-docker). |
 
 Set by the compose file per profile, so do not put them in `.env` (the compose value wins):
 
-| Variable                   | `rdfox` profile                                     | `rdf4j` profile                                     |
-| -------------------------- | --------------------------------------------------- | --------------------------------------------------- |
-| `HOST_REASONER_SERVER`     | `rdfox-service`                                     | `rdf4j-stream-reasoner-service`                     |
-| `MODEL_CONFIGURATION_PATH` | `/symbolic-reasoner/examples/use-case/rdfox_model/` | `/symbolic-reasoner/examples/use-case/rdf4j_model/` |
+| Variable                   | `rdfox` profile                                     | `rdf4j` profile                                     | `cqels` profile                                     |
+| -------------------------- | --------------------------------------------------- | --------------------------------------------------- | --------------------------------------------------- |
+| `HOST_REASONER_SERVER`     | `rdfox-service`                                     | `rdf4j-stream-reasoner-service`                     | `cqels-reasoner-service`                            |
+| `MODEL_CONFIGURATION_PATH` | `/symbolic-reasoner/examples/use-case/rdfox_model/` | `/symbolic-reasoner/examples/use-case/rdf4j_model/` | `/symbolic-reasoner/examples/use-case/cqels_model/` |
 
 The values for this setup are already in [.env.example](.env.example).
 
 At start-up the Knowledge Layer prints the configuration it uses (credentials only as set or not set). If it cannot reach the Information Layer or the reasoner, the error names the host, port and the variables to check. All variables are described in the [Knowledge Layer README](../cdsp/knowledge-layer/README.md#websocket-server-and-reasoner-configuration).
 
-Use the following commands to start the knowledge layer with the reasoner of your choice (the service name matches the profile: `knowledge-layer-rdfox` or `knowledge-layer-rdf4j`):
+Use the following commands to start the knowledge layer with the reasoner of your choice (the service name matches the profile: `knowledge-layer-rdfox`, `knowledge-layer-rdf4j` or `knowledge-layer-cqels`):
 
 ```shell
 $ sudo docker compose -f docker-compose-cdsp.yml --profile rdfox up -d knowledge-layer-rdfox
@@ -330,6 +327,10 @@ $ sudo docker compose -f docker-compose-cdsp.yml --profile rdf4j up -d knowledge
 # [+] Running 2/2
 # ✔ knowledge-layer-rdf4j             Created
 # ✔ Container knowledge-layer         Started
+```
+
+```shell
+$ sudo docker compose -f docker-compose-cdsp.yml --profile cqels up -d knowledge-layer-cqels
 ```
 
 The Knowledge Layer services restart automatically when the client exits with an error (`restart: on-failure`). If the Information Layer stops, the Knowledge Layer exits and keeps restarting until the Information Layer is back, then connects and subscribes again. A configuration error (for example a missing `VEHICLE_OBJECT_ID`) also leads to repeated restarts, which do not fix it: the container shows `Restarting` in `docker ps`, `docker logs knowledge-layer` shows the `Error: ...` message, and the fix is to correct `docker/.env`. Messages it cannot process are skipped and logged as `Skipping message: ...`. See [Errors and Exit Codes](../cdsp/knowledge-layer/README.md#errors-and-exit-codes).
@@ -366,7 +367,7 @@ RUN update-ca-certificates
 
 ### Start/stop containers
 
-The reasoner services (`rdfox-init`, `rdfox-service`, `rdf4j-stream-reasoner-service`) and the corresponding `knowledge-layer-rdfox` / `knowledge-layer-rdf4j` service are gated behind the `rdfox` and `rdf4j` [profiles](https://docs.docker.com/compose/how-tos/profiles/), so a profile must be selected with `--profile` to start them.
+The reasoner services (`rdfox-init`, `rdfox-service`, `rdf4j-stream-reasoner-service`, `cqels-reasoner-service`) and the corresponding `knowledge-layer-rdfox` / `knowledge-layer-rdf4j` / `knowledge-layer-cqels` service are gated behind the `rdfox`, `rdf4j` and `cqels` [profiles](https://docs.docker.com/compose/how-tos/profiles/), so a profile must be selected with `--profile` to start them.
 
 Start the containers with the open-source RDF4J reasoner:
 

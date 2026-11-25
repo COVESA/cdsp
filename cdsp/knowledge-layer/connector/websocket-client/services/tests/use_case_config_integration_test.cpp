@@ -39,4 +39,4 @@ TEST_P(UseCaseConfigIntegrationTest, LoadsAllFilesOfTheUseCase) {
 }
 
 INSTANTIATE_TEST_SUITE_P(ShippedUseCases, UseCaseConfigIntegrationTest,
-                         ::testing::Values("rdfox_model", "rdf4j_model"));
+                         ::testing::Values("rdfox_model", "rdf4j_model", "cqels_model"));

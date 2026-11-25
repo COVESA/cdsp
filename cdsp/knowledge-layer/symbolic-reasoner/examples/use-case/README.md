@@ -33,11 +33,23 @@ use-case/
 │   ├── model_config.json
 │   ├── queries/output/
 │   └── rules/                      # Datalog rules (.dlog)
-└── rdf4j_model/
-    ├── model_config.json
-    ├── queries/output/
-    └── rules/                      # SHACL rules (.shacl)
+├── rdf4j_model/
+│   ├── model_config.json
+│   ├── queries/output/
+│   └── rules/                      # SHACL rules (.shacl)
+└── cqels_model/
+    ├── model_config.json           # Sets "frames"
+    └── queries/output/             # CQELS-QL query (.cqels), also listed under rules
 ```
+
+The CQELS model runs the driving-style use case as one continuous query (`driving_style.cqels`) over two frames of the same vehicle in a 3 s window. It needs `"frames"` in the reasoner settings: with one observation per signal the query has to join the signals by time and reaches the join limit of CQELS, see the [CQELS server README](../../../../reasoner-services/cqels/README.md#limitations). Compared to the RDFox model:
+
+- The query returns the same `Vehicle_DrivingStyle_*` values, but only for two frames of the same vehicle.
+- The speed and the locations come from the frames, so each value is at most `max_value_age_ms` older than its frame. The RDFox rules match them by the second of the steering angle.
+- Latitude and longitude form a pair when both are recent; the RDFox rules need the same timestamp for both.
+- The angle change in the segment id has another number format (for example `230.0` instead of `2.3E2`).
+
+Known limitation: the query gives the expected results with the test data, but not yet with continuous real data. With a vehicle that sends all signals without pause (for example the Remotive Labs recording, about 8 frames per second with 7 signals each), the join of the frames with their member observations reaches the join limit of CQELS after a few seconds, and the query gives no results after that (see [CQELS4J #138](https://github.com/cqels/CQELS4J/issues/138) and [CQELS4J #140](https://github.com/cqels/CQELS4J/issues/140)). A change of the frame shape that avoids this join is planned. RDFox and RDF4J are not affected.
 
 All paths in `model_config.json` are relative to the folder of that file, so shared files are referenced with `../shared/`. `MODEL_CONFIGURATION_PATH` points to the reasoner folder (for example `/symbolic-reasoner/examples/use-case/rdf4j_model/`).
 
@@ -157,6 +169,16 @@ All paths in `model_config.json` are relative to the folder of that file, so sha
     > [!NOTE] Supported schema types this repository
     >
     > - `vehicle` (Vehicle Signal Specification)
+
+  - **frames** (optional object, frames off when missing): If present, the Triple Assembler groups the signals of one moment into one frame (a `sosa:ObservationCollection` with one member observation per input signal) instead of one observation per signal. Messages with the same latest timestamp belong to one moment; the frame is pushed when data of a later moment arrives. `"frames": {}` turns frames on with the defaults. Only supported with the `CQELS` engine; with another engine the Knowledge Layer stops at start-up with an error. With `CQELS` and frames off, the Knowledge Layer logs an info line at start-up: queries that join several signals by time can reach the join limit of CQELS, see the [CQELS server README](../../../../reasoner-services/cqels/README.md#limitations).
+
+    ```json
+    "frames": {
+      "max_value_age_ms": 1000
+    }
+    ```
+
+    - **max_value_age_ms** (optional, default `1000`): Maximum age in milliseconds of a value in a frame, before the frame time. Older values are left out of the frame, so a frame does not mix far apart moments. Must be positive. Choose it from what the queries of the model treat as the same moment and from how often the signals arrive.
 
 ### Example Usage
 

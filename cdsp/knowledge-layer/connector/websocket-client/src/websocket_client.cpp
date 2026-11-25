@@ -38,7 +38,13 @@ WebSocketClient::WebSocketClient(SystemConfig system_config,
       reasoner_service_(std::move(reasoner_service)),
       model_config_(std::move(model_config)),
       connection_(std::move(connection)),
-      triple_assembler_(model_config_, *reasoner_service_, file_handler_, triple_writer_),
+      frame_builder_(
+          model_config_->getReasonerSettings().isFramesEnabled()
+              ? std::make_unique<FrameBuilder>(
+                    triple_writer_, model_config_->getReasonerSettings().getFrameMaxValueAge())
+              : nullptr),
+      triple_assembler_(model_config_, *reasoner_service_, file_handler_, triple_writer_,
+                        frame_builder_.get()),
       request_registry_(std::make_shared<RequestRegistry>()),
       reasoner_query_service_(std::make_shared<ReasoningQueryService>(reasoner_service_)) {
     triple_assembler_.initialize();

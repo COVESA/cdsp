@@ -4,7 +4,7 @@ This folder contains the Java-based CQELS reasoner service. It runs as a Docker 
 
 ## Overview
 
-[CQELS](https://github.com/cqels/CQELS4J) is an open-source stream reasoner: continuous queries in CQELS-QL run over time windows of stream elements. The service wraps the `cqels-engine` library (version `2.0.0-alpha.21`, from the Maven repository `https://maven.cqels.org/releases`) in a Spring Boot REST server and provides:
+[CQELS](https://github.com/cqels/CQELS4J) is an open-source stream reasoner: continuous queries in CQELS-QL run over time windows of stream elements. The service wraps the `cqels-engine` library (version `2.0.0-alpha.22`, from the Maven repository `https://maven.cqels.org/releases`) in a Spring Boot REST server and provides:
 
 - one CQELS engine per datastore (session), with an in-memory store
 - static data (Turtle) and one-shot SPARQL SELECT queries on that store
@@ -94,12 +94,13 @@ Consequences:
 
 ## Limitations
 
-Limits of `cqels-engine` `2.0.0-alpha.21` that matter for CDSP:
+Limits of `cqels-engine` `2.0.0-alpha.22` that matter for CDSP:
 
 - **Aggregates need a newer element.** An aggregate over a `[RANGE]` window gives the result of a window only when a newer element arrives. The last window gives no result while no new data comes, for example when the vehicle stops sending. The reorder buffer does not change this.
 - **`LATENESS` only works on single-stream `[RANGE]` aggregates.** Joins and plain windowed SELECTs reject it, so the service uses its own reorder buffer.
-- **Numbers come back as Java values.** For example, an `xsd:integer` input comes back as `xsd:long`. The value itself is unchanged.
-- Other limits of the engine (for example `REPLACE()` and `xsd:dateTime` subtraction unbound) are listed in the CQELS4J issues.
+- **Windowed joins are limited to 100000 intermediate results.** The limit is counted before `FILTER`, and triple patterns that share no variable multiply. Over the limit the engine logs `WindowedJoinCapExceeded` and the results of that evaluation are lost. The limit can be changed with the JVM property `cqels.join.crossProductCap`. Queries that join many elements of one window, for example separate observations per signal matched by time, reach it at a few elements per second. The Knowledge Layer therefore groups the signals of one moment into one stream element (a frame) for CQELS, when the model configuration sets `frames`.
+- **Numbers come back as Java values.** For example, an `xsd:integer` input comes back as `xsd:long` and an `xsd:float` input as `xsd:double`. The value itself is unchanged.
+- Other limits of the engine (for example `xsd:dateTime` subtraction unbound) are listed in the CQELS4J issues.
 
 ## Design choices
 

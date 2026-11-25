@@ -10,6 +10,7 @@
 
 #include "data_types.h"
 #include "file_handler_impl.h"
+#include "frame_builder.h"
 #include "message_service.h"
 #include "model_config.h"
 #include "reasoner_service.h"
@@ -48,6 +49,8 @@ class WebSocketClient : public std::enable_shared_from_this<WebSocketClient> {
     std::shared_ptr<ReasoningQueryService> reasoner_query_service_;
     std::shared_ptr<RequestRegistry> request_registry_;
     TripleWriter triple_writer_;
+    // Only set when the reasoner settings contain "frames"
+    std::unique_ptr<FrameBuilder> frame_builder_;
     TripleAssembler triple_assembler_;
     FileHandlerImpl file_handler_;
     std::vector<json> reply_messages_queue_;

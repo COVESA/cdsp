@@ -16,7 +16,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.release>17</maven.compiler.release>
-    <cqels.version>2.0.0-alpha.21</cqels.version>
+    <cqels.version>2.0.0-alpha.22</cqels.version>
     <!-- The RDF4J version cqels-engine is built on; update together with cqels.version -->
     <rdf4j.version>4.3.8</rdf4j.version>
   </properties>

@@ -6,9 +6,9 @@ This document describes how reasoners are integrated into the Knowledge Layer an
 
 The Knowledge Layer uses a **factory pattern** to support multiple reasoning engines. Each reasoner consists of:
 
-1. **C++ Adapter** — Implements `IReasonerAdapter` interface, handles communication with the external engine
-2. **External Engine** — The actual reasoning service (runs as Docker container or external process)
-3. **Model Configuration** — JSON config specifying which reasoner to use
+1. **C++ Adapter**: Implements `IReasonerAdapter` interface, handles communication with the external engine
+2. **External Engine**: The actual reasoning service (runs as Docker container or external process)
+3. **Model Configuration**: JSON config specifying which reasoner to use
 
 ## Folder Structure
 
@@ -57,7 +57,9 @@ covesa.cdsp/
 │           ├── shared/                     # Files used by every reasoner (signals, SHACL, ontologies, helper queries)
 │           ├── rdfox_model/                # Config for RDFox
 │           │   └── model_config.json
-│           └── rdf4j_model/                # Config for RDF4J
+│           ├── rdf4j_model/                # Config for RDF4J
+│           │   └── model_config.json
+│           └── cqels_model/                # Config for CQELS
 │               └── model_config.json
 │
 └── cdsp/reasoner-services/
@@ -368,6 +370,10 @@ If your reasoner runs as an external service, put it in `cdsp/reasoner-services/
 ```bash
 # Use RDF4J reasoner
 export MODEL_CONFIGURATION_PATH=/symbolic-reasoner/examples/use-case/rdf4j_model/
+./reasoner_client
+
+# Use CQELS reasoner
+export MODEL_CONFIGURATION_PATH=/symbolic-reasoner/examples/use-case/cqels_model/
 ./reasoner_client
 
 # Use RDFox reasoner (default)

@@ -117,11 +117,11 @@ uv run s2dmc \
   --il-out ../information-layer/handlers/config/schema-files/vss_data_points.yaml
 ```
 
-The [Reasoner client](./connector/websocket-client/README.md) integrates with both the WebSocket server and the RDFox triple store. The client processes incoming messages and generates RDF triples, which are then stored in RDFox.
+The [Reasoner client](./connector/websocket-client/README.md) integrates with both the WebSocket server and the reasoning engine. The client processes incoming messages and generates RDF triples, which are then sent to the engine.
 
 ### WebSocket Server and Reasoner Configuration
 
-The project requires certain environment variables to work with the WebSocket server and the reasoner server. By default, the WebSocket client connects to the WebSocket server located in the [`information-layer`](../information-layer/README.md). Two reasoning engines are supported: **RDFox** and **RDF4J** (see [Choosing a Reasoning Engine](#choosing-a-reasoning-engine)).
+The project requires certain environment variables to work with the WebSocket server and the reasoner server. By default, the WebSocket client connects to the WebSocket server located in the [`information-layer`](../information-layer/README.md). Three reasoning engines are supported: **RDFox**, **RDF4J** and **CQELS** (see [Choosing a Reasoning Engine](#choosing-a-reasoning-engine)).
 
 - **HOST_WEBSOCKET_SERVER:** Specifies the hostname of the WebSocket server. The default is `127.0.0.1`.
 - **PORT_WEBSOCKET_SERVER:** Specifies the port for connecting to the WebSocket server. The default is `8080`.
@@ -129,10 +129,10 @@ The project requires certain environment variables to work with the WebSocket se
 - **[SCHEMA]\_OBJECT_ID:** The Object ID environment variable is required to subscribe and retrieve information for a specific object, such as a VIN (Vehicle Identification Number) when working with Vehicle Signal Specification (VSS) data. [SCHEMA] represents the schema type being used, such as VEHICLE. For example, if you are working with Vehicle data under the VSS schema, the environment variable should be set as: `VEHICLE_OBJECT_ID`. Use the Object ID configured in the [`information-layer`](../information-layer/README.md).
 - **HOST_REASONER_SERVER:** Hostname of the reasoner server. The default is `127.0.0.1`. In the Docker Compose setup it is set per profile by the compose file.
 - **PORT_REASONER_SERVER:** Port for the reasoner server. The default is `12110`.
-- **AUTH_REASONER_SERVER_BASE64:** Base64-encoded credentials for reasoner authentication. The default is `cm9vdDphZG1pbg==` (`root:admin` in base64). Required for RDFox; ignored by RDF4J.
+- **AUTH_REASONER_SERVER_BASE64:** Base64-encoded credentials for reasoner authentication. The default is `cm9vdDphZG1pbg==` (`root:admin` in base64). Required for RDFox; ignored by RDF4J and CQELS.
 - **REASONER_DATASTORE_NAME:** Data store used in the reasoner server to store the generated data. The default is `ds-test`.
 - **REASONER_ORIGIN_SYSTEM_NAME:** Origin system name for the reasoner server used to identify the source of the data. The default is `SemanticReasoner`.
-- **MODEL_CONFIGURATION_PATH:** Path to the model configuration folder used by the reasoner client. The default is `/symbolic-reasoner/examples/use-case/rdfox_model/`. In the Docker Compose setup it is set per profile by the compose file (`rdfox_model/` or `rdf4j_model/`).
+- **MODEL_CONFIGURATION_PATH:** Path to the model configuration folder used by the reasoner client. The default is `/symbolic-reasoner/examples/use-case/rdfox_model/`. In the Docker Compose setup it is set per profile by the compose file (`rdfox_model/`, `rdf4j_model/` or `cqels_model/`).
 
 At start-up the client prints the configuration it uses (credentials only as set or not set). If it cannot reach the WebSocket server or the reasoner, the error names the host, port and the variables to check.
 
@@ -161,12 +161,13 @@ MODEL_CONFIGURATION_PATH="path_to_your_model_config"
 
 ### Choosing a Reasoning Engine
 
-The reasoning engine is selected via the `inference_engine` field in `model_config.json` inside the model directory pointed to by `MODEL_CONFIGURATION_PATH`. Two engines are supported:
+The reasoning engine is selected via the `inference_engine` field in `model_config.json` inside the model directory pointed to by `MODEL_CONFIGURATION_PATH`. Three engines are supported:
 
 | Engine | `inference_engine` | Docker service | Model path (main setup) | Model path (Hello World example) |
 |--------|-------------------|----------------|-------------------------|----------------------------------|
 | RDFox  | `"RDFox"`  | `rdfox-service` (requires license) | `/symbolic-reasoner/examples/use-case/rdfox_model/` | `KL-config/rdfox_model/` |
 | RDF4J  | `"RDF4J"`  | `rdf4j-stream-reasoner-service` | `/symbolic-reasoner/examples/use-case/rdf4j_model/` | `KL-config/rdf4j_model/` |
+| CQELS  | `"CQELS"`  | `cqels-reasoner-service` | `/symbolic-reasoner/examples/use-case/cqels_model/` | `KL-config/cqels_model/` |
 
 Files that are the same for every engine (required signals, SHACL shapes, ontologies, Triple Assembler helper queries) live once in `symbolic-reasoner/examples/use-case/shared/`. See the [use-case README](./symbolic-reasoner/examples/use-case/README.md#folder-layout).
 
@@ -174,6 +175,7 @@ To switch engines, set `HOST_REASONER_SERVER` to the target service and point `M
 
 - RDFox uses Datalog rules (`.dlog`) and requires a license file. See [docker/README.md](/docker/README.md#rdfox-restful-api).
 - RDF4J uses SHACL `sh:SPARQLRule` CONSTRUCT patterns (`.shacl`) and requires no license. See the [RDF4J service README](../reasoner-services/rdf4j/README.md).
+- CQELS runs continuous CQELS-QL queries (`.cqels`) over time windows of the stream and requires no license. Queries that join several signals need `"frames"` in the reasoner settings. See the [CQELS adapter README](./symbolic-reasoner/adapters/cqels/README.md#differences-to-rdfox-and-rdf4j) for how it differs from RDFox and RDF4J.
 
 ### Start the Reasoner Websocket Client
 

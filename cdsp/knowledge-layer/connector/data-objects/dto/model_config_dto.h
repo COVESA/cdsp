@@ -1,8 +1,10 @@
 #ifndef MODEL_CONFIG_DTO_H
 #define MODEL_CONFIG_DTO_H
 
+#include <cstdint>
 #include <map>
 #include <nlohmann/json.hpp>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -34,13 +36,21 @@ struct QueriesDTO {
 };
 
 /**
+ * @brief Data Transfer Object for the frames settings. Present means frames are on.
+ */
+struct FramesDTO {
+    std::optional<int64_t> max_value_age_ms;
+};
+
+/**
  * @brief Data Transfer Object for the Reasoner Settings
  */
 struct ReasonerSettingsDTO {
     std::string inference_engine;
-    bool is_ai_reasoner_inference_results;
+    bool is_ai_reasoner_inference_results = false;
     std::string output_format;
     std::vector<std::string> supported_schema_collections;
+    std::optional<FramesDTO> frames;
 
     // Overload the << operator to print the ReasonerSettingsDTO
     friend std::ostream& operator<<(std::ostream& os, const ReasonerSettingsDTO& dto) {
@@ -49,6 +59,12 @@ struct ReasonerSettingsDTO {
            << "      is_ai_reasoner_inference_results: " << dto.is_ai_reasoner_inference_results
            << "\n"
            << "      output_format: " << dto.output_format << "\n"
+           << "      frames: "
+           << (!dto.frames ? std::string("off")
+               : dto.frames->max_value_age_ms
+                   ? "max_value_age_ms " + std::to_string(*dto.frames->max_value_age_ms)
+                   : std::string("on"))
+           << "\n"
            << "      supported_schema_collections: [\n";
         for (const auto& schema : dto.supported_schema_collections) {
             os << "        " << schema << ",\n";

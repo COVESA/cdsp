@@ -183,3 +183,59 @@ TEST_F(ModelConfigDtoServiceUnitTest,
         ASSERT_THROW(dto_service_.parseModelConfigJsonToDto(test_message), std::invalid_argument);
     }
 }
+
+/**
+ * @brief Tests that the optional "frames" reasoner setting is parsed.
+ *
+ * A missing "frames" object means frames off, an empty object means frames on with the default
+ * maximum age, "max_value_age_ms" is taken over, and a value that is not an object or an age that
+ * is not a number is rejected.
+ */
+TEST_F(ModelConfigDtoServiceUnitTest, ParseReasonerSettingsFrames) {
+    nlohmann::json json_message = generateValidModelConfigJson();
+    ASSERT_FALSE(json_message["reasoner_settings"].contains("frames"));
+    EXPECT_FALSE(
+        dto_service_.parseModelConfigJsonToDto(json_message).reasoner_settings.frames.has_value());
+
+    json_message["reasoner_settings"]["frames"] = nlohmann::json::object();
+    auto frames = dto_service_.parseModelConfigJsonToDto(json_message).reasoner_settings.frames;
+    ASSERT_TRUE(frames.has_value());
+    EXPECT_FALSE(frames->max_value_age_ms.has_value());
+
+    json_message["reasoner_settings"]["frames"] = {{"max_value_age_ms", 1500}};
+    frames = dto_service_.parseModelConfigJsonToDto(json_message).reasoner_settings.frames;
+    ASSERT_TRUE(frames.has_value());
+    EXPECT_EQ(frames->max_value_age_ms, 1500);
+
+    json_message["reasoner_settings"]["frames"] = {{"max_value_age_ms", "1s"}};
+    EXPECT_THROW(dto_service_.parseModelConfigJsonToDto(json_message), std::invalid_argument);
+
+    json_message["reasoner_settings"]["frames"] = true;
+    try {
+        dto_service_.parseModelConfigJsonToDto(json_message);
+        FAIL() << "A frames value that is not an object must be rejected";
+    } catch (const std::invalid_argument& e) {
+        EXPECT_NE(std::string(e.what()).find("frames must be an object"), std::string::npos)
+            << e.what();
+    }
+}
+
+/**
+ * @brief Tests that the optional "is_ai_reasoner_inference_results" reasoner setting is parsed.
+ *
+ * A missing field means false, a boolean value is taken over, and a value that is not a boolean
+ * is rejected.
+ */
+TEST_F(ModelConfigDtoServiceUnitTest, ParseReasonerSettingsIsAiReasonerInferenceResults) {
+    nlohmann::json json_message = generateValidModelConfigJson();
+    json_message["reasoner_settings"].erase("is_ai_reasoner_inference_results");
+    EXPECT_FALSE(dto_service_.parseModelConfigJsonToDto(json_message)
+                     .reasoner_settings.is_ai_reasoner_inference_results);
+
+    json_message["reasoner_settings"]["is_ai_reasoner_inference_results"] = true;
+    EXPECT_TRUE(dto_service_.parseModelConfigJsonToDto(json_message)
+                    .reasoner_settings.is_ai_reasoner_inference_results);
+
+    json_message["reasoner_settings"]["is_ai_reasoner_inference_results"] = "yes";
+    EXPECT_THROW(dto_service_.parseModelConfigJsonToDto(json_message), std::invalid_argument);
+}

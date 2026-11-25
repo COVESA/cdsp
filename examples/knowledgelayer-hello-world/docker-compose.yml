@@ -95,6 +95,22 @@ services:
       retries: 10
       start_period: 20s
 
+  # CQELS Stream Reasoner
+  cqels-reasoner-service:
+    profiles: ["cqels"]
+    build:
+      context: ../../cdsp/reasoner-services/cqels
+    image: cqels-reasoner:latest
+    container_name: cqels-reasoner-service
+    ports:
+      - "12110:12110"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:12110/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 20s
+
 
   # Information Layer Server exposing websocket API
   information-layer:
@@ -139,6 +155,17 @@ services:
       iotdb-service:
         condition: service_healthy
 
+  rl-bridge-cqels:
+    <<: *rl-bridge-common
+    profiles: ["cqels"]
+    depends_on:
+      knowledge-layer-cqels:
+        condition: service_started
+      information-layer:
+        condition: service_started
+      iotdb-service:
+        condition: service_healthy
+
   # Knowledge Layer Server using RDFox
   knowledge-layer-rdfox:
     <<: *knowledge-layer-common
@@ -172,6 +199,23 @@ services:
         condition: service_completed_successfully
     environment:
       - HOST_REASONER_SERVER=rdf4j-stream-reasoner-service
+
+  # Knowledge Layer Server using CQELS
+  knowledge-layer-cqels:
+    <<: *knowledge-layer-common
+    profiles: ["cqels"]
+    volumes:
+      - ./KL-config/cqels_model:/src/symbolic-reasoner/examples/use-case/model
+      - ./KL-config/shared:/src/symbolic-reasoner/examples/use-case/shared
+    depends_on:
+      cqels-reasoner-service:
+        condition: service_healthy
+      information-layer:
+        condition: service_started
+      s2dm-config-gen:
+        condition: service_completed_successfully
+    environment:
+      - HOST_REASONER_SERVER=cqels-reasoner-service
 
 volumes:
   rdfox-server-directory:

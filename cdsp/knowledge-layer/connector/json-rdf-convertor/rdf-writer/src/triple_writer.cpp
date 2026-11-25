@@ -113,6 +113,103 @@ void TripleWriter::addElementDataToTriple(
     const std::tuple<std::string, std::string, std::string>& rdf_data_values,
     const std::string& value, const std::chrono::system_clock::time_point& timestamp,
     const std::optional<double>& ntmValue) {
+    addObservationToTriple(prefixes, rdf_data_values, value, timestamp, ntmValue, std::nullopt);
+}
+
+/**
+ * @brief Adds a member observation of a frame to the triples.
+ *
+ * Same triples as addElementDataToTriple, but the observation IRI is
+ * `<prefix>:fm_<property>_<identifier>_<frame timestamp>`, so a value that is repeated in the next
+ * frame gets a new member.
+ *
+ * @param prefixes A string containing the prefixes to be added to the system list.
+ * @param rdf_data_values The class, data property and data type of the value.
+ * @param value A string representing the value to be used in the RDF triple.
+ * @param timestamp The time of the value.
+ * @param frame_time The time of the frame the member belongs to.
+ * @param ntmValue An optional double representing the NTM value, required for specific cases.
+ * @return The IRI of the member observation.
+ *
+ * @throws std::runtime_error If the value is empty, or if the NTM value is required
+ *                            but not provided.
+ */
+std::string TripleWriter::addMemberDataToTriple(
+    const std::string& prefixes,
+    const std::tuple<std::string, std::string, std::string>& rdf_data_values,
+    const std::string& value, const std::chrono::system_clock::time_point& timestamp,
+    const std::chrono::system_clock::time_point& frame_time,
+    const std::optional<double>& ntmValue) {
+    return addObservationToTriple(prefixes, rdf_data_values, value, timestamp, ntmValue,
+                                  frame_time);
+}
+
+/**
+ * @brief Adds the frame node to the triples.
+ *
+ * The frame is a `sosa:ObservationCollection` with the IRI
+ * `<prefix>:frame_<identifier>_<frame timestamp>`, the instance of the given class as feature of
+ * interest, the frame time as `sosa:phenomenonTime` and one `sosa:hasMember` per member.
+ *
+ * @param feature_of_interest_element The RDF class of the feature of interest, for example
+ * `<http://example.ontology.com/car#Vehicle>`.
+ * @param frame_time The time of the frame.
+ * @param member_uris The IRIs of the member observations.
+ *
+ * @throws std::runtime_error If there are no members.
+ */
+void TripleWriter::addFrameToTriple(const std::string& feature_of_interest_element,
+                                    const std::chrono::system_clock::time_point& frame_time,
+                                    const std::vector<std::string>& member_uris) {
+    if (member_uris.empty()) {
+        throw std::runtime_error("A frame needs at least one member");
+    }
+    unique_rdf_prefix_definitions_.emplace("sosa", "http://www.w3.org/ns/sosa/");
+    unique_rdf_prefix_definitions_.emplace("xsd", "http://www.w3.org/2001/XMLSchema#");
+
+    const auto [foi_prefix, foi_identifier] =
+        extractPrefixAndIdentifierFromRdfElement(feature_of_interest_element);
+    const std::string frame_uri =
+        foi_prefix + ":frame_" + identifier_ + "_" + createTimestampIdentifier(frame_time);
+
+    TripleNodes triple_nodes;
+    triple_nodes.subject = std::make_pair(SERD_CURIE, frame_uri);
+    triple_nodes.predicate =
+        std::make_pair(SERD_URI, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
+    triple_nodes.object = std::make_pair(SERD_CURIE, "sosa:ObservationCollection");
+    rdf_triples_definitions_.push_back(triple_nodes);
+
+    triple_nodes.predicate = std::make_pair(SERD_CURIE, "sosa:hasFeatureOfInterest");
+    triple_nodes.object = std::make_pair(SERD_CURIE, createInstanceUri(foi_prefix, foi_identifier));
+    rdf_triples_definitions_.push_back(triple_nodes);
+
+    triple_nodes.predicate = std::make_pair(SERD_CURIE, "sosa:phenomenonTime");
+    triple_nodes.object = std::make_pair(
+        SERD_LITERAL, Helper::getFormattedTimestampCustom("%Y-%m-%dT%H:%M:%S", frame_time, true));
+    triple_nodes.datatype = std::make_pair(SERD_CURIE, "xsd:dateTime");
+    rdf_triples_definitions_.push_back(triple_nodes);
+
+    triple_nodes.predicate = std::make_pair(SERD_CURIE, "sosa:hasMember");
+    triple_nodes.datatype = std::nullopt;
+    for (const auto& member_uri : member_uris) {
+        triple_nodes.object = std::make_pair(SERD_CURIE, member_uri);
+        rdf_triples_definitions_.push_back(triple_nodes);
+    }
+}
+
+/**
+ * @brief Adds one observation (or frame member) with its feature of interest to the triples.
+ *
+ * @param frame_time The time of the frame for a frame member, std::nullopt for a plain
+ * observation.
+ * @return The IRI of the observation.
+ */
+std::string TripleWriter::addObservationToTriple(
+    const std::string& prefixes,
+    const std::tuple<std::string, std::string, std::string>& rdf_data_values,
+    const std::string& value, const std::chrono::system_clock::time_point& timestamp,
+    const std::optional<double>& ntmValue,
+    const std::optional<std::chrono::system_clock::time_point>& frame_time) {
     if (value.empty()) {
         throw std::runtime_error("Triple value cannot be empty");
     }
@@ -138,17 +235,16 @@ void TripleWriter::addElementDataToTriple(
     const std::string date_time_with_nano =
         Helper::getFormattedTimestampCustom("%Y-%m-%dT%H:%M:%S", timestamp, true);
 
-    const std::string observation_identifier =
-        Helper::getFormattedTimestampCustom("%Y%m%d%H%M%S", timestamp) +
-        Helper::extractNanoseconds(timestamp);
-
-    auto milliseconds_since_epoch =
-        std::chrono::duration_cast<std::chrono::milliseconds>(timestamp.time_since_epoch()).count();
-
     const std::string class_1_instance_uri = createInstanceUri(class_1_prefix, class_1_identifier);
     std::stringstream observation_instance_uri;
-    observation_instance_uri << class_1_prefix << ":" << "ob_" << data_property_identifier << "_"
-                             << observation_identifier;
+    if (frame_time.has_value()) {
+        observation_instance_uri << class_1_prefix << ":" << "fm_" << data_property_identifier
+                                 << "_" << identifier_ << "_"
+                                 << createTimestampIdentifier(frame_time.value());
+    } else {
+        observation_instance_uri << class_1_prefix << ":" << "ob_" << data_property_identifier
+                                 << "_" << createTimestampIdentifier(timestamp);
+    }
 
     // Create triples
     triple_nodes.subject = std::make_pair(SERD_CURIE, class_1_instance_uri);
@@ -195,6 +291,17 @@ void TripleWriter::addElementDataToTriple(
             std::make_pair(SERD_CURIE, data_type_prefix + ":" + data_type_identifier);
         rdf_triples_definitions_.push_back(triple_nodes);
     }
+    return observation_instance_uri.str();
+}
+
+/**
+ * @brief Creates the timestamp part of an observation or frame IRI, for example
+ * `20261116100002200000000`.
+ */
+std::string TripleWriter::createTimestampIdentifier(
+    const std::chrono::system_clock::time_point& timestamp) {
+    return Helper::getFormattedTimestampCustom("%Y%m%d%H%M%S", timestamp) +
+           Helper::extractNanoseconds(timestamp);
 }
 
 /**

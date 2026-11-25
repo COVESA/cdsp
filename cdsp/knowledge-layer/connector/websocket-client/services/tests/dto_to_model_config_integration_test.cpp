@@ -82,7 +82,7 @@ std::pair<std::string, std::string> getRandomTypeAndFileExtension(
  * randomly generated file path with the corresponding file extension.
  */
 std::vector<std::pair<std::string, std::string>> generateRandomListOfTypeAndFilePaths(
-    const std::vector<std::pair<std::string, std::string>> &type_list_to_use, int max_files = 5) {
+    const std::vector<std::pair<std::string, std::string>>& type_list_to_use, int max_files = 5) {
     int num_files = RandomUtils::generateRandomInt(1, max_files);
     std::vector<std::pair<std::string, std::string>> file_paths;
     for (int i = 0; i < num_files; i++) {
@@ -123,7 +123,7 @@ TEST_F(DtoToModelConfigIntegrationTest, ConvertModelConfigDtoToBo) {
     // Generate model config inputs
     std::map<std::string, std::string> dto_random_inputs;
     std::map<SchemaType, SchemaInputList> expected_bo_inputs;
-    for (const auto &schema : SCHEMAS_IN_TEST) {
+    for (const auto& schema : SCHEMAS_IN_TEST) {
         std::string input_path = RandomUtils::generateRandomString() + ".txt";
         std::string return_from_file;
 
@@ -144,7 +144,7 @@ TEST_F(DtoToModelConfigIntegrationTest, ConvertModelConfigDtoToBo) {
     // Generate model config ontologies
     std::vector<std::string> dto_ontologies;
     std::vector<std::pair<ReasonerSyntaxType, std::string>> expected_bo_ontologies;
-    for (const auto &ontology_type_and_path :
+    for (const auto& ontology_type_and_path :
          generateRandomListOfTypeAndFilePaths(SYNTAX_TYPES_AND_EXTENSION_IN_TEST)) {
         dto_ontologies.push_back(ontology_type_and_path.second);
         expected_bo_ontologies.push_back(
@@ -165,7 +165,7 @@ TEST_F(DtoToModelConfigIntegrationTest, ConvertModelConfigDtoToBo) {
     std::map<SchemaType, TripleAssemblerHelper::QueryPair>
         expected_bo_triple_assembler_helper_queries;
 
-    for (const auto &schema : SCHEMAS_IN_TEST) {
+    for (const auto& schema : SCHEMAS_IN_TEST) {
         auto random_query_extension =
             getRandomTypeAndFileExtension(QUERY_LANGUAGE_TYPES_AND_EXTENSION_IN_TEST);
 
@@ -254,9 +254,9 @@ TEST_F(DtoToModelConfigIntegrationTest, ConvertModelConfigDtoToBo) {
         dto_reasoning_output_queries_paths.push_back(RandomUtils::generateRandomString() + "." +
                                                      random_query_extension.second);
 
-        std::string expected_bo_reasoning_output_query =
-            MODEL_CONFIG_PATH + dto_queries.reasoning_output_queries_path +
-            dto_reasoning_output_queries_paths.back();
+        std::string expected_bo_reasoning_output_query = MODEL_CONFIG_PATH +
+                                                         dto_queries.reasoning_output_queries_path +
+                                                         dto_reasoning_output_queries_paths.back();
 
         EXPECT_CALL(*mock_i_file_handler_,
                     readFile(::testing::StrEq(expected_bo_reasoning_output_query)))
@@ -290,7 +290,7 @@ TEST_F(DtoToModelConfigIntegrationTest, ConvertModelConfigDtoToBo) {
     // Generate model config validation shapes
     std::vector<std::string> dto_shacl_shapes;
     std::vector<std::pair<ReasonerSyntaxType, std::string>> expected_bo_validation_shapes;
-    for (const auto &shacl_file_path :
+    for (const auto& shacl_file_path :
          generateRandomListOfTypeAndFilePaths(SYNTAX_TYPES_AND_EXTENSION_IN_TEST)) {
         dto_shacl_shapes.push_back(shacl_file_path.second);
         expected_bo_validation_shapes.push_back(
@@ -347,7 +347,7 @@ TEST_F(DtoToModelConfigIntegrationTest, ConvertModelConfigDtoToBo) {
     EXPECT_EQ(b_obj.getValidationShapes(), expected_bo_validation_shapes);
 
     TripleAssemblerHelper bo_queries_config = b_obj.getQueriesTripleAssemblerHelper();
-    for (const auto &[expected_bo_schema, expected_bo_query_pair] :
+    for (const auto& [expected_bo_schema, expected_bo_query_pair] :
          expected_bo_triple_assembler_helper_queries) {
         EXPECT_EQ(bo_queries_config.getQueries()[expected_bo_schema].data_property,
                   expected_bo_query_pair.data_property);
@@ -361,7 +361,7 @@ TEST_F(DtoToModelConfigIntegrationTest, ConvertModelConfigDtoToBo) {
     EXPECT_EQ(bo_reasoner_settings.getInferenceEngine(), expected_bo_reasoner_inference_engine);
     EXPECT_EQ(bo_reasoner_settings.getOutputFormat(), expected_bo_reasoner_output_format);
 
-    for (const SchemaType &schema : expected_bo_reasoner_supported_schema_collections) {
+    for (const SchemaType& schema : expected_bo_reasoner_supported_schema_collections) {
         EXPECT_THAT(bo_reasoner_settings.getSupportedSchemaCollections(),
                     testing::Contains(schema));
     }
@@ -392,7 +392,7 @@ TEST_F(DtoToModelConfigIntegrationTest,
 
     // For this test, the file handler is irrelevant and return a dummy string
     EXPECT_CALL(*mock_i_file_handler_, readFile(::testing::_))
-        .WillRepeatedly([](const std::string &path) {
+        .WillRepeatedly([](const std::string& path) {
             if (path.find(".json") != std::string::npos) {
                 // Minimal valid JSON for inputs
                 return std::string(R"({"subscribe":["foo"],"callback":[]})");
@@ -404,7 +404,7 @@ TEST_F(DtoToModelConfigIntegrationTest,
     EXPECT_CALL(*mock_i_file_handler_, readDirectory(::testing::_))
         .WillRepeatedly(testing::Return(std::vector<std::string>({"some_file.rq"})));
 
-    for (const auto &field : required_fields) {
+    for (const auto& field : required_fields) {
         // Define the complete ModelConfigDTO
         ModelConfigDTO dto = createValidDto();
         std::string error_message;
@@ -468,7 +468,7 @@ TEST_F(DtoToModelConfigIntegrationTest, ConvertModelConfigDtoHandlesIncompleteQu
 
     // For this test, the file handler is irrelevant and return a dummy string
     EXPECT_CALL(*mock_i_file_handler_, readFile(::testing::_))
-        .WillRepeatedly([](const std::string &path) {
+        .WillRepeatedly([](const std::string& path) {
             if (path.find(".json") != std::string::npos) {
                 // Minimal valid JSON for inputs
                 return std::string(R"({"subscribe":["foo"],"callback":[]})");
@@ -480,13 +480,13 @@ TEST_F(DtoToModelConfigIntegrationTest, ConvertModelConfigDtoHandlesIncompleteQu
     EXPECT_CALL(*mock_i_file_handler_, readDirectory(::testing::_))
         .WillRepeatedly(testing::Return(std::vector<std::string>({"some_file.rq"})));
 
-    for (const auto &schema : schema_types) {
-        for (const auto &field : required_fields) {
+    for (const auto& schema : schema_types) {
+        for (const auto& field : required_fields) {
             // Define the complete ModelConfigDTO
             ModelConfigDTO dto = createValidDto();
 
             // Set the field to an empty value
-            auto &files = dto.queries.triple_assembler_helper[schema];
+            auto& files = dto.queries.triple_assembler_helper[schema];
             if (field == "data_property") {
                 files.erase(files.begin());
             } else if (field == "object_property") {
@@ -507,7 +507,7 @@ TEST_F(DtoToModelConfigIntegrationTest, ConvertModelConfigDtoHandlesIncompleteQu
                     auto b_obj = dto_to_bo_->convert(dto);
                     std::cout << "ModelConfig parsed: \n" << b_obj << "\n";
                     auto query = b_obj.getQueriesTripleAssemblerHelper().getQueries();
-                    for (const auto &[schema, query_pair] : query) {
+                    for (const auto& [schema, query_pair] : query) {
                         std::cout << "Schema: " << schemaTypeToString(schema) << "\n";
                     }
                     EXPECT_NE(query.find(SchemaType::VEHICLE), query.end());
@@ -520,5 +520,102 @@ TEST_F(DtoToModelConfigIntegrationTest, ConvertModelConfigDtoHandlesIncompleteQu
                                 ::testing::HasSubstr(error_message)));
             }
         }
+    }
+}
+
+namespace {
+const std::string FRAMES_OFF_INFO = "Frames off: windowed joins over several signals";
+
+/**
+ * @brief Sets up the file handler mock so that a converted DTO finds dummy files.
+ */
+void allowAnyModelConfigFile(MockIFileHandler& file_handler) {
+    EXPECT_CALL(file_handler, readFile(::testing::_)).WillRepeatedly([](const std::string& path) {
+        if (path.find(".json") != std::string::npos) {
+            return std::string(R"({"subscribe":["foo"],"callback":[]})");
+        }
+        return std::string("some_data");
+    });
+    EXPECT_CALL(file_handler, readDirectory(::testing::_))
+        .WillRepeatedly(testing::Return(std::vector<std::string>({"some_file.rq"})));
+}
+}  // namespace
+
+/**
+ * @brief Tests that frames are only accepted with the CQELS engine.
+ *
+ * With frames on, CQELS is accepted and RDFox and RDF4J stop with an error. CQELS with frames off
+ * is accepted and logs an info line about the CQELS join limit; CQELS with frames on and the
+ * other engines do not log it.
+ */
+TEST_F(DtoToModelConfigIntegrationTest, ConvertModelConfigDtoChecksFramesAgainstEngine) {
+    allowAnyModelConfigFile(*mock_i_file_handler_);
+
+    for (const auto& engine : ENGINES_IN_TEST) {
+        for (const bool frames : {false, true}) {
+            ModelConfigDTO dto = createValidDto();
+            dto.reasoner_settings.inference_engine = engine;
+            if (frames) {
+                dto.reasoner_settings.frames = FramesDTO{};
+            }
+            const bool is_cqels = stringToInferenceEngineType(engine) == InferenceEngineType::CQELS;
+            std::cout << "\nTesting engine " << engine << " with frames " << frames << "\n";
+
+            if (frames && !is_cqels) {
+                EXPECT_THAT([&]() { dto_to_bo_->convert(dto); },
+                            ::testing::ThrowsMessage<std::invalid_argument>(::testing::HasSubstr(
+                                "Frames are only supported with the CQELS engine")));
+                continue;
+            }
+
+            testing::internal::CaptureStdout();
+            auto b_obj = dto_to_bo_->convert(dto);
+            const std::string output = testing::internal::GetCapturedStdout();
+
+            EXPECT_EQ(b_obj.getReasonerSettings().isFramesEnabled(), frames);
+            if (is_cqels && !frames) {
+                EXPECT_THAT(output, ::testing::HasSubstr(FRAMES_OFF_INFO));
+            } else {
+                EXPECT_THAT(output, ::testing::Not(::testing::HasSubstr(FRAMES_OFF_INFO)));
+            }
+        }
+    }
+}
+
+/**
+ * @brief Tests that a CQELS model without the "frames" setting is accepted with frames off.
+ */
+TEST_F(DtoToModelConfigIntegrationTest, ConvertModelConfigDtoAcceptsCqelsWithoutFrames) {
+    allowAnyModelConfigFile(*mock_i_file_handler_);
+
+    ModelConfigDTO dto = createValidDto();
+    dto.reasoner_settings.inference_engine = "cqels";
+
+    auto b_obj = dto_to_bo_->convert(dto);
+    EXPECT_FALSE(b_obj.getReasonerSettings().isFramesEnabled());
+}
+
+/**
+ * @brief Tests the maximum age of a frame value: default when missing, taken over when set, and
+ * rejected when not positive.
+ */
+TEST_F(DtoToModelConfigIntegrationTest, ConvertModelConfigDtoHandlesFrameMaxValueAge) {
+    allowAnyModelConfigFile(*mock_i_file_handler_);
+
+    ModelConfigDTO dto = createValidDto();
+    dto.reasoner_settings.inference_engine = "cqels";
+    dto.reasoner_settings.frames = FramesDTO{};
+    EXPECT_EQ(dto_to_bo_->convert(dto).getReasonerSettings().getFrameMaxValueAge(),
+              ReasonerSettings::DEFAULT_FRAME_MAX_VALUE_AGE);
+
+    dto.reasoner_settings.frames->max_value_age_ms = 1500;
+    EXPECT_EQ(dto_to_bo_->convert(dto).getReasonerSettings().getFrameMaxValueAge(),
+              std::chrono::milliseconds(1500));
+
+    for (const int64_t invalid_age : {0, -1}) {
+        dto.reasoner_settings.frames->max_value_age_ms = invalid_age;
+        EXPECT_THAT([&]() { dto_to_bo_->convert(dto); },
+                    ::testing::ThrowsMessage<std::invalid_argument>(
+                        ::testing::HasSubstr("The maximum age of a frame value must be positive")));
     }
 }

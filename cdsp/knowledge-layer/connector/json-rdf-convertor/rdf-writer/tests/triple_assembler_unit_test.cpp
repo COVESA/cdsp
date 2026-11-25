@@ -9,6 +9,7 @@
 
 #include "data_message.h"
 #include "data_types.h"
+#include "mock_frame_builder.h"
 #include "mock_i_file_handler.h"
 #include "mock_model_config.h"
 #include "mock_reasoner_adapter.h"
@@ -17,6 +18,10 @@
 #include "triple_assembler.h"
 #include "vin_utils.h"
 
+/**
+ * @brief Fixture for a Triple Assembler without a frame builder, as created when the reasoner
+ * settings do not contain "frames".
+ */
 class TripleAssemblerUnitTest : public ::testing::Test {
    protected:
     const std::string VIN = VinUtils::getRandomVinString();
@@ -51,6 +56,9 @@ class TripleAssemblerUnitTest : public ::testing::Test {
         mock_reasoner_service_.reset();
     }
 
+    /**
+     * @brief Adds one node with a data point of the vehicle to the message nodes.
+     */
     void setUpMessage() {
         const std::string data_point =
             "Vehicle.Powertrain.TractionBattery.StateOfCharge.CurrentEnergy";
@@ -548,4 +556,234 @@ TEST_F(TripleAssemblerUnitTest, TransformMessageToTripleFailsWhenCoordinatesAreN
 
     // Assert
     EXPECT_NO_THROW(triple_assembler_->transformMessageToTriple(message_feature));
+}
+// Testing messages with frames
+
+/**
+ * @brief Fixture for a Triple Assembler with a frame builder, as created when the reasoner
+ * settings contain "frames".
+ */
+class TripleAssemblerFramesUnitTest : public TripleAssemblerUnitTest {
+   protected:
+    MockFrameBuilder mock_frame_builder_{mock_triple_writer_};
+    std::shared_ptr<TripleAssembler> frames_assembler_;
+    // 2026-11-16T10:00:02Z
+    const std::chrono::system_clock::time_point T0 =
+        std::chrono::system_clock::time_point(std::chrono::seconds(1794823202));
+
+    void SetUp() override {
+        TripleAssemblerUnitTest::SetUp();
+        frames_assembler_ = std::make_shared<TripleAssembler>(
+            mock_model_config_, *mock_reasoner_service_, mock_i_file_handler_, mock_triple_writer_,
+            &mock_frame_builder_);
+    }
+
+    void TearDown() override {
+        frames_assembler_.reset();
+        TripleAssemblerUnitTest::TearDown();
+    }
+
+    /**
+     * @brief Creates node metadata with the given time as received and generated time.
+     */
+    static Metadata generatedAt(const std::chrono::system_clock::time_point& time) {
+        return Metadata(Metadata::Timestamps{time, time});
+    }
+
+    /**
+     * @brief Creates reasoner settings with the CQELS engine and frames on.
+     */
+    static ReasonerSettings framesSettings() {
+        return ReasonerSettings(InferenceEngineType::CQELS, ReasonerSyntaxType::TURTLE,
+                                std::vector<SchemaType>{SchemaType::VEHICLE}, false, true);
+    }
+
+    /**
+     * @brief The data store is available and the helper queries resolve every node. The Triple
+     * Writer is not used directly, the frame builder writes the frame.
+     */
+    void setUpFrameExpectations(const int& times_object_queries, const int& times_data_queries) {
+        EXPECT_CALL(*mock_reasoner_service_, checkDataStore()).WillOnce(testing::Return(true));
+
+        TripleAssemblerHelper::QueryPair query_pair;
+        query_pair.object_property = std::make_pair(QueryLanguageType::SPARQL, "OBJECT QUERY");
+        query_pair.data_property = std::make_pair(QueryLanguageType::SPARQL, "DATA QUERY");
+        EXPECT_CALL(*mock_model_config_, getQueriesTripleAssemblerHelper())
+            .WillRepeatedly(
+                testing::Return(TripleAssemblerHelper({{SchemaType::VEHICLE, query_pair}})));
+        auto& object_queries =
+            EXPECT_CALL(*mock_reasoner_service_,
+                        queryData("OBJECT QUERY", QueryLanguageType::SPARQL, ::testing::_))
+                .Times(times_object_queries);
+        if (times_object_queries > 0) {
+            object_queries.WillRepeatedly(testing::Return("?a ?b ?c\n<ex:A> <ex:hasB> <ex:B>"));
+        }
+        auto& data_queries =
+            EXPECT_CALL(*mock_reasoner_service_,
+                        queryData("DATA QUERY", QueryLanguageType::SPARQL, ::testing::_))
+                .Times(times_data_queries);
+        if (times_data_queries > 0) {
+            data_queries.WillRepeatedly(testing::Return("?a ?b ?c\n<ex:B> <ex:value> <xsd:float>"));
+        }
+
+        EXPECT_CALL(mock_triple_writer_, initiateTriple(::testing::_)).Times(0);
+        EXPECT_CALL(mock_triple_writer_, addElementObjectToTriple(::testing::_, ::testing::_))
+            .Times(0);
+        EXPECT_CALL(mock_triple_writer_,
+                    addElementDataToTriple(::testing::_, ::testing::_, ::testing::_, ::testing::_,
+                                           ::testing::_))
+            .Times(0);
+        EXPECT_CALL(mock_triple_writer_, generateTripleOutput(::testing::_)).Times(0);
+    }
+};
+
+/**
+ * @brief Unit test for transforming a message when it starts a new moment.
+ *
+ * Each resolved node goes to the frame builder under the VIN of the message. The frame builder
+ * returns the frame of the previous moment, which is pushed as one element with its own time as
+ * event time.
+ */
+TEST_F(TripleAssemblerFramesUnitTest, FramesOnStoresFrameOfPreviousMoment) {
+    const auto angle_time = T0 + std::chrono::milliseconds(200);
+    const auto speed_time = T0 + std::chrono::milliseconds(187);
+    const auto previous_moment = T0;
+    nodes_.emplace_back("Vehicle.Chassis.SteeringWheel.Angle", "250", generatedAt(angle_time));
+    nodes_.emplace_back("Vehicle.Speed", "64.0", generatedAt(speed_time));
+    DataMessage message(MessageHeader(VIN, SchemaType::VEHICLE), nodes_);
+
+    // Angle: two object queries (Vehicle > Chassis > SteeringWheel), each node one data query
+    setUpFrameExpectations(2, 2);
+
+    EXPECT_CALL(*mock_model_config_, getReasonerSettings())
+        .WillRepeatedly(testing::Return(framesSettings()));
+    EXPECT_CALL(
+        mock_frame_builder_,
+        addMessage(
+            VIN,
+            ::testing::ElementsAre(
+                ::testing::Pair(
+                    "Vehicle.Chassis.SteeringWheel.Angle",
+                    ::testing::AllOf(
+                        ::testing::Field(&ResolvedSignal::value, "250"),
+                        ::testing::Field(&ResolvedSignal::timestamp, angle_time),
+                        ::testing::Field(&ResolvedSignal::object_elements, ::testing::SizeIs(2)))),
+                ::testing::Pair(
+                    "Vehicle.Speed",
+                    ::testing::AllOf(
+                        ::testing::Field(&ResolvedSignal::value, "64.0"),
+                        ::testing::Field(&ResolvedSignal::timestamp, speed_time),
+                        ::testing::Field(&ResolvedSignal::object_elements, ::testing::IsEmpty())))),
+            ReasonerSyntaxType::TURTLE))
+        .WillOnce(testing::Return(BuiltFrame{"frame_ttl", previous_moment}));
+
+    EXPECT_CALL(*mock_model_config_, getOutput()).WillOnce(testing::Return("output/"));
+    EXPECT_CALL(*mock_reasoner_service_,
+                loadObservations(::testing::StrEq("frame_ttl"), ReasonerSyntaxType::TURTLE,
+                                 ::testing::Eq(previous_moment)))
+        .WillOnce(testing::Return(true));
+    EXPECT_CALL(mock_i_file_handler_,
+                writeFile(::testing::_, ::testing::HasSubstr("frame_ttl"), ::testing::Eq(true)))
+        .Times(1);
+
+    EXPECT_NO_THROW(frames_assembler_->transformMessageToTriple(message));
+}
+
+/**
+ * @brief Unit test for transforming a message with coordinates to a frame.
+ *
+ * Latitude and longitude go to the frame builder as signals; the frame builder pairs them.
+ */
+TEST_F(TripleAssemblerFramesUnitTest, FramesOnPassesLocationToFrameBuilder) {
+    nodes_.emplace_back("Vehicle.CurrentLocation.Latitude", "48.1", generatedAt(T0));
+    nodes_.emplace_back("Vehicle.CurrentLocation.Longitude", "11.5", generatedAt(T0));
+    DataMessage message(MessageHeader(VIN, SchemaType::VEHICLE), nodes_);
+
+    setUpFrameExpectations(2, 2);
+
+    EXPECT_CALL(*mock_model_config_, getReasonerSettings())
+        .WillRepeatedly(testing::Return(framesSettings()));
+    EXPECT_CALL(mock_frame_builder_,
+                addMessage(VIN,
+                           ::testing::ElementsAre(
+                               ::testing::Pair("Vehicle.CurrentLocation.Latitude",
+                                               ::testing::Field(&ResolvedSignal::value, "48.1")),
+                               ::testing::Pair("Vehicle.CurrentLocation.Longitude",
+                                               ::testing::Field(&ResolvedSignal::value, "11.5"))),
+                           ::testing::_))
+        .WillOnce(testing::Return(BuiltFrame{"frame_ttl", T0}));
+    EXPECT_CALL(*mock_model_config_, getOutput()).WillOnce(testing::Return("output/"));
+    EXPECT_CALL(*mock_reasoner_service_, loadObservations("frame_ttl", ::testing::_, T0))
+        .WillOnce(testing::Return(true));
+    EXPECT_CALL(mock_i_file_handler_, writeFile(::testing::_, ::testing::_, true)).Times(1);
+
+    EXPECT_NO_THROW(frames_assembler_->transformMessageToTriple(message));
+}
+
+/**
+ * @brief Unit test for transforming a message to a frame with a node that cannot be resolved.
+ *
+ * The node is skipped; the other nodes still go to the frame builder.
+ */
+TEST_F(TripleAssemblerFramesUnitTest, FramesOnSkipsNodeThatCannotBeResolved) {
+    nodes_.emplace_back("InvalidNode", "error_value", generatedAt(T0 + std::chrono::seconds(5)));
+    nodes_.emplace_back("Vehicle.Speed", "64.0", generatedAt(T0));
+    DataMessage message(MessageHeader(VIN, SchemaType::VEHICLE), nodes_);
+
+    setUpFrameExpectations(0, 1);
+
+    EXPECT_CALL(*mock_model_config_, getReasonerSettings())
+        .WillRepeatedly(testing::Return(framesSettings()));
+    EXPECT_CALL(
+        mock_frame_builder_,
+        addMessage(VIN, ::testing::ElementsAre(::testing::Pair("Vehicle.Speed", ::testing::_)),
+                   ::testing::_))
+        .WillOnce(testing::Return(BuiltFrame{"frame_ttl", T0}));
+    EXPECT_CALL(*mock_model_config_, getOutput()).WillOnce(testing::Return("output/"));
+    EXPECT_CALL(*mock_reasoner_service_, loadObservations("frame_ttl", ::testing::_, T0))
+        .WillOnce(testing::Return(true));
+    EXPECT_CALL(mock_i_file_handler_, writeFile(::testing::_, ::testing::_, true)).Times(1);
+
+    EXPECT_NO_THROW(frames_assembler_->transformMessageToTriple(message));
+}
+
+/**
+ * @brief Unit test for a message that gives no frame.
+ *
+ * While the moment is still open (or its frame has no recent value) nothing is pushed or written.
+ */
+TEST_F(TripleAssemblerFramesUnitTest, FramesOnPushesNothingWithoutFrame) {
+    nodes_.emplace_back("Vehicle.Speed", "64.0", generatedAt(T0));
+    DataMessage message(MessageHeader(VIN, SchemaType::VEHICLE), nodes_);
+
+    setUpFrameExpectations(0, 1);
+
+    EXPECT_CALL(*mock_model_config_, getReasonerSettings())
+        .WillRepeatedly(testing::Return(framesSettings()));
+    EXPECT_CALL(mock_frame_builder_, addMessage(VIN, ::testing::SizeIs(1), ::testing::_))
+        .WillOnce(testing::Return(std::nullopt));
+    EXPECT_CALL(*mock_reasoner_service_, loadObservations(::testing::_, ::testing::_, ::testing::_))
+        .Times(0);
+    EXPECT_CALL(mock_i_file_handler_, writeFile(::testing::_, ::testing::_, ::testing::_)).Times(0);
+
+    EXPECT_NO_THROW(frames_assembler_->transformMessageToTriple(message));
+}
+
+/**
+ * @brief Unit test for a message without any node that can be resolved.
+ *
+ * The frame builder is not called and nothing is pushed or written.
+ */
+TEST_F(TripleAssemblerFramesUnitTest, FramesOnSkipsMessageWithoutResolvedNode) {
+    nodes_.emplace_back("InvalidNode", "error_value", generatedAt(T0));
+    DataMessage message(MessageHeader(VIN, SchemaType::VEHICLE), nodes_);
+
+    setUpFrameExpectations(0, 0);
+
+    EXPECT_CALL(mock_frame_builder_, addMessage(::testing::_, ::testing::_, ::testing::_)).Times(0);
+    EXPECT_CALL(*mock_reasoner_service_, loadObservations(::testing::_, ::testing::_, ::testing::_))
+        .Times(0);
+    EXPECT_CALL(mock_i_file_handler_, writeFile(::testing::_, ::testing::_, ::testing::_)).Times(0);
+
+    EXPECT_NO_THROW(frames_assembler_->transformMessageToTriple(message));
 }

@@ -32,6 +32,15 @@ class TripleWriter {
         const std::tuple<std::string, std::string, std::string>& rdf_data_values,
         const std::string& value, const std::chrono::system_clock::time_point& dataTime,
         const std::optional<double>& ntmValue = std::nullopt);
+    virtual std::string addMemberDataToTriple(
+        const std::string& prefixes,
+        const std::tuple<std::string, std::string, std::string>& rdf_data_values,
+        const std::string& value, const std::chrono::system_clock::time_point& dataTime,
+        const std::chrono::system_clock::time_point& frame_time,
+        const std::optional<double>& ntmValue = std::nullopt);
+    virtual void addFrameToTriple(const std::string& feature_of_interest_element,
+                                  const std::chrono::system_clock::time_point& frame_time,
+                                  const std::vector<std::string>& member_uris);
 
     virtual std::string generateTripleOutput(const ReasonerSyntaxType& format);
 
@@ -53,6 +62,15 @@ class TripleWriter {
 
     std::tuple<std::string, std::string> extractPrefixAndIdentifierFromRdfElement(
         const std::string& element);
+
+    std::string addObservationToTriple(
+        const std::string& prefixes,
+        const std::tuple<std::string, std::string, std::string>& rdf_data_values,
+        const std::string& value, const std::chrono::system_clock::time_point& timestamp,
+        const std::optional<double>& ntmValue,
+        const std::optional<std::chrono::system_clock::time_point>& frame_time);
+    static std::string createTimestampIdentifier(
+        const std::chrono::system_clock::time_point& timestamp);
 };
 
 #endif  // TRIPLE_WRITER_H

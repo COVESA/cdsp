@@ -14,11 +14,11 @@ avoiding both the 0.2s poll-race (a signal landing right on a poll boundary
 can be silently missed) and second-level timestamp mismatches between signals
 that some rules require to align exactly (e.g. FixPoint's lat/long match).
 
-The angle swing (diff=220) clears both reasoners' thresholds: RDF4J's rules
-require > 180, RDFox's require > 210.
+The angle swing (diff=220) clears the thresholds of all reasoners: RDF4J's
+rules require > 180, RDFox's rules and the CQELS query require > 210.
 
-Requires: iotdb-service, information-layer, knowledge-layer(-rdf4j or -rdfox),
-and the reasoner service already running (docker compose up ...).
+Requires: iotdb-service, information-layer, knowledge-layer(-rdf4j, -rdfox or
+-cqels), and the reasoner service already running (docker compose up ...).
 
 Usage:
     uv run --with websockets python feed_test_data.py
@@ -109,6 +109,15 @@ async def main():
         angle_swing["CurrentLocation.Latitude"] = 52.6
         angle_swing["CurrentLocation.Longitude"] = 13.5
         msg_id = await send_set(ws, msg_id, angle_swing)
+
+        print("=== normal driving after the swing ===")
+        # With CQELS, the Knowledge Layer sends the signals of one moment as one frame,
+        # once data of a later moment arrives. These moments push the frame of the swing.
+        after_swing = dict(angle_swing)
+        for i in range(4):
+            await asyncio.sleep(0.5)
+            after_swing["Speed"] = 61.0 + i
+            msg_id = await send_set(ws, msg_id, after_swing)
 
         print("--- polling for KL to reason and report a fresh result back to IL ---")
         # This result can be old. IoTDB saves its data to disk, so a `get` right after

@@ -15,7 +15,10 @@
 #include "model_config.h"
 #include "node.h"
 #include "reasoner_service.h"
+#include "resolved_signal.h"
 #include "triple_writer.h"
+
+class FrameBuilder;
 
 using chrono_time_nanos = std::chrono::nanoseconds;
 
@@ -27,7 +30,8 @@ struct CoordinateNodes {
 class TripleAssembler {
    public:
     TripleAssembler(std::shared_ptr<ModelConfig> model_config, ReasonerService& reasoner_service,
-                    IFileHandler& file_reader, TripleWriter& triple_writer);
+                    IFileHandler& file_reader, TripleWriter& triple_writer,
+                    FrameBuilder* frame_builder = nullptr);
 
     void initialize();
     void transformMessageToTriple(const DataMessage& message);
@@ -49,6 +53,8 @@ class TripleAssembler {
     ReasonerService& reasoner_service_;
     IFileHandler& file_handler_;
     TripleWriter& triple_writer_;
+    // Set when the reasoner settings contain "frames", not owned
+    FrameBuilder* frame_builder_;
     const std::vector<std::map<std::string, std::string>> json_data_;
     chrono_time_nanos coordinates_last_time_stamp_{chrono_time_nanos(0)};
 
@@ -57,6 +63,9 @@ class TripleAssembler {
 
     std::pair<std::vector<std::string>, std::string> extractObjectsAndDataElements(
         const std::string& node_name);
+
+    void transformMessageToFrame(const MessageHeader& header, const std::vector<Node>& nodes);
+    ResolvedSignal resolveSignal(const Node& node, const SchemaType& msg_schema_type);
 
     std::optional<CoordinateNodes> getValidCoordinatesPair();
     void cleanupOldTimestamps();
