@@ -200,6 +200,8 @@ int main(int argc, char* argv[]) {
             DEFAULT_AUTH_REASONER_SERVER_BASE64, DEFAULT_REASONER_DATASTORE_NAME,
             DEFAULT_REASONER_ORIGIN_SYSTEM_NAME, DEFAULT_MODEL_CONFIGURATION_PATH);
 
+        std::cout << SystemConfigurationService::describeSystemConfig(system_config) << std::endl;
+
         // Initialize Model Configuration
         const std::string model_config_file =
             getProjectRoot() + getPathToUseCases() + "model_config.json";
@@ -221,10 +223,13 @@ int main(int argc, char* argv[]) {
         // Initialize the RealWebSocketConnection with the WebSocketClient
         client->initializeConnection();
 
-        // Run the WebSocket client
+        // Run the WebSocket client. It only returns when the connection to the Information Layer
+        // could not be established or was lost, so this is always an error. A non-zero exit code
+        // lets Docker restart the client (restart policy in the compose files).
         client->run();
 
-        return EXIT_SUCCESS;
+        std::cerr << "Error: Connection to the Information Layer ended. Exiting." << std::endl;
+        return EXIT_FAILURE;
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
         return EXIT_FAILURE;

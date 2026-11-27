@@ -13,6 +13,10 @@ class MockReasonerService : public ReasonerService {
     MOCK_METHOD(bool, checkDataStore, (), (override));
     MOCK_METHOD(bool, loadData, (const std::string& data, const ReasonerSyntaxType& content_type),
                 (override));
+    MOCK_METHOD(bool, loadObservations,
+                (const std::string& data, const ReasonerSyntaxType& content_type,
+                 std::chrono::system_clock::time_point observation_time),
+                (override));
     MOCK_METHOD(bool, loadRules, (const std::string& rules, const RuleLanguageType& content_type),
                 (override));
     MOCK_METHOD(std::string, queryData,

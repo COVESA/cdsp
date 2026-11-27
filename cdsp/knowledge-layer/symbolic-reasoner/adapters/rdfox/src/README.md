@@ -5,7 +5,7 @@
 `RDFoxAdapter` is responsible for communicating with the RDFox server using RESTful APIs. This adapter allows users to perform various operations such as creating connections, loading data, querying data (using [SPARQL](https://www.w3.org/TR/sparql11-query/)), and managing cursors efficiently.
 
 > [!NOTE]
-> When the `RDFoxAdapter` initializes, it creates the datastore (name configured via the `REASONER_DATASTORE` environment variable) in the RDFox server if it does not exist.
+> When the `RDFoxAdapter` initializes, it creates the datastore (name configured via the `REASONER_DATASTORE_NAME` environment variable) in the RDFox server if it does not exist.
 
 ## Features
 

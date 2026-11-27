@@ -246,7 +246,20 @@ ReasonerSettingsDTO DtoService::parseReasonerSettingsJsonToDto(
 
         if (reasoner_settings_json.contains("is_ai_reasoner_inference_results")) {
             dto.is_ai_reasoner_inference_results =
-                reasoner_settings_json["is_ai_reasoner_inference_results"];
+                reasoner_settings_json["is_ai_reasoner_inference_results"].get<bool>();
+        }
+
+        if (reasoner_settings_json.contains("frames")) {
+            const auto& frames_json = reasoner_settings_json["frames"];
+            if (!frames_json.is_object()) {
+                throw std::invalid_argument(
+                    "frames must be an object, for example {\"max_value_age_ms\": 1000}");
+            }
+            FramesDTO frames;
+            if (frames_json.contains("max_value_age_ms")) {
+                frames.max_value_age_ms = frames_json["max_value_age_ms"].get<int64_t>();
+            }
+            dto.frames = frames;
         }
 
         return dto;

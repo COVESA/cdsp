@@ -1,21 +1,24 @@
 #include "triple_assembler.h"
 
+#include <algorithm>
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include <sstream>
 
 #include "data_message.h"
+#include "frame_builder.h"
 #include "helper.h"
 
 using json = nlohmann::json;
 
 TripleAssembler::TripleAssembler(std::shared_ptr<ModelConfig> model_config,
                                  ReasonerService& reasoner_service, IFileHandler& file_reader,
-                                 TripleWriter& triple_writer)
+                                 TripleWriter& triple_writer, FrameBuilder* frame_builder)
     : model_config_(model_config),
       reasoner_service_(reasoner_service),
       file_handler_(file_reader),
-      triple_writer_(triple_writer) {}
+      triple_writer_(triple_writer),
+      frame_builder_(frame_builder) {}
 
 /**
  * @brief Initializes the TripleAssembler by checking the data store and loading validation shapes.
@@ -25,8 +28,11 @@ TripleAssembler::TripleAssembler(std::shared_ptr<ModelConfig> model_config,
  * from the model configuration. If no validation shapes are found or if loading fails, it throws a
  * runtime error.
  *
- * @throws std::runtime_error If the data store is unavailable or if validation shapes cannot be
- * loaded.
+ * With a frame builder, it also checks that every input signal has its own property name, see
+ * `checkUniqueFramePropertyNames`.
+ *
+ * @throws std::runtime_error If the data store is unavailable, if validation shapes cannot be
+ * loaded, or if two input signals share a property name while frames are on.
  */
 void TripleAssembler::initialize() {
     if (!reasoner_service_.checkDataStore()) {
@@ -44,6 +50,56 @@ void TripleAssembler::initialize() {
         throw std::runtime_error(
             "No validation shapes were found to load. The triples cannot be generated.");
     }
+    if (frame_builder_ != nullptr) {
+        checkUniqueFramePropertyNames();
+    }
+}
+
+/**
+ * @brief Checks that no two input signals share a property name, which frames need.
+ *
+ * In a frame, the member observations and the values on the frame node are named after the
+ * property of the signal. Two input signals with the same property (for example `car:Position` of
+ * the door and of the ambient light) would get the same names in one frame and their values would
+ * mix. The property of each input signal is resolved with the helper query for data properties,
+ * so it needs the validation shapes in the data store.
+ *
+ * @throws std::runtime_error If two input signals share a property name, naming both signals and
+ * the property, or if the property of a signal cannot be resolved.
+ */
+void TripleAssembler::checkUniqueFramePropertyNames() {
+    for (const auto& [schema_type, input_list] : model_config_->getInputs()) {
+        const auto query_pair = getHelperQueries(schema_type);
+        std::map<std::string, std::string> signal_per_property;
+        for (const auto& input : input_list.subscribe) {
+            // The inputs are stored without the schema type, the message nodes carry it
+            const std::string signal_name = schemaTypeToString(schema_type, true) + "." + input;
+            const auto [object_elements, data_element] = extractObjectsAndDataElements(signal_name);
+            const auto data_values = getQueryPrefixesAndData(query_pair.data_property,
+                                                             object_elements.back(), data_element);
+            const std::string& property = std::get<1>(data_values.second);
+            const auto [found, inserted] = signal_per_property.emplace(property, signal_name);
+            if (!inserted) {
+                throw std::runtime_error(
+                    "Frames need a unique property name per input signal, but " + found->second +
+                    " and " + signal_name + " both have the property " + property +
+                    ". Remove one of them from the inputs or turn frames off.");
+            }
+        }
+    }
+}
+
+/**
+ * @brief Returns the helper queries of a schema type, or the default helper queries.
+ */
+TripleAssemblerHelper::QueryPair TripleAssembler::getHelperQueries(
+    const SchemaType& schema_type) const {
+    const auto queries = model_config_->getQueriesTripleAssemblerHelper().getQueries();
+    const auto found = queries.find(schema_type);
+    if (found != queries.end()) {
+        return found->second;
+    }
+    return queries.at(SchemaType::DEFAULT);
 }
 
 /**
@@ -53,7 +109,8 @@ void TripleAssembler::initialize() {
  * and then generates reasoning triples based on the nodes' data. It checks the data store
  * availability before proceeding and handles both coordinate and non-coordinate nodes
  * differently. If valid coordinates are found, it generates triples specifically for them.
- * Finally, it outputs the generated triples in the specified format.
+ * Finally, it outputs the generated triples in the specified format. With a frame builder, the
+ * message becomes one frame instead, see `transformMessageToFrame`.
  *
  * @param message The DataMessage containing the header and nodes to be transformed into triples.
  * @throws std::runtime_error If the data store check fails.
@@ -66,6 +123,11 @@ void TripleAssembler::transformMessageToTriple(const DataMessage& message) {
     MessageHeader header = message.getHeader();
     std::vector<Node> nodes = message.getNodes();
 
+    if (frame_builder_ != nullptr) {
+        transformMessageToFrame(header, nodes);
+        return;
+    }
+
     // Add the identifier to the triples that will be generated
     triple_writer_.initiateTriple(header.getInstance());
 
@@ -75,6 +137,8 @@ void TripleAssembler::transformMessageToTriple(const DataMessage& message) {
     }
 
     std::optional<CoordinateNodes> valid_coordinates = std::nullopt;
+    // Time of the latest observation in this message, passed to the reasoner
+    std::chrono::system_clock::time_point observation_time{};
 
     for (const auto node : nodes) {
         if (node.getName() == "Vehicle.CurrentLocation.Latitude" ||
@@ -97,21 +161,26 @@ void TripleAssembler::transformMessageToTriple(const DataMessage& message) {
         } else {
             try {
                 generateTriplesFromNode(node, header.getSchemaType());
+                observation_time = std::max(observation_time, getTimestampFromNode(node));
             } catch (const std::exception& e) {
                 std::cerr << "An error occurred creating the triples: " << e.what() << std::endl;
             }
         }
     }
 
-    if (valid_coordinates.has_value())
+    if (valid_coordinates.has_value()) {
         generateTriplesFromCoordinates(valid_coordinates, header.getSchemaType(), message);
+        observation_time =
+            std::max({observation_time, getTimestampFromNode(valid_coordinates->latitude),
+                      getTimestampFromNode(valid_coordinates->longitude)});
+    }
 
     // Get the document of the generated triples
     std::string generated_triples =
         triple_writer_.generateTripleOutput(model_config_->getReasonerSettings().getOutputFormat());
 
     if (!generated_triples.empty()) {
-        storeTripleOutput(generated_triples);
+        storeTripleOutput(generated_triples, observation_time);
     } else {
         std::cout << "No triples have been generated for the update message\n\n";
     }
@@ -201,38 +270,84 @@ void TripleAssembler::cleanupOldTimestamps() {
 void TripleAssembler::generateTriplesFromNode(const Node& node, const SchemaType& msg_schema_type,
                                               const std::optional<double>& ntm_coord_value) {
     try {
-        // Split node data point into object and data elements
-        const auto [object_elements, data_element] = extractObjectsAndDataElements(node.getName());
-
-        const auto queries = model_config_->getQueriesTripleAssemblerHelper().getQueries();
-        TripleAssemblerHelper::QueryPair query_pair;
-        if (queries.find(msg_schema_type) != queries.end()) {
-            query_pair = queries.at(msg_schema_type);
-        } else {
-            query_pair = queries.at(SchemaType::DEFAULT);
-        }
-
-        // Query and add Object Elements
-        for (std::size_t i = 1; i < object_elements.size(); ++i) {
-            const auto [prefixes, object_values] = getQueryPrefixesAndData(
-                query_pair.object_property, object_elements[i - 1], object_elements[i]);
-
+        const ResolvedSignal signal = resolveSignal(node, msg_schema_type);
+        for (const auto& [prefixes, object_values] : signal.object_elements) {
             triple_writer_.addElementObjectToTriple(prefixes, object_values);
         }
-
-        // Query and add Data Element
-        const auto [prefixes, data_values] = getQueryPrefixesAndData(
-            query_pair.data_property, object_elements[object_elements.size() - 1], data_element);
-
-        const auto node_timestamp = getTimestampFromNode(node);
-
-        triple_writer_.addElementDataToTriple(prefixes, data_values, node.getValue().value(),
-                                              node_timestamp, ntm_coord_value);
+        triple_writer_.addElementDataToTriple(signal.data_element.first, signal.data_element.second,
+                                              signal.value, signal.timestamp, ntm_coord_value);
     } catch (const std::exception& e) {
         std::cerr << "An error occurred while creating the reasoning triples: " << e.what()
                   << std::endl;
         throw;
     }
+}
+
+/**
+ * @brief Resolves the classes, properties and datatype of a node through the helper queries.
+ *
+ * @param node The node with the data point name, value and timestamp.
+ * @param msg_schema_type The message schema type used to select the helper queries.
+ * @return The object elements from the root class down to the class of the signal, the data
+ * element, the value and the timestamp of the node.
+ * @throws std::runtime_error If the node name has fewer than two elements or a query returns no
+ * data.
+ */
+ResolvedSignal TripleAssembler::resolveSignal(const Node& node, const SchemaType& msg_schema_type) {
+    // Split node data point into object and data elements
+    const auto [object_elements, data_element] = extractObjectsAndDataElements(node.getName());
+
+    const auto query_pair = getHelperQueries(msg_schema_type);
+
+    ResolvedSignal signal;
+    // Query the object elements
+    for (std::size_t i = 1; i < object_elements.size(); ++i) {
+        signal.object_elements.push_back(getQueryPrefixesAndData(
+            query_pair.object_property, object_elements[i - 1], object_elements[i]));
+    }
+    // Query the data element
+    signal.data_element = getQueryPrefixesAndData(
+        query_pair.data_property, object_elements[object_elements.size() - 1], data_element);
+    signal.value = node.getValue().value();
+    signal.timestamp = getTimestampFromNode(node);
+    return signal;
+}
+
+/**
+ * @brief Hands the nodes of a message to the frame builder and stores the frame it returns.
+ *
+ * Each node is resolved and passed to the frame builder under the vehicle identifier of the
+ * message header, latitude and longitude included (the frame builder pairs them). The frame
+ * builder returns a frame when the message starts a new moment: the frame of the previous moment,
+ * with the latest value of each signal of that vehicle. Its time is the event time of the stream
+ * element.
+ *
+ * @param header The message header with the vehicle identifier and the schema type.
+ * @param nodes The nodes of the message.
+ */
+void TripleAssembler::transformMessageToFrame(const MessageHeader& header,
+                                              const std::vector<Node>& nodes) {
+    std::vector<std::pair<std::string, ResolvedSignal>> signals;
+    for (const auto& node : nodes) {
+        try {
+            signals.emplace_back(node.getName(), resolveSignal(node, header.getSchemaType()));
+        } catch (const std::exception& e) {
+            std::cerr << "An error occurred resolving the frame signal " << node.getName() << ": "
+                      << e.what() << std::endl;
+        }
+    }
+    if (signals.empty()) {
+        std::cout << "No frame has been generated for the update message\n\n";
+        return;
+    }
+
+    const std::optional<BuiltFrame> frame = frame_builder_->addMessage(
+        header.getInstance(), signals, model_config_->getReasonerSettings().getOutputFormat());
+    if (!frame.has_value()) {
+        std::cout << "No frame has been generated for the update message\n\n";
+        return;
+    }
+    storeTripleOutput(frame->triples, frame->time);
 }
 
 /**
@@ -422,17 +537,19 @@ std::string TripleAssembler::extractPrefixesFromQuery(const std::string& query) 
 }
 
 /**
- * @brief Stores the triple output to a file.
+ * @brief Loads the triple output into the reasoner as observations and stores it to a file.
  *
  * This function constructs a file name using the configured output file path,
  * the current timestamp, and the appropriate file extension. It then writes
  * the provided triple output to this file.
  *
  * @param triple_output The string containing the triple output to be stored.
+ * @param observation_time The time of the latest observation in the triple output.
  */
-void TripleAssembler::storeTripleOutput(const std::string& triple_output) {
+void TripleAssembler::storeTripleOutput(const std::string& triple_output,
+                                        std::chrono::system_clock::time_point observation_time) {
     const ReasonerSyntaxType output_format = model_config_->getReasonerSettings().getOutputFormat();
-    if (!reasoner_service_.loadData(triple_output, output_format)) {
+    if (!reasoner_service_.loadObservations(triple_output, output_format, observation_time)) {
         std::cerr << "It was a problem loading triple data to Reasoner-Server" << std::endl;
     }
 

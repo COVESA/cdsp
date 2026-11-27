@@ -1,5 +1,6 @@
 # Define the rdf-writer library
 add_library(rdf_writer
+    src/frame_builder.cpp
     src/triple_assembler.cpp
     src/triple_writer.cpp
 )
