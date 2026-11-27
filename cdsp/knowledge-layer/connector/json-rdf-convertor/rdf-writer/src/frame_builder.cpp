@@ -156,12 +156,12 @@ std::string FrameBuilder::buildFrame(const std::string& identifier,
     }
 
     triple_writer_.initiateTriple(identifier);
-    std::vector<std::string> member_uris;
+    std::vector<FrameMember> frame_members;
     for (const auto& [signal, ntm_value] : members) {
         for (const auto& [prefixes, object_values] : signal->object_elements) {
             triple_writer_.addElementObjectToTriple(prefixes, object_values);
         }
-        member_uris.push_back(triple_writer_.addMemberDataToTriple(
+        frame_members.push_back(triple_writer_.addMemberDataToTriple(
             signal->data_element.first, signal->data_element.second, signal->value,
             signal->timestamp, frame_time, ntm_value));
     }
@@ -171,7 +171,7 @@ std::string FrameBuilder::buildFrame(const std::string& identifier,
     const std::string root_class = first->object_elements.empty()
                                        ? std::get<0>(first->data_element.second)
                                        : std::get<0>(first->object_elements.front().second);
-    triple_writer_.addFrameToTriple(root_class, frame_time, member_uris);
+    triple_writer_.addFrameToTriple(root_class, frame_time, frame_members);
 
     return triple_writer_.generateTripleOutput(format);
 }

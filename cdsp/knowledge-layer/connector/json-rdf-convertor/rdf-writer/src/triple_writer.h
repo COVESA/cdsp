@@ -14,11 +14,33 @@
 
 #include "data_types.h"
 
+/**
+ * @brief One RDF triple as Serd nodes, written by `generateTripleOutput`.
+ */
 struct TripleNodes {
+    // Serd node type and text of the subject, for example (SERD_CURIE, `car:VehicleVIN123`)
     std::pair<SerdType, std::string> subject;
+    // Serd node type and text of the predicate, for example (SERD_CURIE, `sosa:hasMember`)
     std::pair<SerdType, std::string> predicate;
+    // Serd node type and text of the object: an IRI, a CURIE or a literal value
     std::pair<SerdType, std::string> object;
+    // Serd node type and text of the datatype, only for a literal object
     std::optional<std::pair<SerdType, std::string>> datatype;
+};
+
+/**
+ * @brief A member observation of a frame: its IRI and its value, which the frame node also
+ * carries with the property of the member as predicate.
+ */
+struct FrameMember {
+    // IRI of the member observation as CURIE, for example `car:fm_Angle_VIN123_<frame timestamp>`
+    std::string uri;
+    // Property of the member as CURIE, for example `car:Angle`
+    std::string property;
+    // Value of the member as text, for example `250`
+    std::string value;
+    // Datatype of the value as CURIE, for example `xsd:short`
+    std::string datatype;
 };
 
 class TripleWriter {
@@ -32,7 +54,7 @@ class TripleWriter {
         const std::tuple<std::string, std::string, std::string>& rdf_data_values,
         const std::string& value, const std::chrono::system_clock::time_point& dataTime,
         const std::optional<double>& ntmValue = std::nullopt);
-    virtual std::string addMemberDataToTriple(
+    virtual FrameMember addMemberDataToTriple(
         const std::string& prefixes,
         const std::tuple<std::string, std::string, std::string>& rdf_data_values,
         const std::string& value, const std::chrono::system_clock::time_point& dataTime,
@@ -40,7 +62,7 @@ class TripleWriter {
         const std::optional<double>& ntmValue = std::nullopt);
     virtual void addFrameToTriple(const std::string& feature_of_interest_element,
                                   const std::chrono::system_clock::time_point& frame_time,
-                                  const std::vector<std::string>& member_uris);
+                                  const std::vector<FrameMember>& members);
 
     virtual std::string generateTripleOutput(const ReasonerSyntaxType& format);
 

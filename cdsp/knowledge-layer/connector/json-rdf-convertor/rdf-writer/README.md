@@ -38,6 +38,8 @@ std::string rdf_output = writer.generateTripleOutput(ReasonerSyntaxType::TURTLE)
 
 Each member has its own feature of interest, property, value with datatype and `sosa:phenomenonTime`, like an observation without frames. Its IRI carries the VIN and the frame timestamp, for example `car:fm_Speed_VIN123_20261116100002200000000`.
 
+The frame node also carries the value of each member, with the property of the member as predicate and the datatype of the value, for example `car:Speed "64.0"^^xsd:float`. A query can read the values on the frame without joining the members; the NTM values of the location stay on the members.
+
 # Testing
 
 An Integration [test](../tests/) is provided to ensure functionality. Tests cover the main components (`TripleAssembler`, `TripleWriter`, `FrameBuilder`) to verify message transformation, RDF generation, and error handling.

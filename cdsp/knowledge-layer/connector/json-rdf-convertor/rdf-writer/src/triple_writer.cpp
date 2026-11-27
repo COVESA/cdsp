@@ -129,19 +129,25 @@ void TripleWriter::addElementDataToTriple(
  * @param timestamp The time of the value.
  * @param frame_time The time of the frame the member belongs to.
  * @param ntmValue An optional double representing the NTM value, required for specific cases.
- * @return The IRI of the member observation.
+ * @return The IRI, property, value and datatype of the member, for the frame node.
  *
  * @throws std::runtime_error If the value is empty, or if the NTM value is required
  *                            but not provided.
  */
-std::string TripleWriter::addMemberDataToTriple(
+FrameMember TripleWriter::addMemberDataToTriple(
     const std::string& prefixes,
     const std::tuple<std::string, std::string, std::string>& rdf_data_values,
     const std::string& value, const std::chrono::system_clock::time_point& timestamp,
     const std::chrono::system_clock::time_point& frame_time,
     const std::optional<double>& ntmValue) {
-    return addObservationToTriple(prefixes, rdf_data_values, value, timestamp, ntmValue,
-                                  frame_time);
+    const std::string uri =
+        addObservationToTriple(prefixes, rdf_data_values, value, timestamp, ntmValue, frame_time);
+    const auto [property_prefix, property_identifier] =
+        extractPrefixAndIdentifierFromRdfElement(std::get<1>(rdf_data_values));
+    const auto [datatype_prefix, datatype_identifier] =
+        extractPrefixAndIdentifierFromRdfElement(std::get<2>(rdf_data_values));
+    return FrameMember{uri, property_prefix + ":" + property_identifier, value,
+                       datatype_prefix + ":" + datatype_identifier};
 }
 
 /**
@@ -149,19 +155,21 @@ std::string TripleWriter::addMemberDataToTriple(
  *
  * The frame is a `sosa:ObservationCollection` with the IRI
  * `<prefix>:frame_<identifier>_<frame timestamp>`, the instance of the given class as feature of
- * interest, the frame time as `sosa:phenomenonTime` and one `sosa:hasMember` per member.
+ * interest and the frame time as `sosa:phenomenonTime`. For each member, the frame carries its value
+ * with the property of the member as predicate (for example `car:Angle "250"^^xsd:short`), so a
+ * query can read the values on the frame without joining the members, and one `sosa:hasMember`.
  *
  * @param feature_of_interest_element The RDF class of the feature of interest, for example
  * `<http://example.ontology.com/car#Vehicle>`.
  * @param frame_time The time of the frame.
- * @param member_uris The IRIs of the member observations.
+ * @param members The member observations with their values.
  *
  * @throws std::runtime_error If there are no members.
  */
 void TripleWriter::addFrameToTriple(const std::string& feature_of_interest_element,
                                     const std::chrono::system_clock::time_point& frame_time,
-                                    const std::vector<std::string>& member_uris) {
-    if (member_uris.empty()) {
+                                    const std::vector<FrameMember>& members) {
+    if (members.empty()) {
         throw std::runtime_error("A frame needs at least one member");
     }
     unique_rdf_prefix_definitions_.emplace("sosa", "http://www.w3.org/ns/sosa/");
@@ -189,10 +197,17 @@ void TripleWriter::addFrameToTriple(const std::string& feature_of_interest_eleme
     triple_nodes.datatype = std::make_pair(SERD_CURIE, "xsd:dateTime");
     rdf_triples_definitions_.push_back(triple_nodes);
 
+    for (const auto& member : members) {
+        triple_nodes.predicate = std::make_pair(SERD_CURIE, member.property);
+        triple_nodes.object = std::make_pair(SERD_LITERAL, member.value);
+        triple_nodes.datatype = std::make_pair(SERD_CURIE, member.datatype);
+        rdf_triples_definitions_.push_back(triple_nodes);
+    }
+
     triple_nodes.predicate = std::make_pair(SERD_CURIE, "sosa:hasMember");
     triple_nodes.datatype = std::nullopt;
-    for (const auto& member_uri : member_uris) {
-        triple_nodes.object = std::make_pair(SERD_CURIE, member_uri);
+    for (const auto& member : members) {
+        triple_nodes.object = std::make_pair(SERD_CURIE, member.uri);
         rdf_triples_definitions_.push_back(triple_nodes);
     }
 }

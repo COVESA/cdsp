@@ -25,7 +25,8 @@ struct BuiltFrame {
  *
  * Values are kept per vehicle identifier, so a frame only contains the values of its own vehicle.
  * The frame is a `sosa:ObservationCollection` with one member observation (`sosa:hasMember`) per
- * signal. There is one frame per moment: the signals of one moment can arrive in several messages,
+ * signal, and it also carries the value of each member, so a query can read the values on the
+ * frame without joining the members. There is one frame per moment: the signals of one moment can arrive in several messages,
  * so the frame of a moment is built when the first message of a later moment arrives. Used when
  * the reasoner settings contain "frames"; which inference engines support frames is checked when
  * the model configuration is read.

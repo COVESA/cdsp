@@ -42,14 +42,38 @@ use-case/
     └── queries/output/             # CQELS-QL query (.cqels), also listed under rules
 ```
 
-The CQELS model runs the driving-style use case as one continuous query (`driving_style.cqels`) over two frames of the same vehicle in a 3 s window. It needs `"frames"` in the reasoner settings: with one observation per signal the query has to join the signals by time and reaches the join limit of CQELS, see the [CQELS server README](../../../../reasoner-services/cqels/README.md#limitations). Compared to the RDFox model:
+The CQELS model runs the driving-style use case as one continuous query (`driving_style.cqels`) over two frames of the same vehicle in a 3 s window. It needs `"frames"` in the reasoner settings: with one observation per signal the query has to join the signals by time and reaches the join limit of CQELS, see the [CQELS server README](../../../../reasoner-services/cqels/README.md#limitations). The query reads the values on the frame node, not the member observations: joining each frame with its members also reaches the join limit with continuous real data (about 8 frames per second with 7 signals each), see [CQELS4J #140](https://github.com/cqels/CQELS4J/issues/140).
+
+A frame of one moment, with invented values (the class triples of vehicle, chassis and steering wheel left out):
+
+```turtle
+car:frame_VIN123_20261116100002200000000 a sosa:ObservationCollection ;
+    sosa:hasFeatureOfInterest car:VehicleVIN123 ;
+    sosa:phenomenonTime "2026-11-16T10:00:02.200000000Z"^^xsd:dateTime ;
+    car:Angle "250"^^xsd:short ;
+    car:Speed "64.0"^^xsd:float ;
+    sosa:hasMember car:fm_Angle_VIN123_20261116100002200000000 ,
+                   car:fm_Speed_VIN123_20261116100002200000000 .
+
+car:fm_Angle_VIN123_20261116100002200000000 a sosa:Observation ;
+    sosa:hasFeatureOfInterest car:SteeringWheelVIN123 ;
+    sosa:hasSimpleResult "250"^^xsd:short ;
+    sosa:observedProperty car:Angle ;
+    sosa:phenomenonTime "2026-11-16T10:00:02.200000000Z"^^xsd:dateTime .
+
+car:fm_Speed_VIN123_20261116100002200000000 a sosa:Observation ;
+    sosa:hasFeatureOfInterest car:VehicleVIN123 ;
+    sosa:hasSimpleResult "64.0"^^xsd:float ;
+    sosa:observedProperty car:Speed ;
+    sosa:phenomenonTime "2026-11-16T10:00:02.187000000Z"^^xsd:dateTime .
+```
+
+Compared to the RDFox model:
 
 - The query returns the same `Vehicle_DrivingStyle_*` values, but only for two frames of the same vehicle.
 - The speed and the locations come from the frames, so each value is at most `max_value_age_ms` older than its frame. The RDFox rules match them by the second of the steering angle.
 - Latitude and longitude form a pair when both are recent; the RDFox rules need the same timestamp for both.
 - The angle change in the segment id has another number format (for example `230.0` instead of `2.3E2`).
-
-Known limitation: the query gives the expected results with the test data, but not yet with continuous real data. With a vehicle that sends all signals without pause (for example the Remotive Labs recording, about 8 frames per second with 7 signals each), the join of the frames with their member observations reaches the join limit of CQELS after a few seconds, and the query gives no results after that (see [CQELS4J #138](https://github.com/cqels/CQELS4J/issues/138) and [CQELS4J #140](https://github.com/cqels/CQELS4J/issues/140)). A change of the frame shape that avoids this join is planned. RDFox and RDF4J are not affected.
 
 All paths in `model_config.json` are relative to the folder of that file, so shared files are referenced with `../shared/`. `MODEL_CONFIGURATION_PATH` points to the reasoner folder (for example `/symbolic-reasoner/examples/use-case/rdf4j_model/`).
 
@@ -166,11 +190,12 @@ All paths in `model_config.json` are relative to the folder of that file, so sha
     > - `trig` for .trig files
 
   - **supported_schema_collections**: This field defines the types of schema collections that the reasoner application can handle. For the communication with the WebSocket server and definition of the input data, it is required to specify how the schema type will be represented. This schema type will be sent as part of the message header during data transfer and is crucial for reading, interpreting the [input data](#inputs) for the reasoner model, and if exist, specific [triple assembler helpers](#queries). With this schema type definition, the reasoner can ensure compatibility with the input data and properly interpret the data points being processed.
+
     > [!NOTE] Supported schema types this repository
     >
     > - `vehicle` (Vehicle Signal Specification)
 
-  - **frames** (optional object, frames off when missing): If present, the Triple Assembler groups the signals of one moment into one frame (a `sosa:ObservationCollection` with one member observation per input signal) instead of one observation per signal. Messages with the same latest timestamp belong to one moment; the frame is pushed when data of a later moment arrives. `"frames": {}` turns frames on with the defaults. Only supported with the `CQELS` engine; with another engine the Knowledge Layer stops at start-up with an error. With `CQELS` and frames off, the Knowledge Layer logs an info line at start-up: queries that join several signals by time can reach the join limit of CQELS, see the [CQELS server README](../../../../reasoner-services/cqels/README.md#limitations).
+  - **frames** (optional object, frames off when missing): If present, the Triple Assembler groups the signals of one moment into one frame (a `sosa:ObservationCollection` with one member observation per input signal, which also carries the value of each member) instead of one observation per signal. Messages with the same latest timestamp belong to one moment; the frame is pushed when data of a later moment arrives. `"frames": {}` turns frames on with the defaults. Only supported with the `CQELS` engine; with another engine the Knowledge Layer stops at start-up with an error. With frames, every input signal needs its own property name, because the members and the values in a frame are named after the property: if two input signals share one (for example `Position` of a door and of the ambient light), the Knowledge Layer stops at start-up with an error that names both signals. With `CQELS` and frames off, the Knowledge Layer logs an info line at start-up: queries that join several signals by time can reach the join limit of CQELS, see the [CQELS server README](../../../../reasoner-services/cqels/README.md#limitations).
 
     ```json
     "frames": {

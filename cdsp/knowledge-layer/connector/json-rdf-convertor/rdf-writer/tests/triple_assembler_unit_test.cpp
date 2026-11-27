@@ -787,3 +787,97 @@ TEST_F(TripleAssemblerFramesUnitTest, FramesOnSkipsMessageWithoutResolvedNode) {
 
     EXPECT_NO_THROW(frames_assembler_->transformMessageToTriple(message));
 }
+
+// Testing the start-up check for frames
+
+/**
+ * @brief Fixture for the start-up check of a Triple Assembler with a frame builder: the data store
+ * is available and the validation shapes load.
+ */
+class TripleAssemblerFramesInitializeUnitTest : public TripleAssemblerFramesUnitTest {
+   protected:
+    // Inputs as stored in the model configuration, without the schema type
+    const std::string DOOR_POSITION = "Cabin.Door.Position";
+    const std::string LIGHT_POSITION = "Cabin.Light.AmbientLight.Position";
+    const std::string SPEED = "Speed";
+
+    void setUpInitializeExpectations(const std::vector<std::string>& inputs) {
+        EXPECT_CALL(*mock_reasoner_service_, checkDataStore()).WillOnce(testing::Return(true));
+        EXPECT_CALL(*mock_model_config_, getValidationShapes())
+            .WillOnce(testing::Return(std::vector<std::pair<ReasonerSyntaxType, std::string>>{
+                {ReasonerSyntaxType::TURTLE, "shapes"}}));
+        EXPECT_CALL(*mock_reasoner_service_,
+                    loadData(testing::StrEq("shapes"), ReasonerSyntaxType::TURTLE))
+            .WillOnce(testing::Return(true));
+        EXPECT_CALL(*mock_model_config_, getInputs())
+            .WillOnce(testing::Return(
+                std::map<SchemaType, SchemaInputList>{{SchemaType::VEHICLE, {inputs}}}));
+
+        TripleAssemblerHelper::QueryPair query_pair;
+        query_pair.object_property = std::make_pair(QueryLanguageType::SPARQL, "OBJECT QUERY");
+        query_pair.data_property = std::make_pair(QueryLanguageType::SPARQL, "DATA QUERY %A% %B%");
+        EXPECT_CALL(*mock_model_config_, getQueriesTripleAssemblerHelper())
+            .WillRepeatedly(
+                testing::Return(TripleAssemblerHelper({{SchemaType::VEHICLE, query_pair}})));
+        // The data query resolves the property from the class and the last element of the signal
+        EXPECT_CALL(*mock_reasoner_service_,
+                    queryData("DATA QUERY Door Position", QueryLanguageType::SPARQL, ::testing::_))
+            .WillRepeatedly(testing::Return("?a ?b ?c\n<ex:Door> <ex:Position> <xsd:string>"));
+        EXPECT_CALL(*mock_reasoner_service_, queryData("DATA QUERY AmbientLight Position",
+                                                       QueryLanguageType::SPARQL, ::testing::_))
+            .WillRepeatedly(
+                testing::Return("?a ?b ?c\n<ex:AmbientLight> <ex:Position> <xsd:string>"));
+        EXPECT_CALL(*mock_reasoner_service_,
+                    queryData("DATA QUERY Vehicle Speed", QueryLanguageType::SPARQL, ::testing::_))
+            .WillRepeatedly(testing::Return("?a ?b ?c\n<ex:Vehicle> <ex:Speed> <xsd:float>"));
+        EXPECT_CALL(*mock_reasoner_service_,
+                    queryData("OBJECT QUERY", QueryLanguageType::SPARQL, ::testing::_))
+            .Times(0);
+    }
+};
+
+/**
+ * @brief With frames, input signals with different property names pass the start-up check.
+ */
+TEST_F(TripleAssemblerFramesInitializeUnitTest, FramesInitializeSucceedsWithUniquePropertyNames) {
+    setUpInitializeExpectations({DOOR_POSITION, SPEED});
+
+    EXPECT_NO_THROW(frames_assembler_->initialize());
+}
+
+/**
+ * @brief With frames, two input signals of different classes with the same property name stop
+ * the start-up with an error that names both signals and the property.
+ */
+TEST_F(TripleAssemblerFramesInitializeUnitTest, FramesInitializeFailsWhenInputsSharePropertyName) {
+    setUpInitializeExpectations({DOOR_POSITION, SPEED, LIGHT_POSITION});
+
+    try {
+        frames_assembler_->initialize();
+        FAIL() << "Expected a runtime error";
+    } catch (const std::runtime_error& e) {
+        const std::string message = e.what();
+        EXPECT_THAT(message, ::testing::HasSubstr("Vehicle." + DOOR_POSITION));
+        EXPECT_THAT(message, ::testing::HasSubstr("Vehicle." + LIGHT_POSITION));
+        EXPECT_THAT(message, ::testing::HasSubstr("<ex:Position>"));
+    }
+}
+
+/**
+ * @brief Without frames, the start-up does not check the property names, so the same inputs
+ * pass.
+ */
+TEST_F(TripleAssemblerUnitTest, InitializeWithoutFramesDoesNotCheckPropertyNames) {
+    EXPECT_CALL(*mock_reasoner_service_, checkDataStore()).WillOnce(testing::Return(true));
+    EXPECT_CALL(*mock_model_config_, getValidationShapes())
+        .WillOnce(testing::Return(std::vector<std::pair<ReasonerSyntaxType, std::string>>{
+            {ReasonerSyntaxType::TURTLE, "shapes"}}));
+    EXPECT_CALL(*mock_reasoner_service_,
+                loadData(testing::StrEq("shapes"), ReasonerSyntaxType::TURTLE))
+        .WillOnce(testing::Return(true));
+    EXPECT_CALL(*mock_model_config_, getInputs()).Times(0);
+    EXPECT_CALL(*mock_reasoner_service_, queryData(::testing::_, ::testing::_, ::testing::_))
+        .Times(0);
+
+    EXPECT_NO_THROW(triple_assembler_->initialize());
+}

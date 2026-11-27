@@ -28,8 +28,11 @@ TripleAssembler::TripleAssembler(std::shared_ptr<ModelConfig> model_config,
  * from the model configuration. If no validation shapes are found or if loading fails, it throws a
  * runtime error.
  *
- * @throws std::runtime_error If the data store is unavailable or if validation shapes cannot be
- * loaded.
+ * With a frame builder, it also checks that every input signal has its own property name, see
+ * `checkUniqueFramePropertyNames`.
+ *
+ * @throws std::runtime_error If the data store is unavailable, if validation shapes cannot be
+ * loaded, or if two input signals share a property name while frames are on.
  */
 void TripleAssembler::initialize() {
     if (!reasoner_service_.checkDataStore()) {
@@ -47,6 +50,56 @@ void TripleAssembler::initialize() {
         throw std::runtime_error(
             "No validation shapes were found to load. The triples cannot be generated.");
     }
+    if (frame_builder_ != nullptr) {
+        checkUniqueFramePropertyNames();
+    }
+}
+
+/**
+ * @brief Checks that no two input signals share a property name, which frames need.
+ *
+ * In a frame, the member observations and the values on the frame node are named after the
+ * property of the signal. Two input signals with the same property (for example `car:Position` of
+ * the door and of the ambient light) would get the same names in one frame and their values would
+ * mix. The property of each input signal is resolved with the helper query for data properties,
+ * so it needs the validation shapes in the data store.
+ *
+ * @throws std::runtime_error If two input signals share a property name, naming both signals and
+ * the property, or if the property of a signal cannot be resolved.
+ */
+void TripleAssembler::checkUniqueFramePropertyNames() {
+    for (const auto& [schema_type, input_list] : model_config_->getInputs()) {
+        const auto query_pair = getHelperQueries(schema_type);
+        std::map<std::string, std::string> signal_per_property;
+        for (const auto& input : input_list.subscribe) {
+            // The inputs are stored without the schema type, the message nodes carry it
+            const std::string signal_name = schemaTypeToString(schema_type, true) + "." + input;
+            const auto [object_elements, data_element] = extractObjectsAndDataElements(signal_name);
+            const auto data_values = getQueryPrefixesAndData(query_pair.data_property,
+                                                             object_elements.back(), data_element);
+            const std::string& property = std::get<1>(data_values.second);
+            const auto [found, inserted] = signal_per_property.emplace(property, signal_name);
+            if (!inserted) {
+                throw std::runtime_error(
+                    "Frames need a unique property name per input signal, but " + found->second +
+                    " and " + signal_name + " both have the property " + property +
+                    ". Remove one of them from the inputs or turn frames off.");
+            }
+        }
+    }
+}
+
+/**
+ * @brief Returns the helper queries of a schema type, or the default helper queries.
+ */
+TripleAssemblerHelper::QueryPair TripleAssembler::getHelperQueries(
+    const SchemaType& schema_type) const {
+    const auto queries = model_config_->getQueriesTripleAssemblerHelper().getQueries();
+    const auto found = queries.find(schema_type);
+    if (found != queries.end()) {
+        return found->second;
+    }
+    return queries.at(SchemaType::DEFAULT);
 }
 
 /**
@@ -244,13 +297,7 @@ ResolvedSignal TripleAssembler::resolveSignal(const Node& node, const SchemaType
     // Split node data point into object and data elements
     const auto [object_elements, data_element] = extractObjectsAndDataElements(node.getName());
 
-    const auto queries = model_config_->getQueriesTripleAssemblerHelper().getQueries();
-    TripleAssemblerHelper::QueryPair query_pair;
-    if (queries.find(msg_schema_type) != queries.end()) {
-        query_pair = queries.at(msg_schema_type);
-    } else {
-        query_pair = queries.at(SchemaType::DEFAULT);
-    }
+    const auto query_pair = getHelperQueries(msg_schema_type);
 
     ResolvedSignal signal;
     // Query the object elements

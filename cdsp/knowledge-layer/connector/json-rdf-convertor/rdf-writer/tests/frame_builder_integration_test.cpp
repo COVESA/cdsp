@@ -72,7 +72,7 @@ class FrameBuilderIntegrationTest : public ::testing::Test {
 
 /**
  * @brief A frame with angle and speed: class triples, one member per signal with its own time,
- * and the frame node with the frame time.
+ * and the frame node with the frame time and the value of each member.
  */
 TEST_F(FrameBuilderIntegrationTest, BuildsFrameWithOneMemberPerSignal) {
     frame_builder_.updateSignal(VIN, "Vehicle.Chassis.SteeringWheel.Angle",
@@ -115,6 +115,8 @@ car:frame_VIN123_20261116100002200000000
 	a sosa:ObservationCollection ;
 	sosa:hasFeatureOfInterest car:VehicleVIN123 ;
 	sosa:phenomenonTime "2026-11-16T10:00:02.200000000Z"^^xsd:dateTime ;
+	car:Angle "250"^^xsd:short ;
+	car:Speed "64.0"^^xsd:float ;
 	sosa:hasMember car:fm_Angle_VIN123_20261116100002200000000 ,
 		car:fm_Speed_VIN123_20261116100002200000000 .)";
 
@@ -150,6 +152,7 @@ TEST_F(FrameBuilderIntegrationTest, LeavesOutValuesOlderThanMaxAge) {
                                 angle("300", T0 + milliseconds(1500)));
     const std::string later = build(T0 + milliseconds(1500));
     EXPECT_FALSE(contains(later, "car:fm_Speed_")) << later;
+    EXPECT_FALSE(contains(later, R"(car:Speed "64.0")")) << later;
     EXPECT_TRUE(contains(later, R"("300"^^xsd:short)")) << later;
 }
 
@@ -179,6 +182,8 @@ TEST_F(FrameBuilderIntegrationTest, TakesLocationOnlyAsPair) {
     frame = build(T0 + milliseconds(1500));
     EXPECT_TRUE(contains(frame, "car:fm_Latitude_")) << frame;
     EXPECT_TRUE(contains(frame, "car:fm_Longitude_")) << frame;
+    EXPECT_TRUE(contains(frame, R"(car:Latitude "48.1"^^xsd:double)")) << frame;
+    EXPECT_TRUE(contains(frame, R"(car:Longitude "11.5"^^xsd:double)")) << frame;
 
     // The longitude gets too old, so the latitude is left out as well
     frame_builder_.updateSignal(VIN, "Vehicle.CurrentLocation.Latitude",
@@ -187,10 +192,12 @@ TEST_F(FrameBuilderIntegrationTest, TakesLocationOnlyAsPair) {
     frame = build(T0 + milliseconds(3000));
     EXPECT_FALSE(contains(frame, "car:fm_Latitude_")) << frame;
     EXPECT_FALSE(contains(frame, "car:fm_Longitude_")) << frame;
+    EXPECT_FALSE(contains(frame, "car:Latitude ")) << frame;
 }
 
 /**
- * @brief The location pair gets its NTM values, like an observation without frames.
+ * @brief The location pair gets its NTM values, like an observation without frames. The NTM
+ * values stay on the members, the frame only carries the values.
  */
 TEST_F(FrameBuilderIntegrationTest, AddsNtmValuesToLocationPair) {
     frame_builder_.updateSignal(VIN, "Vehicle.CurrentLocation.Latitude",

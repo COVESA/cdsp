@@ -66,6 +66,8 @@ class TripleAssembler {
 
     void transformMessageToFrame(const MessageHeader& header, const std::vector<Node>& nodes);
     ResolvedSignal resolveSignal(const Node& node, const SchemaType& msg_schema_type);
+    TripleAssemblerHelper::QueryPair getHelperQueries(const SchemaType& schema_type) const;
+    void checkUniqueFramePropertyNames();
 
     std::optional<CoordinateNodes> getValidCoordinatesPair();
     void cleanupOldTimestamps();
